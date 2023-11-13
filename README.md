@@ -1,18 +1,13 @@
-# Decapodes.jl
+# DiagrammaticEquations.jl
 
-[![Stable Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://AlgebraicJulia.github.io/Decapodes.jl/stable)
-[![Development Documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://AlgebraicJulia.github.io/Decapodes.jl/dev)
-[![Code Coverage](https://codecov.io/gh/AlgebraicJulia/Decapodes.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/AlgebraicJulia/Decapodes.jl)
-[![CI/CD](https://github.com/AlgebraicJulia/Decapodes.jl/actions/workflows/julia_ci.yml/badge.svg)](https://github.com/AlgebraicJulia/Decapodes.jl/actions/workflows/julia_ci.yml)
+[![Stable Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://AlgebraicJulia.github.io/DiagrammaticEquations.jl/stable)
+[![Development Documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://AlgebraicJulia.github.io/DiagrammaticEquations.jl/dev)
+[![Code Coverage](https://codecov.io/gh/AlgebraicJulia/DiagrammaticEquations.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/AlgebraicJulia/DiagrammaticEquations.jl)
+[![CI/CD](https://github.com/AlgebraicJulia/DiagrammaticEquations.jl/actions/workflows/julia_ci.yml/badge.svg)](https://github.com/AlgebraicJulia/DiagrammaticEquations.jl/actions/workflows/julia_ci.yml)
 
-Decapodes are a graphical tool for the composition of physical systems.
-Ultimately, this library will include tooling which takes advantage of the
-formalization of physical theories described by DEC provided by
-[CombinatorialSpaces.jl](https://algebraicjulia.github.io/CombinatorialSpaces.jl/dev/).
+`DiagrammaticEquations.jl` is a Julia library implementing category theory to reason formally about diagrammatic representations of systems of algebraic and differential equations. 
 
-# NOTE
+Currently DiagrammaticEquations.jl contains two submodules, `Deca` and `Learn` for supporting `Decapodes.jl` and `AlgebraicLearning.jl` functionality. 
 
-This library is currently under active development, and so is not yet at a
-point where a constant API/behavior can be assumed. That being said, if this
-project looks interesting/relevant please contact us and
-[let us know](https://www.algebraicjulia.org/#contributing)!
+## Relevant Work
+* Patterson, E., Baas, A., Hosgood, T., & Fairbanks, J. (2022). A diagrammatic view of differential equations in physics. arXiv preprint arXiv:2204.01843.

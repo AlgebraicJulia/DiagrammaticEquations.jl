@@ -1,7 +1,5 @@
 # Library Reference
 
-## Decapodes
 ```@autodocs
-Modules = [ Decapodes ]
-Private = false
+Modules = [DiagrammaticEquations, DiagrammaticEquations.Deca, DiagrammaticEquations.Learn]
 ```
