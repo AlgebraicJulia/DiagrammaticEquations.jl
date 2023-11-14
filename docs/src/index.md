@@ -1,7 +1,7 @@
-# AlgebraicTemplate.jl
+# DiagrammaticEquations.jl
 
 ```@meta
-CurrentModule = AlgebraicTemplate
+CurrentModule = DiagrammaticEquations
 ```
 
-`AlgebraicTemplate.jl` is a Julia library for...
+`DiagrammaticEquations.jl` is a Julia library for...

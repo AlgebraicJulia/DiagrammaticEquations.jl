@@ -1,11 +1,17 @@
-name = "AlgebraicTemplate"
+name = "DiagrammaticEquations.jl"
 uuid = "b66562e1-fa90-4e8b-9505-c909188fab76"
 license = "MIT"
-authors = ["AlgebraicJulia Developer <email@algebraicjulia.org>"]
+authors = authors = [
+  "James Fairbanks",
+  "Andrew Baas",
+  "Evan Patterson",
+  "Luke Morris",
+  "George Rauta",
+]
 version = "0.0.1"
 
 [deps]
-Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
+Catlab = "d3509f1a-f4fe-4f63-b9c2-a8cefdb22603"
 
 [compat]
 Catlab = "^0.14"
