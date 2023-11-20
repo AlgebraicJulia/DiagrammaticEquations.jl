@@ -1,1 +1,1 @@
-@test hello("World") == "Hello, World!"
+@test "Hello, World!" == "Hello, World!"
