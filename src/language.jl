@@ -133,6 +133,7 @@ reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
         # TODO: this is creating a spurious variable with the same name
         txv = add_part!(d, :Var, type=:infer)
         tx = add_part!(d, :TVar, incl=txv)
+        # TODO - Matt: DerivOp being used here
         tanop = add_part!(d, :Op1, src=!(t,d,syms), tgt=txv, op1=DerivOp)
         return txv #syms[x[1]]
       end

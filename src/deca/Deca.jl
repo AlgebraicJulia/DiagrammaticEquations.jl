@@ -1,3 +1,11 @@
+include("acset.jl")
+include("visualization.jl")
+
+normalize_unicode(s::String) = Unicode.normalize(s, compose=true, stable=true, chartransform=Unicode.julia_chartransform)
+normalize_unicode(s::Symbol)  = Symbol(normalize_unicode(String(s)))
+
+DerivOp = Symbol("∂ₜ")
+append_dot(s::Symbol) = Symbol(string(s)*'\U0307')
 
 """
     function recursive_delete_parents!(d::SummationDecapode, to_delete::Vector{Int64})
