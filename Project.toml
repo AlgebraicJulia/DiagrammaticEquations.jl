@@ -1,5 +1,5 @@
 name = "DiagrammaticEquations"
-uuid = "b66562e1-fa90-4e8b-9505-c909188fab76"
+uuid = "6f00c28b-6bed-4403-80fa-30e0dc12f317" 
 license = "MIT"
 authors = ["James Fairbanks", "Andrew Baas", "Evan Patterson", "Luke Morris", "George Rauta"]
 version = "0.0.1"

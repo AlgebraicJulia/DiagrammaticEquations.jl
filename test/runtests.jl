@@ -1,7 +1,5 @@
 using Test
 
-using DiagrammaticEquations
-
 @testset "Core" begin
   include("core.jl")
 end

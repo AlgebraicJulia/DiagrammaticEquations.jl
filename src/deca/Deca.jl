@@ -1,11 +1,26 @@
-include("acset.jl")
-include("visualization.jl")
+module Deca
+using ..DiagrammaticEquations
+using Catlab
 
-normalize_unicode(s::String) = Unicode.normalize(s, compose=true, stable=true, chartransform=Unicode.julia_chartransform)
-normalize_unicode(s::Symbol)  = Symbol(normalize_unicode(String(s)))
+include("deca_acset.jl")
+include("deca_visualization.jl")
 
-DerivOp = Symbol("∂ₜ")
-append_dot(s::Symbol) = Symbol(string(s)*'\U0307')
+export normalize_unicode, varname, infer_states, typename, spacename
+
+
+
+## TODO: where?
+function infer_states(d::SummationDecapode)
+    filter(parts(d, :Var)) do v
+        length(incident(d, v, :tgt)) == 0 &&
+        length(incident(d, v, :res)) == 0 &&
+        length(incident(d, v, :sum)) == 0 &&
+        d[v, :type] != :Literal
+    end
+end
+
+infer_state_names(d) = d[infer_states(d), :name]
+
 
 """
     function recursive_delete_parents!(d::SummationDecapode, to_delete::Vector{Int64})
@@ -61,4 +76,5 @@ function recursive_delete_parents!(d::SummationDecapode, to_delete::Vector{Int64
     isempty(s) && break
   end
   rem_parts!(d, :Var, sort!(unique!(vars_to_remove)))
+end
 end
