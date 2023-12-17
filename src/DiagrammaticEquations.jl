@@ -20,7 +20,7 @@ export
 DerivOp, append_dot, normalize_unicode, infer_states,
 
 # Deca
-recursive_delete_parents, findname,
+recursive_delete_parents, findname, spacename,
 op1_inf_rules_1D, op2_inf_rules_1D, op1_inf_rules_2D, op2_inf_rules_2D, op1_res_rules_1D, op2_res_rules_1D, op1_res_rules_2D, op2_res_rules_2D, varname,
 
 ## collages
