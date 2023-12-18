@@ -36,11 +36,11 @@ end
 makedocs(
   modules=[DiagrammaticEquations],
   format=Documenter.HTML(),
-  sitename="AlgebraicX.jl",
+  sitename="DE.jl",
   doctest=false,
   checkdocs=:none,
   pages=Any[
-    "AlgebraicX.jl"=>"index.md",
+    "DiagrammaticEquations.jl"=>"index.md",
     "Examples"=>Any[
       "generated/literate_example.md",
     ],

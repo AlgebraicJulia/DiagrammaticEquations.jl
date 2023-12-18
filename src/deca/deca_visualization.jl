@@ -78,6 +78,8 @@ function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; typena
     map(parts(d, :Op2)) do op
       s, t = d[op, :proj1], d[op, :proj2]
       r = d[op, :res]
+      # S, T, = typename(d, s), typename(d, t)
+      # v = add_vertex!(G, label="$(S)×$(T)", shape="rectangle")
       v = add_vertex!(G, label="$(spacename(d, s))×$(spacename(d,t))", shape="rectangle")
 
       # If in directed mode, sources point into the projection field
