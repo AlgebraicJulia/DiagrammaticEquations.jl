@@ -5,9 +5,9 @@
 [![Code Coverage](https://codecov.io/gh/AlgebraicJulia/DiagrammaticEquations.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/AlgebraicJulia/DiagrammaticEquationse.jl)
 [![CI/CD](https://github.com/AlgebraicJulia/DiagrammaticEquations.jl/actions/workflows/julia_ci.yml/badge.svg)](https://github.com/AlgebraicJulia/DiagrammaticEquations.jl/actions/workflows/julia_ci.yml)
 
-`DiagrammaticEquations.jl` is a Julia library implementing category-theoretic formally reasoning about systems of algebraic and differential equations with diagrams. 
+`DiagrammaticEquations.jl` is a Julia library implementing category theory to reason formally about diagrammatic representations of systems of algebraic and differential equations. 
 
-Currently DiagrammaticEquations.jl contains wo submodules, `Deca` and `Learn` for supporting `Decapodes.jl` and `AlgebraicLearning.jl` functionality. 
+Currently DiagrammaticEquations.jl contains two submodules, `Deca` and `Learn` for supporting `Decapodes.jl` and `AlgebraicLearning.jl` functionality. 
 
 ## Relevant Work
 * Patterson, E., Baas, A., Hosgood, T., & Fairbanks, J. (2022). A diagrammatic view of differential equations in physics. arXiv preprint arXiv:2204.01843.
