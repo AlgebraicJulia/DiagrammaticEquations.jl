@@ -137,50 +137,106 @@ op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
   (proj1_type = :Literal, proj2_type = :Form2, res_type = :Form2, op_names = [:/, :./, :*, :.*]),
   (proj1_type = :Form2, proj2_type = :Literal, res_type = :Form2, op_names = [:/, :./, :*, :.*])])
   
-function apply_inference_rule_op1!(d::SummationDecapode, op1_id, rule)
-  type_src = d[d[op1_id, :src], :type]
-  type_tgt = d[d[op1_id, :tgt], :type]
+# TODO: You could write a method which auto-generates these rules given degree N.
 
-  if(type_src != :infer && type_tgt != :infer)
-    return false
-  end
+"""
+These are the default rules used to do function resolution in the 1D exterior calculus.
+"""
+op1_res_rules_1D = [
+  # Rules for d.
+  (src_type = :Form0, tgt_type = :Form1, resolved_name = :d₀, op = :d),
+  (src_type = :DualForm0, tgt_type = :DualForm1, resolved_name = :dual_d₀, op = :d),
+  # Rules for ⋆.
+  (src_type = :Form0, tgt_type = :DualForm1, resolved_name = :⋆₀, op = :⋆),
+  (src_type = :Form1, tgt_type = :DualForm0, resolved_name = :⋆₁, op = :⋆),
+  (src_type = :DualForm1, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = :⋆),
+  (src_type = :DualForm0, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :⋆),
+  (src_type = :Form0, tgt_type = :DualForm1, resolved_name = :⋆₀, op = :star),
+  (src_type = :Form1, tgt_type = :DualForm0, resolved_name = :⋆₁, op = :star),
+  (src_type = :DualForm1, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = :star),
+  (src_type = :DualForm0, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :star),
+  # Rules for δ.
+  (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :δ),
+  (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :codif)]
 
-  score_src = (rule.src_type == type_src)
-  score_tgt = (rule.tgt_type == type_tgt)
-  check_op = (d[op1_id, :op1] in rule.op_names)
+# We merge 1D and 2D rules since it seems op2 rules are metric-free. If
+# this assumption is false, this needs to change.
+op2_res_rules_1D = [
+  # Rules for ∧.
+  (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, resolved_name = :∧₀₀, op = :∧),
+  (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form1, resolved_name = :∧₁₀, op = :∧),
+  (proj1_type = :Form0, proj2_type = :Form1, res_type = :Form1, resolved_name = :∧₀₁, op = :∧),
+  (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, resolved_name = :∧₀₀, op = :wedge),
+  (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form1, resolved_name = :∧₁₀, op = :wedge),
+  (proj1_type = :Form0, proj2_type = :Form1, res_type = :Form1, resolved_name = :∧₀₁, op = :wedge),
+  # Rules for L.
+  (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form0, resolved_name = :L₀, op = :L),
+  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form1, resolved_name = :L₁, op = :L),
+  # Rules for i.
+  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form0, resolved_name = :i₁, op = :i)]
 
-  if(check_op && (score_src + score_tgt == 1))
-    d[d[op1_id, :src], :type] = rule.src_type
-    d[d[op1_id, :tgt], :type] = rule.tgt_type
-    return true
-  end
 
-  return false
-end
+"""
+These are the default rules used to do function resolution in the 2D exterior calculus.
+"""
+op1_res_rules_2D = [
+  # Rules for d.
+  (src_type = :Form0, tgt_type = :Form1, resolved_name = :d₀, op = :d),
+  (src_type = :Form1, tgt_type = :Form2, resolved_name = :d₁, op = :d),
+  (src_type = :DualForm0, tgt_type = :DualForm1, resolved_name = :dual_d₀, op = :d),
+  (src_type = :DualForm1, tgt_type = :DualForm2, resolved_name = :dual_d₁, op = :d),
+  # Rules for ⋆.
+  (src_type = :Form0, tgt_type = :DualForm2, resolved_name = :⋆₀, op = :⋆),
+  (src_type = :Form1, tgt_type = :DualForm1, resolved_name = :⋆₁, op = :⋆),
+  (src_type = :Form2, tgt_type = :DualForm0, resolved_name = :⋆₂, op = :⋆),
+  (src_type = :DualForm2, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = :⋆),
+  (src_type = :DualForm1, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :⋆),
+  (src_type = :DualForm0, tgt_type = :Form2, resolved_name = :⋆₂⁻¹, op = :⋆),
+  (src_type = :Form0, tgt_type = :DualForm2, resolved_name = :⋆₀, op = :star),
+  (src_type = :Form1, tgt_type = :DualForm1, resolved_name = :⋆₁, op = :star),
+  (src_type = :Form2, tgt_type = :DualForm0, resolved_name = :⋆₂, op = :star),
+  (src_type = :DualForm2, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = :star),
+  (src_type = :DualForm1, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :star),
+  (src_type = :DualForm0, tgt_type = :Form2, resolved_name = :⋆₂⁻¹, op = :star),
+  # Rules for δ.
+  (src_type = :Form2, tgt_type = :Form1, resolved_name = :δ₂, op = :δ),
+  (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :δ),
+  (src_type = :Form2, tgt_type = :Form1, resolved_name = :δ₂, op = :codif),
+  (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :codif),
+  # Rules for ∇².
+  # TODO: Call this :nabla2 in ASCII?
+  (src_type = :Form0, tgt_type = :Form0, resolved_name = :∇²₀, op = :∇²),
+  (src_type = :Form1, tgt_type = :Form1, resolved_name = :∇²₁, op = :∇²),
+  (src_type = :Form2, tgt_type = :Form2, resolved_name = :∇²₂, op = :∇²),
+  # Rules for Δ.
+  (src_type = :Form0, tgt_type = :Form0, resolved_name = :Δ₀, op = :Δ),
+  (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₁, op = :Δ),
+  (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₂, op = :Δ),
+  (src_type = :Form0, tgt_type = :Form0, resolved_name = :Δ₀, op = :lapl),
+  (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₁, op = :lapl),
+  (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₂, op = :lapl)]
 
-function apply_inference_rule_op2!(d::SummationDecapode, op2_id, rule)
-  type_proj1 = d[d[op2_id, :proj1], :type]
-  type_proj2 = d[d[op2_id, :proj2], :type]
-  type_res = d[d[op2_id, :res], :type]
+# We merge 1D and 2D rules directly here since it seems op2 rules
+# are metric-free. If this assumption is false, this needs to change.
+op2_res_rules_2D = vcat(op2_res_rules_1D, [
+  # Rules for ∧.
+  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form2, resolved_name = :∧₁₁, op = :∧),
+  (proj1_type = :Form2, proj2_type = :Form0, res_type = :Form2, resolved_name = :∧₂₀, op = :∧),
+  (proj1_type = :Form0, proj2_type = :Form2, res_type = :Form2, resolved_name = :∧₀₂, op = :∧),
+  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form2, resolved_name = :∧₁₁, op = :wedge),
+  (proj1_type = :Form2, proj2_type = :Form0, res_type = :Form2, resolved_name = :∧₂₀, op = :wedge),
+  (proj1_type = :Form0, proj2_type = :Form2, res_type = :Form2, resolved_name = :∧₀₂, op = :wedge),
+  # Rules for L.
+  (proj1_type = :Form1, proj2_type = :Form2, res_type = :Form2, resolved_name = :L₂, op = :L),
+  (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm2, resolved_name = :L₂ᵈ, op = :L),
+  # Rules for i.
+  (proj1_type = :Form1, proj2_type = :Form2, res_type = :Form1, resolved_name = :i₂, op = :i)])
 
-  if(type_proj1 != :infer && type_proj2 != :infer && type_res != :infer)
-    return false
-  end
+# TODO: When SummationDecapodes are annotated with the degree of their space,
+# use dispatch to choose the correct set of rules.
+infer_types!(d::SummationDecapode) =
+  infer_types!(d, op1_inf_rules_2D, op2_inf_rules_2D)
 
-  score_proj1 = (rule.proj1_type == type_proj1)
-  score_proj2 = (rule.proj2_type == type_proj2)
-  score_res = (rule.res_type == type_res)
-  check_op = (d[op2_id, :op2] in rule.op_names)
-
-  if(check_op && (score_proj1 + score_proj2 + score_res == 2))
-    d[d[op2_id, :proj1], :type] = rule.proj1_type
-    d[d[op2_id, :proj2], :type] = rule.proj2_type
-    d[d[op2_id, :res], :type] = rule.res_type
-    return true
-  end
-
-  return false
-end
 
 ascii_to_unicode_op1 = Pair{Symbol, Any}[
                         (:dt       => :∂ₜ),
