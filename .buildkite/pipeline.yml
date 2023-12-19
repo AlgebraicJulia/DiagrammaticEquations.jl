@@ -1,0 +1,22 @@
+env:
+  JULIA_VERSION: "1.9.3"
+
+steps:
+
+  - label: ":hammer: Build Project"
+    command: 
+      - "module load julia"
+      - "julia --project --color=yes -e 'using Pkg; Pkg.instantiate()'"
+      - "julia --project=docs/ --color=yes -e 'using Pkg; Pkg.instantiate()'"
+      - "julia --project=docs/ --color=yes -e 'using Pkg; Pkg.precompile()'"
+         
+  - wait 
+
+  - label: ":scroll: Build docs"
+    command:
+      - "srun --mem=8G --time=1:00:00 --output=log_%j.log jobscript.sh"
+    env:
+      JULIA_PROJECT: "docs/"
+
+  - wait
+
