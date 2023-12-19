@@ -1,18 +1,19 @@
-name = "DiagrammaticEquations.jl"
-uuid = "b66562e1-fa90-4e8b-9505-c909188fab76"
+name = "DiagrammaticEquations"
+uuid = "6f00c28b-6bed-4403-80fa-30e0dc12f317"
 license = "MIT"
-authors = authors = [
-  "James Fairbanks",
-  "Andrew Baas",
-  "Evan Patterson",
-  "Luke Morris",
-  "George Rauta",
-]
+authors = ["James Fairbanks", "Andrew Baas", "Evan Patterson", "Luke Morris", "George Rauta"]
 version = "0.0.1"
 
 [deps]
-Catlab = "d3509f1a-f4fe-4f63-b9c2-a8cefdb22603"
+AlgebraicRewriting = "725a01d3-f174-5bbd-84e1-b9417bad95d9"
+Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
+DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+MLStyle = "d8e11817-5142-5d16-987a-aa16d5891078"
+Unicode = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
 [compat]
-Catlab = "^0.14"
+AlgebraicRewriting = "0.2"
+Catlab = "0.15"
+DataStructures = "0.18.13"
+MLStyle = "0.4.17"
 julia = "1.6"

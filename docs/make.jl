@@ -14,8 +14,8 @@ if !no_literate
   # Set Literate.jl config if not being compiled on recognized service.
   config = Dict{String,String}()
   if !(haskey(ENV, "GITHUB_ACTIONS") || haskey(ENV, "GITLAB_CI"))
-    config["nbviewer_root_url"] = "https://nbviewer.jupyter.org/github/AlgebraicJulia/AlgebraicX.jl/blob/gh-pages/dev"
-    config["repo_root_url"] = "https://github.com/AlgebraicJulia/AlgebraicX.jl/blob/main/docs"
+    config["nbviewer_root_url"] = "https://nbviewer.jupyter.org/github/AlgebraicJulia/DiagrammaticEquations.jl/blob/gh-pages/dev"
+    config["repo_root_url"] = "https://github.com/AlgebraicJulia/DiagrammaticEquations.jl/blob/main/docs"
   end
 
   for (root, dirs, files) in walkdir(literate_dir)
@@ -36,11 +36,11 @@ end
 makedocs(
   modules=[DiagrammaticEquations],
   format=Documenter.HTML(),
-  sitename="AlgebraicX.jl",
+  sitename="DE.jl",
   doctest=false,
   checkdocs=:none,
   pages=Any[
-    "AlgebraicX.jl"=>"index.md",
+    "DiagrammaticEquations.jl"=>"index.md",
     "Examples"=>Any[
       "generated/literate_example.md",
     ],

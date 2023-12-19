@@ -1,5 +1,5 @@
 # Library Reference
 
 ```@autodocs
-Modules = [DiagrammaticEquations]
+Modules = [DiagrammaticEquations, DiagrammaticEquations.Deca, DiagrammaticEquations.Learn]
 ```
