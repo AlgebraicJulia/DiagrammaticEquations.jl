@@ -5,14 +5,20 @@ module DiagrammaticEquations
 export 
 DerivOp, append_dot, normalize_unicode, infer_states,
 # Deca
-recursive_delete_parents, findname, spacename,
-op1_inf_rules_1D, op2_inf_rules_1D, op1_inf_rules_2D, op2_inf_rules_2D, op1_res_rules_1D, op2_res_rules_1D, op1_res_rules_2D, op2_res_rules_2D, varname,
+op1_res_rules_1D,
+op2_res_rules_1D,
+op1_res_rules_2D,
+op2_res_rules_2D,
+op1_inf_rules_1D,
+op2_inf_rules_1D,
+op1_inf_rules_2D,
+op2_inf_rules_2D,
+recursive_delete_parents, findname, spacename, varname, unicode!,
 ## collages
 Collage, collate,
 ## composition
 oapply, unique_by, unique_by!, OpenSummationDecapodeOb, OpenSummationDecapode, Open,
 ## acset
-unicode!,
 SchDecapode, SchNamedDecapode, AbstractDecapode, AbstractNamedDecapode, NamedDecapode, SummationDecapode,
 contract_operators, add_constant!, add_parameter, vec_to_dec!, infer_types!,
 fill_names!,  dot_rename!, expand_operators, infer_state_names, recognize_types,
