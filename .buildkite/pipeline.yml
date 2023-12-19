@@ -7,8 +7,7 @@ steps:
     command: 
       - "module load julia"
       - "julia --project --color=yes -e 'using Pkg; Pkg.instantiate()'"
-      - "julia --project=docs/ --color=yes -e 'using Pkg; Pkg.instantiate()'"
-      - "julia --project=docs/ --color=yes -e 'using Pkg; Pkg.precompile()'"
+      - "julia --project=docs/ --color=yes -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'"
          
   - wait 
 
