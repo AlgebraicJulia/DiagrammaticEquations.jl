@@ -5,15 +5,15 @@ using Catlab
 include("deca_acset.jl")
 include("deca_visualization.jl")
 
-export normalize_unicode, varname, infer_states, infer_types!, typename, spacename, recursive_delete_parents, recursive_delete_parents!, unicode!, op1_res_rules_1D,
+export normalize_unicode, varname, infer_states, infer_types!, typename, spacename, recursive_delete_parents, recursive_delete_parents!, unicode!, replace_names!, op1_res_rules_1D,
 op2_res_rules_1D,
 op1_res_rules_2D,
 op2_res_rules_2D,
 op1_inf_rules_1D,
 op2_inf_rules_1D,
 op1_inf_rules_2D,
-op2_inf_rules_2D
-
+op2_inf_rules_2D,
+apply_inference_rule_op1!, apply_inference_rule_op2!
 
 ## TODO: where?
 function infer_states(d::SummationDecapode)

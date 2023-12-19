@@ -1,3 +1,5 @@
+using ..DiagrammaticEquations
+
 # TODO: You could write a method which auto-generates these rules given degree N.
 """
 These are the default rules used to do type inference in the 1D exterior calculus.

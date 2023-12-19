@@ -13,7 +13,7 @@ op1_inf_rules_1D,
 op2_inf_rules_1D,
 op1_inf_rules_2D,
 op2_inf_rules_2D,
-recursive_delete_parents, findname, spacename, varname, unicode!,
+recursive_delete_parents, findname, spacename, varname, unicode!, apply_inference_rule_op1!, apply_inference_rule_op2!,
 ## collages
 Collage, collate,
 ## composition
@@ -22,7 +22,7 @@ oapply, unique_by, unique_by!, OpenSummationDecapodeOb, OpenSummationDecapode, O
 SchDecapode, SchNamedDecapode, AbstractDecapode, AbstractNamedDecapode, NamedDecapode, SummationDecapode,
 contract_operators, add_constant!, add_parameter, vec_to_dec!, infer_types!,
 fill_names!,  dot_rename!, expand_operators, infer_state_names, recognize_types,
-resolve_overloads!,
+resolve_overloads!, replace_names!,
 ## language
 @decapode, Term, parse_decapode, term, Eq, DecaExpr,
 # ~~~~~
