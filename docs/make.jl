@@ -36,7 +36,7 @@ end
 makedocs(
   modules=[DiagrammaticEquations],
   format=Documenter.HTML(),
-  sitename="DE.jl",
+  sitename="DiagrammaticEquations.jl",
   doctest=false,
   checkdocs=:none,
   pages=Any[
