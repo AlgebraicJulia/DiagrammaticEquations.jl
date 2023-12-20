@@ -8,17 +8,14 @@
 #SBATCH --output=daemon_test_%j.log   # Standard output and error log
 pwd; hostname; date
 
-module load gcc/12.2.0 openmpi/4.1.5 julia
+module load julia
 
-echo "Running docs build..."
+echo "Installing Packages..."
 
 julia --project=docs/ -e 'using Pkg; Pkg.status()'
+
+echo "Running Tests..."
+julia --project -e 'using Pkg; Pkg.status; Pkg.test()'
+
+echo "Building Documentation..."
 julia --project=docs/ -e 'using Pkg; Pkg.instantiate(); include("docs/make.jl")'
-# julia --project -e 'using Pkg; Pkg.status; Pkg.test()' > log_test.md
-# ./job.sh
-
-# mpiexec -np 1 julia --project -e test/runtests.jl
-
-date
-
-
