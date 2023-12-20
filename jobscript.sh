@@ -9,12 +9,8 @@ pwd; hostname; date
 
 module load julia
 
-echo "Installing Packages..."
-
-julia --project=docs/ -e 'using Pkg; Pkg.status()'
-
 echo "Running Tests..."
 julia --project -e 'using Pkg; Pkg.status(); Pkg.test()'
 
 echo "Building Documentation..."
-julia --project=docs/ -e 'using Pkg; Pkg.status(); include("docs/make.jl")'
+julia --project=docs -e 'using Pkg; Pkg.status(); include("docs/make.jl")'
