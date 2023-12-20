@@ -41,9 +41,7 @@ makedocs(
   checkdocs=:none,
   pages=Any[
     "DiagrammaticEquations.jl"=>"index.md",
-    "Examples"=>Any[
-      "generated/literate_example.md",
-    ],
+    "Equations"=>"equations.md",
     "Library Reference"=>"api.md",
   ]
 )

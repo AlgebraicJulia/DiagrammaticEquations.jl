@@ -1,4 +1,5 @@
 [deps]
+Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
 DiagrammaticEquations = "6f00c28b-6bed-4403-80fa-30e0dc12f317"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
