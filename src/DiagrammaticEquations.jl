@@ -61,6 +61,9 @@ include("collages.jl")
 include("visualization.jl")
 include("rewrite.jl")
 
+include("pretty.jl")
+include("colanguage.jl")
+
 include("deca/Deca.jl")
 include("learn/Learn.jl")
 

@@ -3,17 +3,8 @@
 # TODO: Add support for higher order functions.
 #   - This is straightforward from a language perspective but unclear the best
 #   - way to represent this in a Decapode ACSet.
-@data Term begin
-  Var(name::Symbol)
-  Lit(name::Symbol)
-  Judgment(var::Var, dim::Symbol, space::Symbol) # Symbol 1: Form0 Symbol 2: X
-  AppCirc1(fs::Vector{Symbol}, arg::Term)
-  App1(f::Symbol, arg::Term)
-  App2(f::Symbol, arg1::Term, arg2::Term)
-  Plus(args::Vector{Term})
-  Mult(args::Vector{Term})
-  Tan(var::Term)
-end
+
+@intertypes "decapodes.it" module decapodes end
 
 @data Equation begin
   Eq(lhs::Term, rhs::Term)
@@ -220,9 +211,9 @@ function SummationDecapode(e::DecaExpr)
     d = SummationDecapode{Any, Any, Symbol}()
     symbol_table = Dict{Symbol, Int}()
 
-    for Judgment in e.context
-      var_id = add_part!(d, :Var, name=Judgment.var.name, type=Judgment.dim)
-      symbol_table[Judgment.var.name] = var_id
+    for Judgement in e.context
+      var_id = add_part!(d, :Var, name=Judgement.var.name, type=Judgment.dim)
+      symbol_table[Judgement.var.name] = var_id
     end
 
     deletions = Vector{Int}()
