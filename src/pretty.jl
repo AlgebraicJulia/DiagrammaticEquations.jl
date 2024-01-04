@@ -1,6 +1,6 @@
 using MLStyle
-using Decapodes
-using Decapodes.decapodes
+using DiagrammaticEquations
+using DiagrammaticEquations.decapodes
 
 function pprint(io::IO, exp::DecaExpr, pad=0) 
   pprint(io, "Context:\n", pad)

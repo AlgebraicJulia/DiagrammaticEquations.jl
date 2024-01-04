@@ -1,4 +1,4 @@
-using Decapodes
+using DiagrammaticEquations
 using Catlab
 using Catlab.CategoricalAlgebra
 
@@ -33,5 +33,5 @@ function Term(s::SummationDecapode)
     terms = map(Var, s[incident(s, σ, :summation), [:summand, :name]])
     Eq(Var(s[σ, [:sum,:name]]), Plus(terms))
   end
-  Decapodes.DecaExpr(judgements, vcat(op1s, op2s, sums))
+  DiagrammaticEquations.DecaExpr(judgements, vcat(op1s, op2s, sums))
 end
