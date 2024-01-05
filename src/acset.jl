@@ -119,11 +119,12 @@ end
 # Note: This hard-bakes in Form0 through Form2, and higher Forms are not
 # allowed.
 function recognize_types(d::AbstractNamedDecapode)
+  types = d[:type]
   unrecognized_types = setdiff(d[:type], [:Form0, :Form1, :Form2, :DualForm0,
                           :DualForm1, :DualForm2, :Literal, :Parameter,
                           :Constant, :infer])
   isempty(unrecognized_types) ||
-    error("Types $unrecognized_types are not recognized.")
+  error("Types $unrecognized_types are not recognized. CHECK: $types")
 end
 
 function expand_operators(d::AbstractNamedDecapode)
