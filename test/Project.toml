@@ -1,3 +1,4 @@
 [deps]
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
+MLStyle = "d8e11817-5142-5d16-987a-aa16d5891078"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
