@@ -26,7 +26,6 @@ to_graphviz_property_graph, typename,
 ## rewrite
 average_rewrite
 
-
 using Catlab
 using Catlab.Theories
 import Catlab.Theories: otimes, oplus, compose, ⊗, ⊕, ⋅, associate, associate_unit, Ob, Hom, dom, codom
@@ -38,21 +37,14 @@ using Catlab.ACSetInterface
 using MLStyle
 import Unicode
 
-# using .Deca
-# import .Deca: to_graphviz_property_graph 
-
-
 ## TODO:
 ## generate schema from a _theory_
 ## from presentation in the theory determine what to slice over
 ## Pavel S., Hypergraph theory string diagram
-
 normalize_unicode(s::String) = Unicode.normalize(s, compose=true, stable=true, chartransform=Unicode.julia_chartransform)
 normalize_unicode(s::Symbol)  = Symbol(normalize_unicode(String(s)))
-
 DerivOp = Symbol("∂ₜ")
 append_dot(s::Symbol) = Symbol(string(s)*'\U0307')
-
 
 include("acset.jl")
 include("language.jl")
@@ -60,11 +52,11 @@ include("composition.jl")
 include("collages.jl")
 include("visualization.jl")
 include("rewrite.jl")
-
 include("pretty.jl")
 include("colanguage.jl")
-
 include("deca/Deca.jl")
 include("learn/Learn.jl")
+
+using .Deca
 
 end
