@@ -1,42 +1,11 @@
 using Catlab
-using Catlab.Theories: FreeSchema
 using Catlab.DenseACSets
 using DataStructures
+using ACSets.InterTypes
 
-## TODO:
-## generate schema from a _theory_
-## from presentation in the theory determine what to slice over
-## Pavel S., Hypergraph theory string diagram
-@present SchDecapode(FreeSchema) begin
-    (Var, TVar, Op1, Op2)::Ob
-    (Type, Operator)::AttrType
-    src::Hom(Op1, Var)
-    tgt::Hom(Op1, Var)
-    proj1::Hom(Op2, Var)
-    proj2::Hom(Op2, Var) # no product 
-    res::Hom(Op2, Var)
-    incl::Hom(TVar, Var) # calculus?
-    
-    op1::Attr(Op1, Operator)
-    op2::Attr(Op2, Operator)
-    type::Attr(Var, Type)
-end
+@intertypes "decapodeacset.it" module decapodeacset end
 
-@present SchNamedDecapode <: SchDecapode begin
-    Name::AttrType
-    name::Attr(Var, Name)
-end
-
-@abstract_acset_type AbstractDecapode
-@abstract_acset_type AbstractNamedDecapode <: AbstractDecapode
-
-@acset_type Decapode(SchDecapode,
-  index=[:src, :tgt, :res, :incl, :op1, :op2, :type]) <: AbstractDecapode
-
-@acset_type NamedDecapode(SchNamedDecapode,
-  index=[:src, :tgt, :res, :incl, :op1, :op2, :type, :name]) <: AbstractNamedDecapode
-
-
+using .decapodeacset
 
 """    fill_names!(d::AbstractNamedDecapode)
 
@@ -159,19 +128,6 @@ function expand_operators!(e::AbstractNamedDecapode, d::AbstractNamedDecapode)
   end
   return newvar
 end
-
-@present SchSummationDecapode <: SchNamedDecapode begin
-  # Σ are the white nodes in the Decapode drawing
-  # Summands are the edges that connect white nodes to variables (the projection maps)
-  # because addition is commutative, we don't need to distinguish the order
-  (Σ, Summand)::Ob
-  summand::Hom(Summand, Var)
-  summation::Hom(Summand, Σ)
-  sum::Hom(Σ, Var)
-end
-
-@acset_type SummationDecapode(SchSummationDecapode,
-  index=[:src, :tgt, :res, :incl, :op1, :op2, :type]) <: AbstractNamedDecapode
 
 ## TODO NEW
 function infer_states(d::SummationDecapode)
