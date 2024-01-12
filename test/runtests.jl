@@ -6,6 +6,10 @@ include("pretty.jl")
   include("core.jl")
 end
 
+@testset "Composition" begin
+  include("composition.jl")
+end
+
 @testset "Language" begin
   include("language.jl")
 end
