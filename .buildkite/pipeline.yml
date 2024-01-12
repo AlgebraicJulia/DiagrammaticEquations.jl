@@ -3,6 +3,9 @@ env:
 
 steps:
 
+  - label: ":sunrise: Good morning!"
+    command: "echo 'Good morning!'"
+
   - label: ":hammer: Build Project"
     command: 
       - "module load julia"
