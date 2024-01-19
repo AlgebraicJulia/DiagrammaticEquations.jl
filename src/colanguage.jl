@@ -3,7 +3,7 @@ using Catlab
 using Catlab.CategoricalAlgebra
 
 function Term(s::SummationDecapode)
-  s = expand_operators(s)
+  # s = expand_operators(s)
   judgements = map(parts(s,:Var)) do v
     var = s[v, :name]
     typ = s[v, :type]
@@ -16,6 +16,8 @@ function Term(s::SummationDecapode)
     f = s[op, :op1]
     if f == :∂ₜ
       Eq(y, Tan(x))
+    elseif typeof(f) == Vector{Symbol}
+      Eq(y, AppCirc1(f, x))
     else
       Eq(y, App1(f, x))
     end
