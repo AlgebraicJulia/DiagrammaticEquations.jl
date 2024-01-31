@@ -7,15 +7,15 @@ using ACSets.InterTypes
 
 using .decapodeacset
 
-"""    fill_names!(d::AbstractNamedDecapode)
+"""    function fill_names!(d::AbstractNamedDecapode; lead_symbol::Symbol = Symbol("•"))
 
 Provide a variable name to all the variables that don't have names.
 """
-function fill_names!(d::AbstractNamedDecapode)
+function fill_names!(d::AbstractNamedDecapode; lead_symbol::Symbol = Symbol("•"))
   bulletcount = 1
   for i in parts(d, :Var)
     if !isassigned(d[:,:name],i) || isnothing(d[i, :name])
-      d[i,:name] = Symbol("•$bulletcount")
+      d[i,:name] = Symbol("$lead_symbol$bulletcount")
       bulletcount += 1
     end
   end
@@ -154,20 +154,20 @@ function expand_operators(d::SummationDecapode)
   return e
 end
 
-"""    function contract_operators(d::SummationDecapode)
+"""    function contract_operators(d::SummationDecapode; allowable_ops::Set{Symbol} = Set{Symbol}())
 
 Find chains of Op1s in the given Decapode, and replace them with
 a single Op1 with a vector of function names. After this process,
 all Vars that are not a part of any computation are removed.
 """
-function contract_operators(d::SummationDecapode)
+function contract_operators(d::SummationDecapode; allowable_ops::Set{Symbol} = Set{Symbol}())
   e = expand_operators(d)
-  contract_operators!(e)
+  contract_operators!(e, allowable_ops = allowable_ops)
   #return e
 end
 
-function contract_operators!(d::SummationDecapode)
-  chains = find_chains(d)
+function contract_operators!(d::SummationDecapode; allowable_ops::Set{Symbol} = Set{Symbol}())
+  chains = find_chains(d, allowable_ops = allowable_ops)
   filter!(x -> length(x) != 1, chains)
   for chain in chains
     add_part!(d, :Op1, src=d[:src][first(chain)], tgt=d[:tgt][last(chain)], op1=Vector{Symbol}(d[:op1][chain]))
@@ -196,22 +196,27 @@ function remove_neighborless_vars!(d::SummationDecapode)
   d
 end
 
-#"""
-#  function find_chains(d::SummationDecapode)
-#
-#Find chains of Op1s in the given Decapode. A chain ends when the
-#target of the last Op1 is part of an Op2 or sum, or is a target
-#of multiple Op1s.
-#"""
-function find_chains(d::SummationDecapode)
+"""
+ function find_chains(d::SummationDecapode; allowable_ops::Set{Symbol} = Set{Symbol}())
+
+Find chains of Op1s in the given Decapode. A chain ends when the
+target of the last Op1 is part of an Op2 or sum, or is a target
+of multiple Op1s. Only operators with names included in the 
+allowable_ops set are allowed to be contracted. If the set is
+empty then all operators are allowed.
+"""
+function find_chains(d::SummationDecapode; allowable_ops::Set{Symbol} = Set{Symbol}())
   chains = []
   visited = falses(nparts(d, :Op1))
   # TODO: Re-write this without two reduce-vcats.
   chain_starts = unique(reduce(vcat, reduce(vcat,
-                        #[incident(d, Decapodes.infer_states(d), :src),
-                        [incident(d, Vector{Int64}(filter(i -> !isnothing(i), DiagrammaticEquations.infer_states(d))), :src),
+                        [incident(d, Vector{Int64}(filter(i -> !isnothing(i), infer_states(d))), :src),
                          incident(d, d[:res], :src),
                          incident(d, d[:sum], :src)])))
+
+  if(!isempty(allowable_ops))
+    filter!(x -> d[x, :op1] ∈ allowable_ops, chain_starts)  
+  end
   
   s = Stack{Int64}()
   foreach(x -> push!(s, x), chain_starts)
@@ -226,15 +231,17 @@ function find_chains(d::SummationDecapode)
       tgt = d[op_to_visit, :tgt]
       next_op1s = incident(d, tgt, :src)
       next_op2s = vcat(incident(d, tgt, :proj1), incident(d, tgt, :proj2))
+
       if (length(next_op1s) != 1 ||
           length(next_op2s) != 0 ||
           is_tgt_of_many_ops(d, tgt) ||
           !isempty(incident(d, tgt, :sum)) ||
-          !isempty(incident(d, tgt, :summand)))
+          !isempty(incident(d, tgt, :summand)) ||
+          (!isempty(allowable_ops) && d[only(next_op1s), :op1] ∉ allowable_ops))
         # Terminate chain.
         append!(chains, [curr_chain])
         for next_op1 in next_op1s
-          visited[next_op1] || push!(s, next_op1)
+          visited[next_op1] || (!isempty(allowable_ops) && d[only(next_op1s), :op1] ∉ allowable_ops) || push!(s, next_op1)
         end
         break
       end
@@ -244,7 +251,6 @@ function find_chains(d::SummationDecapode)
   end
   return chains
 end
-
 function add_constant!(d::AbstractNamedDecapode, k::Symbol)
     return add_part!(d, :Var, type=:Constant, name=k)
 end
