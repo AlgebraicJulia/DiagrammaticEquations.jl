@@ -146,6 +146,7 @@ op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
   (proj1_type = :DualForm2, proj2_type = :DualForm2, res_type = :DualForm2, op_names = [:/, :./, :*, :.*]),
   (proj1_type = :Literal, proj2_type = :DualForm2, res_type = :DualForm2, op_names = [:/, :./, :*, :.*]),
   (proj1_type = :DualForm2, proj2_type = :Literal, res_type = :DualForm2, op_names = [:/, :./, :*, :.*])])
+
   """
   These are the default rules used to do function resolution in the 1D exterior calculus.
   """

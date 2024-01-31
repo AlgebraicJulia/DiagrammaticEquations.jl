@@ -20,7 +20,7 @@ apply_inference_rule_op1!, apply_inference_rule_op2!,
 ## language
 @decapode, Term, parse_decapode, term, Eq, DecaExpr,
 # ~~~~~
-Plus, AppCirc1, AppCirc2, Var, Tan, App1, App2, Judgment, 
+Plus, AppCirc1, AppCirc2, Var, Tan, App1, App2, Judgement, 
 ## visualization
 to_graphviz_property_graph, typename,
 ## rewrite
