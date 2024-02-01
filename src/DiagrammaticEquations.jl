@@ -2,12 +2,12 @@
 """
 module DiagrammaticEquations
 
-export 
+export
 DerivOp, append_dot, normalize_unicode, infer_states, infer_types!,
 # Deca
-op1_res_rules_1D, op2_res_rules_1D, op1_res_rules_2D, op2_res_rules_2D, 
+op1_res_rules_1D, op2_res_rules_1D, op1_res_rules_2D, op2_res_rules_2D,
 op1_inf_rules_1D, op2_inf_rules_1D, op1_inf_rules_2D, op2_inf_rules_2D,
-recursive_delete_parents, findname, spacename, varname, unicode!, vec_to_dec!, 
+recursive_delete_parents, spacename, varname, unicode!, vec_to_dec!,
 ## collages
 Collage, collate,
 ## composition
@@ -16,11 +16,11 @@ oapply, unique_by, unique_by!, OpenSummationDecapodeOb, OpenSummationDecapode, O
 SchDecapode, SchNamedDecapode, AbstractDecapode, AbstractNamedDecapode, NamedDecapode, SummationDecapode,
 contract_operators, add_constant!, add_parameter, fill_names!,  dot_rename!, expand_operators, infer_state_names, recognize_types,
 resolve_overloads!, replace_names!,
-apply_inference_rule_op1!, apply_inference_rule_op2!, 
+apply_inference_rule_op1!, apply_inference_rule_op2!,
 ## language
 @decapode, Term, parse_decapode, term, Eq, DecaExpr,
 # ~~~~~
-Plus, AppCirc1, AppCirc2, Var, Tan, App1, App2, Judgment, 
+Plus, AppCirc1, Var, Tan, App1, App2,
 ## visualization
 to_graphviz_property_graph, typename,
 ## rewrite
