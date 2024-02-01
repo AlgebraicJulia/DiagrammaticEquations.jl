@@ -13,8 +13,10 @@ MLStyle = "d8e11817-5142-5d16-987a-aa16d5891078"
 Unicode = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
 [compat]
+ACSets = "0.2"
 AlgebraicRewriting = "0.2, 0.3"
 Catlab = "0.15, 0.16"
 DataStructures = "0.18.13"
 MLStyle = "0.4.17"
+Unicode = "1.6"
 julia = "1.6"
