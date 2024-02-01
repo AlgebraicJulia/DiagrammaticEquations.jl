@@ -1,6 +1,6 @@
 using Test
 
-#= include("pretty.jl")
+include("pretty.jl")
 
 @testset "Core" begin
   include("core.jl")
@@ -8,7 +8,7 @@ end
 
 @testset "Composition" begin
   include("composition.jl")
-end =#
+end
 
 @testset "Language" begin
   include("language.jl")
