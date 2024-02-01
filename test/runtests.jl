@@ -2,6 +2,8 @@ using Test
 
 include("pretty.jl")
 
+include("aqua.jl")
+
 @testset "Core" begin
   include("core.jl")
 end
