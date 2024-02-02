@@ -80,4 +80,4 @@ halfar_terms = parse_decapode(quote
 end)
 HalfarDecapode = SummationDecapode(halfar_terms)
 # Observe that expand_operators is called:
-@test SummationDecapode(Term(HalfarDecapode)) == expand_operators(HalfarDecapode)
+@test SummationDecapode(Term(HalfarDecapode)) == HalfarDecapode
