@@ -14,13 +14,13 @@ Collage, collate,
 oapply, unique_by, unique_by!, OpenSummationDecapodeOb, OpenSummationDecapode, Open,
 ## acset
 SchDecapode, SchNamedDecapode, AbstractDecapode, AbstractNamedDecapode, NamedDecapode, SummationDecapode,
-contract_operators, add_constant!, add_parameter, fill_names!,  dot_rename!, expand_operators, infer_state_names, recognize_types,
+contract_operators!, contract_operators, add_constant!, add_parameter, fill_names!, dot_rename!, expand_operators, infer_state_names, recognize_types,
 resolve_overloads!, replace_names!,
 apply_inference_rule_op1!, apply_inference_rule_op2!, 
 ## language
 @decapode, Term, parse_decapode, term, Eq, DecaExpr,
 # ~~~~~
-Plus, AppCirc1, AppCirc2, Var, Tan, App1, App2, Judgment, 
+Plus, AppCirc1, AppCirc2, Var, Tan, App1, App2, Judgement, 
 ## visualization
 to_graphviz_property_graph, typename,
 ## rewrite

@@ -1,34 +1,5 @@
-# Definition of the Decapodes DSL AST
-# TODO: do functions and tans need to be parameterized by a space?
-# TODO: Add support for higher order functions.
-#   - This is straightforward from a language perspective but unclear the best
-#   - way to represent this in a Decapode ACSet.
-
 @intertypes "decapodes.it" module decapodes end
 using .decapodes
-
-# @data Term begin
-#   Var(name::Symbol)
-#   Lit(name::Symbol)
-#   # Judgement(var::Var, dim::Symbol, space::Symbol) # Symbol 1: Form0 Symbol 2: X
-#   AppCirc1(fs::Vector{Symbol}, arg::Term)
-#   App1(f::Symbol, arg::Term)
-#   App2(f::Symbol, arg1::Term, arg2::Term)
-#   Plus(args::Vector{Term})
-#   Mult(args::Vector{Term})
-#   Tan(var::Term)
-# end
-
-
-# @data Equation begin
-#   Eq(lhs::Term, rhs::Term)
-# end
-
-# # A struct to store a complete Decapode
-# @as_record struct DecaExpr
-#   context::Vector{Judgement}
-#   equations::Vector{Equation}
-# end
 
 term(s::Symbol) = Var(normalize_unicode(s))
 term(s::Number) = Lit(Symbol(s))
@@ -198,13 +169,10 @@ function eval_eq!(eq::Equation, d::AbstractDecapode, syms::Dict{Symbol, Int}, de
   return d
 end
 
-#""" Takes a DecaExpr (i.e. what should be constructed using the @Decapode macro)
-#and gives a Decapode ACSet which represents equalities as two operations with the
-#same tgt or res map.
-#"""
-# Just to get up and running, I tagged untyped variables with :infer
-# TODO: write a type checking/inference step for this function to 
-# overwrite the :infer tags
+"""    function Decapode(e::DecaExpr)
+
+Takes a DecaExpr and returns a Decapode ACSet.
+"""
 function Decapode(e::DecaExpr)
   d = Decapode{Any, Any}()
   symbol_table = Dict{Symbol, Int}()
@@ -221,6 +189,10 @@ function Decapode(e::DecaExpr)
   return d
 end
 
+"""    function SummationDecapode(e::DecaExpr)
+
+Takes a DecaExpr and returns a SummationDecapode ACSet.
+"""
 function SummationDecapode(e::DecaExpr)
     d = SummationDecapode{Any, Any, Symbol}()
     symbol_table = Dict{Symbol, Int}()
@@ -245,9 +217,9 @@ function SummationDecapode(e::DecaExpr)
 end
 
 
-"""    macro Decapode(e)
+"""    macro decapode(e)
 
-Construct a Decapode.
+Construct a SummationDecapode using the Decapode Domain-Specific Language.
 """
 macro decapode(e)
   :(SummationDecapode(parse_decapode($(Meta.quot(e)))))
