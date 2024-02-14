@@ -1,4 +1,4 @@
-""" Some description of ths package
+""" The DiagrammaticEquations module exports data structures which represent diagrammatic equations and functions which manipulate them.
 """
 module DiagrammaticEquations
 
