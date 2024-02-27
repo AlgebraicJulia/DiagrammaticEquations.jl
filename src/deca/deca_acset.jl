@@ -111,6 +111,10 @@ op1_inf_rules_2D = [
   (src_type = :Form1, tgt_type = :Form1, op_names = [:Δ, :Δ₁, :lapl]),
   (src_type = :Form2, tgt_type = :Form2, op_names = [:Δ, :Δ₂, :lapl]),
 
+  # Rules for Δᵈ
+  (src_type = :DualForm0, tgt_type = :DualForm0, op_names = [:Δᵈ₀]),
+  (src_type = :DualForm1, tgt_type = :DualForm1, op_names = [:Δᵈ₁]),
+
   # Rules for δ
   (src_type = :Form1, tgt_type = :Form0, op_names = [:δ, :δ₁, :codif]),
   (src_type = :Form2, tgt_type = :Form1, op_names = [:δ, :δ₂, :codif]),
@@ -142,6 +146,13 @@ op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
 
   # Rules for i₁
   (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm1, op_names = [:i, :i₂]),
+
+  # Rules for ℒ
+  (proj1_type = :DualForm1, proj2_type = :DualForm1, res_type = :DualForm1, op_names = [:ℒ₁]),
+
+  # Rules for ι
+  (proj1_type = :DualForm1, proj2_type = :DualForm1, res_type = :DualForm0, op_names = [:ι₁₁]),
+  (proj1_type = :DualForm1, proj2_type = :DualForm2, res_type = :DualForm1, op_names = [:ι₁₂]),
   
   # Rules for subtraction
   (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, op_names = [:-, :.-]),
