@@ -16,7 +16,7 @@ oapply, unique_by, unique_by!, OpenSummationDecapodeOb, OpenSummationDecapode, O
 SchDecapode, SchNamedDecapode, AbstractDecapode, AbstractNamedDecapode, NamedDecapode, SummationDecapode,
 contract_operators!, contract_operators, add_constant!, add_parameter, fill_names!, dot_rename!, expand_operators, infer_state_names, recognize_types,
 resolve_overloads!, replace_names!,
-apply_inference_rule_op1!, apply_inference_rule_op2!,
+apply_inference_rule_op1!, apply_inference_rule_op2!, setvartype!, setname!,
 ## language
 @decapode, Term, parse_decapode, term, Eq, DecaExpr,
 # ~~~~~

@@ -3,9 +3,31 @@ using Catlab.DenseACSets
 using DataStructures
 using ACSets.InterTypes
 
+export recognized_types
+
 @intertypes "decapodeacset.it" module decapodeacset end
 
 using .decapodeacset
+
+"""    function setvartype!(d::SummationDecapode, name::Symbol, vartype::Symbol)
+
+Greedily mutates the type of all matching variable names in a decapode.
+
+"""
+function setvartype!(d::SummationDecapode, name::Symbol, vartype::Symbol)
+  vartype ∈ recognized_types ? d[incident(d, name, :name), :type] = vartype :
+  error("Dimension $vartype is invalid. Valid types are $(join(recognized_types, ", ", " and "))")
+end
+
+"""    function setname!(d::SummationDecapode, name::Symbol, newname::Symbol)
+
+Greedily mutates the name of all matching variable names in a decapode.
+
+"""
+function setname!(d::SummationDecapode, name::Symbol, newname::Symbol)
+  d[incident(d, name, :name), :name] = newname
+end
+
 
 """    function fill_names!(d::AbstractNamedDecapode; lead_symbol::Symbol = Symbol("•"))
 
@@ -85,13 +107,15 @@ function make_sum_mult_unique!(d::AbstractNamedDecapode)
   end
 end
 
+const recognized_types = [:Form0, :Form1, :Form2, :DualForm0,
+                          :DualForm1, :DualForm2, :Literal, :Parameter,
+                          :Constant, :infer]
+
 # Note: This hard-bakes in Form0 through Form2, and higher Forms are not
 # allowed.
 function recognize_types(d::AbstractNamedDecapode)
   types = d[:type]
-  unrecognized_types = setdiff(d[:type], [:Form0, :Form1, :Form2, :DualForm0,
-                          :DualForm1, :DualForm2, :Literal, :Parameter,
-                          :Constant, :infer])
+  unrecognized_types = setdiff(d[:type], recognized_types)
   isempty(unrecognized_types) ||
   error("Types $unrecognized_types are not recognized. CHECK: $types")
 end
