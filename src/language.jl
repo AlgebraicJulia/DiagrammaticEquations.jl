@@ -1,13 +1,15 @@
 @intertypes "decapodes.it" module decapodes end
 using .decapodes
 
+using Base.Iterators: partition, flatmap
+
 term(s::Symbol) = Var(normalize_unicode(s))
 term(s::Number) = Lit(Symbol(s))
 
 term(expr::Expr) = begin
     @match expr begin
         #TODO: Would we want ∂ₜ to be used with general expressions or just Vars?
-        Expr(:call, :∂ₜ, b) => Tan(Var(b)) 
+        Expr(:call, :∂ₜ, b) => Tan(Var(b))
         Expr(:call, :dt, b) => Tan(Var(b)) 
 
         Expr(:call, Expr(:call, :∘, a...), b) => AppCirc1(a, term(b))
@@ -23,7 +25,33 @@ term(expr::Expr) = begin
     end
 end
 
+∂ = Dict(:∂ₜ¹ => 1, :∂ₜ² => 2, :∂ₜ³ => 3, :∂ₜ⁴ => 4, :∂ₜ⁵ => 5)
+
+# TODO error handling, rhs could be symbol or expr
+# we need to know the correct form 
+function intercalate_dt(partial::Symbol, lhs::Symbol, rhs::Union{Symbol, Expr})
+  newsyms = [gensym(lhs) for x in 1:(∂[partial]-1)];
+  syms = [lhs, repeat(newsyms, inner=2)..., rhs];
+  map(partition(syms, 2)) do (l, r)
+    Eq(term(Expr(:call, :∂ₜ, l)), term(r))
+  end
+  # Judgement.(newsyms, :Form0, :I), eqns
+end
+
+# testing question:
+#   quote
+#     (u,v)::Form0
+#     c::Constant
+#
+#     ∂ₜ²(u) == v
+#   end
+#   yields two ∂ₜ ops (as expected) which go from
+#   1.u -> 5.#225, 5.#225 -> 6.#225
+#   where var 6 corresponds to a sum. but why is its tag
+#   the same as the gensym'd var?
+
 function parse_decapode(expr::Expr)
+    # XXX how does flatmap affect maps in this match expression?
     stmts = map(expr.args) do line 
         @match line begin
             ::LineNumberNode => missing
@@ -34,7 +62,27 @@ function parse_decapode(expr::Expr)
 
             Expr(:(::), a::Symbol, b) => Judgement(a, b.args[1], b.args[2])
             Expr(:(::), a::Expr, b) => map(sym -> Judgement(sym, b.args[1], b.args[2]), a.args)
-
+            # IDEA:
+            #   1. term(lhs) detects ∂ₜⁿu and gensyms a new variable
+            #   2. new line: dₜ(n-1)(tmptan_u_n) == tmptan_u_n-1. repeat until n=1
+            #   3. when n=1: 
+            #
+            # example: ∂ₜ³u == R
+            #          ----------
+            #       => ∂ₜ u == t0
+            #          ∂ₜt0 == t1
+            #          ∂ₜt1 == R
+            #
+            # intercalate_dt will produce:
+            #   Eq(∂ₜ³L, R) => [Eq(term(∂ₜL), term(t0)), Eq(∂ₜt0, t1), Eq(∂ₜt2, R)]
+            # which is then flatmapped out.
+            # 
+            # XXX will this make graphviz needlessly busy?
+            # TODO can I match on a list in MLStyle, like a pattern where x can match on any 
+            # of the items in the list?
+            # need to parse on the rightside as well
+            Expr(:call, :(==), Expr(:call, :∂ₜ², lhs), rhs) => intercalate_dt(:∂ₜ², lhs, rhs)
+            Expr(:call, :(==), Expr(:call, :∂ₜ³, lhs), rhs) => intercalate_dt(:∂ₜ³, lhs, rhs)
             Expr(:call, :(==), lhs, rhs) => Eq(term(lhs), term(rhs))
             _ => error("The line $line is malformed")
         end
@@ -46,6 +94,8 @@ function parse_decapode(expr::Expr)
         ::Judgement => push!(judges, s)
         ::Vector{Judgement} => append!(judges, s)
         ::Eq => push!(eqns, s)
+        ::Vector{Eq} => append!(eqns, s)
+        ::Tuple{Vector{Judgement}, Vector{Eq}} => (append!(judges, s[1]), append!(eqns, s[2]))
         _ => error("Statement containing $s of type $(typeof(s)) was not added.")
       end
     end
