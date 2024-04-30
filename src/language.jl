@@ -11,7 +11,7 @@ term(expr::Expr) = begin
         #TODO: Would we want ∂ₜ to be used with general expressions or just Vars?
         Expr(:call, :∂ₜ, b) => Tan(Var(b))
         Expr(:call, :dt, b) => Tan(Var(b))
-        Expr(:call, ∂, b) && if ishigherorderpartial(∂) end => Partial(term(b), ∂s[∂]...) 
+        Expr(:call, ∂, b) && if ishigherorderpartial(∂) end => Partial(term(b), ∂s[∂]..., 0) 
 
         Expr(:call, Expr(:call, :∘, a...), b) => AppCirc1(a, term(b))
         Expr(:call, a, b) => App1(a, term(b))
@@ -32,7 +32,8 @@ ishigherorderpartial(t::Expr) = @match t begin
   _ => false
 end
 
-∂s = Dict(:∂ₜ => (:t, 1), :∂ₜ¹ => (:t, 1), :∂ₜ² => (:t, 2), :∂ₜ³ => (:t, 3), :∂ₜ⁴ => (:t, 4), :∂ₜ⁵ => (:t, 5))
+∂s = Dict(:∂ₜ¹ => (:t, 1), :∂ₜ² => (:t, 2), :∂ₜ³ => (:t, 3), :∂ₜ⁴ => (:t, 4), :∂ₜ⁵ => (:t, 5))
+ps = Dict(1 => :∂ₜ, 2 => :∂ₜ², 3 => :∂ₜ³)
 
 function parse_decapode(expr::Expr)
     # XXX how does flatmap affect maps in this match expression?
@@ -75,7 +76,7 @@ end
 
 function reduce_term_app1circ!(f, t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int})
   res_var = add_part!(d, :Var, type = :infer)
-  add_part!(d, :Op1, src=reduce_term!(t, d, syms), tgt=res_var, type=:infer)
+  add_part!(d, :Op1, src=reduce_term!(t, d, syms), tgt=res_var, op1=f)
   return res_var
 end
 
@@ -117,35 +118,42 @@ function reduce_term_mult!(ts::Vector{Term}, d::AbstractDecapode, syms::Dict{Sym
 #   out
 end
 
+append_doot(s) = Symbol(string(s)*"_1")
+
 # TODO do we want to 1) continue using DerivOp and 2) create a spurious var. with same name?
 function reduce_term_tan!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int})
-  txv = add_part!(d, :Var, type=:infer, name=gensym())
+  txv = add_part!(d, :Var, type=:infer, name=append_doot(t.name)) 
   tx = add_part!(d, :TVar, incl=txv) # cache tvars in a list
-  # src = reduce_term!(t, d, syms)
-  tanop = add_part!(d, :Op1, src=incident(d, t.name, :name)[1], tgt=txv, op1=DerivOp)
+  src = incident(d, t.name, :name)[1]
+  tanop = add_part!(d, :Op1, src=src, tgt=txv, op1=DerivOp)
   return txv
 end
 
-function reduce_term_partial!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int})
+function _reduce_term_partial!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int})
   txv = reduce_term_tan!(t.var, d, syms)
-  reduce_term!(Partial(Var(d[txv,:name]), t.wrt, t.order-1), d, syms)
+  reduce_term!(Partial(Var(d[txv,:name]), t.wrt, t.order-1, t.iteration+1), d, syms)
+  return txv
+end
+
+# TODO george said something about this
+function reduce_term_partial!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int})
+  txv = reduce_term!(Partial(t.var, t.wrt, t.order - 1, 0), d, syms)
+  txv = reduce_term_tan!(Var(d[txv,:name]), d, syms)
   return txv
 end
 
 function reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int})
-  out = @match t begin
+  @match t begin
     Var(x) => reduce_term_var!(x, d, syms)
     Lit(x) => reduce_term_lit!(x, d, syms)
     App1(f, t) || AppCirc1(f, t) => reduce_term_app1circ!(f, t, d, syms)
     App2(f, t1, t2) => reduce_term_app2!(f, t1, t2, d, syms)
     Plus(ts) => reduce_term_plus!(ts, d, syms)
     Mult(ts) => reduce_term_mult!(ts, d, syms)
-    Tan(t) || Partial(t, wrt, 1) => reduce_term_tan!(t, d, syms)
-    Partial(u, wrt, n) => reduce_term_partial!(t, d, syms)
+    Tan(t) || Partial(t, wrt, 1, k) => reduce_term_tan!(t, d, syms)
+    Partial(u, wrt, n, k) => reduce_term_partial!(t, d, syms)
     _ => throw("Inline type Judgements not yet supported!")
   end
-  @warn "REDUCED!" t d
-  out
 end
 
 function eval_eq!(eq::Equation, d::AbstractDecapode, syms::Dict{Symbol, Int}, deletions::Vector{Int}) 
