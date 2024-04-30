@@ -7,6 +7,7 @@
   Plus(args::Vector{Term})
   Mult(args::Vector{Term})
   Tan(var::Term)
+	Partial(var::Term, wrt::Symbol, order::Int64)
 end
 
 struct Judgement

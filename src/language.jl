@@ -1,7 +1,7 @@
 @intertypes "decapodes.it" module decapodes end
 using .decapodes
 
-using Base.Iterators: partition, flatmap
+using Base.Iterators: partition
 
 term(s::Symbol) = Var(normalize_unicode(s))
 term(s::Number) = Lit(Symbol(s))
@@ -10,7 +10,8 @@ term(expr::Expr) = begin
     @match expr begin
         #TODO: Would we want ∂ₜ to be used with general expressions or just Vars?
         Expr(:call, :∂ₜ, b) => Tan(Var(b))
-        Expr(:call, :dt, b) => Tan(Var(b)) 
+        Expr(:call, :dt, b) => Tan(Var(b))
+        Expr(:call, ∂, b) && if ishigherorderpartial(∂) end => Partial(term(b), ∂s[∂]...) 
 
         Expr(:call, Expr(:call, :∘, a...), b) => AppCirc1(a, term(b))
         Expr(:call, a, b) => App1(a, term(b))
@@ -25,30 +26,13 @@ term(expr::Expr) = begin
     end
 end
 
-∂ = Dict(:∂ₜ¹ => 1, :∂ₜ² => 2, :∂ₜ³ => 3, :∂ₜ⁴ => 4, :∂ₜ⁵ => 5)
-
-# TODO error handling, rhs could be symbol or expr
-# we need to know the correct form 
-function intercalate_dt(partial::Symbol, lhs::Symbol, rhs::Union{Symbol, Expr})
-  newsyms = [gensym(lhs) for x in 1:(∂[partial]-1)];
-  syms = [lhs, repeat(newsyms, inner=2)..., rhs];
-  map(partition(syms, 2)) do (l, r)
-    Eq(term(Expr(:call, :∂ₜ, l)), term(r))
-  end
-  # Judgement.(newsyms, :Form0, :I), eqns
+ishigherorderpartial(t::Symbol) = haskey(∂s, t)
+ishigherorderpartial(t::Expr) = @match t begin
+  Expr(:call, ∂, _) => ishigherorderpartial(∂)
+  _ => false
 end
 
-# testing question:
-#   quote
-#     (u,v)::Form0
-#     c::Constant
-#
-#     ∂ₜ²(u) == v
-#   end
-#   yields two ∂ₜ ops (as expected) which go from
-#   1.u -> 5.#225, 5.#225 -> 6.#225
-#   where var 6 corresponds to a sum. but why is its tag
-#   the same as the gensym'd var?
+∂s = Dict(:∂ₜ => (:t, 1), :∂ₜ¹ => (:t, 1), :∂ₜ² => (:t, 2), :∂ₜ³ => (:t, 3), :∂ₜ⁴ => (:t, 4), :∂ₜ⁵ => (:t, 5))
 
 function parse_decapode(expr::Expr)
     # XXX how does flatmap affect maps in this match expression?
@@ -62,27 +46,6 @@ function parse_decapode(expr::Expr)
 
             Expr(:(::), a::Symbol, b) => Judgement(a, b.args[1], b.args[2])
             Expr(:(::), a::Expr, b) => map(sym -> Judgement(sym, b.args[1], b.args[2]), a.args)
-            # IDEA:
-            #   1. term(lhs) detects ∂ₜⁿu and gensyms a new variable
-            #   2. new line: dₜ(n-1)(tmptan_u_n) == tmptan_u_n-1. repeat until n=1
-            #   3. when n=1: 
-            #
-            # example: ∂ₜ³u == R
-            #          ----------
-            #       => ∂ₜ u == t0
-            #          ∂ₜt0 == t1
-            #          ∂ₜt1 == R
-            #
-            # intercalate_dt will produce:
-            #   Eq(∂ₜ³L, R) => [Eq(term(∂ₜL), term(t0)), Eq(∂ₜt0, t1), Eq(∂ₜt2, R)]
-            # which is then flatmapped out.
-            # 
-            # XXX will this make graphviz needlessly busy?
-            # TODO can I match on a list in MLStyle, like a pattern where x can match on any 
-            # of the items in the list?
-            # need to parse on the rightside as well
-            Expr(:call, :(==), Expr(:call, :∂ₜ², lhs), rhs) => intercalate_dt(:∂ₜ², lhs, rhs)
-            Expr(:call, :(==), Expr(:call, :∂ₜ³, lhs), rhs) => intercalate_dt(:∂ₜ³, lhs, rhs)
             Expr(:call, :(==), lhs, rhs) => Eq(term(lhs), term(rhs))
             _ => error("The line $line is malformed")
         end
@@ -101,49 +64,42 @@ function parse_decapode(expr::Expr)
     end
     DecaExpr(judges, eqns)
 end
-# to_Decapode helper functions
-### TODO - Matt: we need to generalize this
-reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
-  let ! = reduce_term!
-    @match t begin
-      Var(x) => begin 
-        if haskey(syms, x)
-           syms[x]
-        else
-          res_var = add_part!(d, :Var, name = x, type=:infer)
-          syms[x] = res_var
-        end
-      end
-      Lit(x) => begin 
-        if haskey(syms, x)
-           syms[x]
-        else
-          res_var = add_part!(d, :Var, name = x, type=:Literal)
-          syms[x] = res_var
-        end
-      end
-      App1(f, t) || AppCirc1(f, t) => begin
-        res_var = add_part!(d, :Var, type=:infer)
-        add_part!(d, :Op1, src=!(t,d,syms), tgt=res_var, op1=f)
-        return res_var
-      end
-      App2(f, t1, t2) => begin
-        res_var = add_part!(d, :Var, type=:infer)
-        add_part!(d, :Op2, proj1=!(t1,d,syms), proj2=!(t2,d,syms), res=res_var, op2=f)
-        return res_var
-      end
-      Plus(ts) => begin
-        summands = [!(t,d,syms) for t in ts]
-        res_var = add_part!(d, :Var, type=:infer, name=:sum)
-        n = add_part!(d, :Σ, sum=res_var)
-        map(summands) do s
-          add_part!(d, :Summand, summand=s, summation=n)
-        end
-        return res_var
-      end
-      # TODO: Just for now assuming we have 2 or more terms
-      Mult(ts) => begin
-        multiplicands  = [!(t,d,syms) for t in ts]
+
+function reduce_term_var!(x::Symbol, d::AbstractDecapode, syms::Dict{Symbol, Int})
+  haskey(syms, x) ? syms[x] : syms[x] = add_part!(d, :Var, name = x, type = :infer)
+end
+
+function reduce_term_lit!(x::Symbol, d::AbstractDecapode, syms::Dict{Symbol, Int})
+  haskey(syms, x) ? syms[x] : syms[x] = add_part!(d, :Var, name = x, type = :Literal)
+end
+
+function reduce_term_app1circ!(f, t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int})
+  res_var = add_part!(d, :Var, type = :infer)
+  add_part!(d, :Op1, src=reduce_term!(t, d, syms), tgt=res_var, type=:infer)
+  return res_var
+end
+
+function reduce_term_app2!(f, arg1::Term, arg2::Term, d::AbstractDecapode, syms::Dict{Symbol, Int})
+  res_var = add_part!(d, :Var, type=:infer)
+  add_part!(d, :Op2, proj1=reduce_term!(arg1,d,syms), proj2=reduce_term!(arg2,d,syms), res=res_var, op2=f)
+  return res_var
+end
+
+function reduce_term_plus!(ts::Vector{Term}, d::AbstractDecapode, syms::Dict{Symbol, Int})
+  summands = reduce_term!.(ts, Ref(d), Ref(syms))
+  res_var = add_part!(d, :Var, type=:infer, name=:sum)
+  n = add_part!(d, :Σ, sum=res_var)
+  foreach(summands) do s
+    add_part!(d, :Summand, summand=s, summation=n)
+  end
+  return res_var
+end
+
+const MULT_SYM = Symbol("*")
+
+# TODO: res=res_var undefined
+function reduce_term_mult!(ts::Vector{Term}, d::AbstractDecapode, syms::Dict{Symbol, Int})
+        multiplicands  = [reduce_term!(t,d,syms) for t in ts]
         res_var = add_part!(d, :Var, type=:infer, name=:mult)
         m1,m2 = multiplicands[1:2]
         add_part!(d, :Op2, proj1=m1, proj2=m2, res=res_var, op2=Symbol("*"))
@@ -153,19 +109,44 @@ reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
           res_var = add_part!(d, :Var, type=:infer, name=:mult)
           add_part!(d, :Op2, proj1=m1, proj2=m2, res=res_var, op2=Symbol("*"))
         end
-        return res_var
-      end
-      Tan(t) => begin 
-        # TODO: this is creating a spurious variable with the same name
-        txv = add_part!(d, :Var, type=:infer)
-        tx = add_part!(d, :TVar, incl=txv)
-        # TODO - Matt: DerivOp being used here
-        tanop = add_part!(d, :Op1, src=!(t,d,syms), tgt=txv, op1=DerivOp)
-        return txv #syms[x[1]]
-      end
-      _ => throw("Inline type Judgements not yet supported!")
-    end
+    return res_var
+#   multiplicands = [reduce_term!.(ts, Ref(d), Ref(syms))]
+#   out = foldl(((m1, m2) -> add_part!(d, :Op2, proj1=m1, proj2=m2, res=m1, op2=MULT_SYM))
+#         ,multiplicands, add_part!(d, :Var, type=:infer, name=:mult))
+#   @info "MULT" out
+#   out
+end
+
+# TODO do we want to 1) continue using DerivOp and 2) create a spurious var. with same name?
+function reduce_term_tan!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int})
+  txv = add_part!(d, :Var, type=:infer, name=gensym())
+  tx = add_part!(d, :TVar, incl=txv) # cache tvars in a list
+  # src = reduce_term!(t, d, syms)
+  tanop = add_part!(d, :Op1, src=incident(d, t.name, :name)[1], tgt=txv, op1=DerivOp)
+  return txv
+end
+
+function reduce_term_partial!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int})
+  txv = reduce_term_tan!(t.var, d, syms)
+  reduce_term!(Partial(Var(d[txv,:name]), t.wrt, t.order-1), d, syms)
+  return txv
+end
+
+function reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int})
+  out = @match t begin
+    Var(x) => reduce_term_var!(x, d, syms)
+    Lit(x) => reduce_term_lit!(x, d, syms)
+    App1(f, t) || AppCirc1(f, t) => reduce_term_app1circ!(f, t, d, syms)
+    App2(f, t1, t2) => reduce_term_app2!(f, t1, t2, d, syms)
+    Plus(ts) => reduce_term_plus!(ts, d, syms)
+    Mult(ts) => reduce_term_mult!(ts, d, syms)
+    Tan(t) || Partial(t, wrt, 1) => reduce_term_tan!(t, d, syms)
+    Partial(u, wrt, n) => reduce_term_partial!(t, d, syms)
+    _ => throw("Inline type Judgements not yet supported!")
   end
+  @warn "REDUCED!" t d
+  out
+end
 
 function eval_eq!(eq::Equation, d::AbstractDecapode, syms::Dict{Symbol, Int}, deletions::Vector{Int}) 
   @match eq begin
