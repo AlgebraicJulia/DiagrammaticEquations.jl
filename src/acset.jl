@@ -299,7 +299,9 @@ function contract_operators(d::SummationDecapode;
   #return e
 end
 
-function contract_operators!(d::SummationDecapode; white_list::Set{Symbol} = Set{Symbol}(), black_list::Set{Symbol} = Set{Symbol}())
+function contract_operators!(d::SummationDecapode;
+    white_list::Set{Symbol} = Set{Symbol}(),
+    black_list::Set{Symbol} = Set{Symbol}())
   chains = find_chains(d, white_list=white_list, black_list=black_list)
   filter!(x -> length(x) != 1, chains)
   for chain in chains
@@ -346,10 +348,14 @@ function find_chains(d::SummationDecapode;
   chains = []
   visited = falses(nparts(d, :Op1))
   # TODO: Re-write this without two reduce-vcats.
-  chain_starts = unique(reduce(vcat, reduce(vcat,
-                        [incident(d, Vector{Int64}(filter(i -> !isnothing(i), infer_states(d))), :src),
-                         incident(d, d[:res], :src),
-                         incident(d, d[:sum], :src)])))
+  rvrv(x) = reduce(vcat, reduce(vcat, x))
+  chain_starts = unique(rvrv(
+    [incident(d, Vector{Int64}(filter(i -> !isnothing(i), infer_states(d))), :src),
+     incident(d, d[:res], :src),
+     incident(d, d[:sum], :src),
+     d[rvrv(incident(d, collect(black_list), :op1)), :tgt]
+    ]))
+
 
   passes_white_list(x) = isempty(white_list) ? true : x ∈ white_list
   passes_black_list(x) = x ∉ black_list
@@ -376,12 +382,12 @@ function find_chains(d::SummationDecapode;
           is_tgt_of_many_ops(d, tgt) ||
           !isempty(incident(d, tgt, :sum)) ||
           !isempty(incident(d, tgt, :summand)) ||
-          !passes_white_list(tgt) ||
-          !passes_black_list(tgt))
+          !passes_white_list(d[only(next_op1s), :op1]) ||
+          !passes_black_list(d[only(next_op1s), :op1]))
         # Terminate chain.
         append!(chains, [curr_chain])
         for op1 in next_op1s
-          if !visited[op1] && passes_white_list(op1) && passes_black_list(op1)
+          if !visited[op1] && passes_white_list(d[op1, :op1]) && passes_black_list(d[op1, :op1])
             push!(s, op1)
           end
         end

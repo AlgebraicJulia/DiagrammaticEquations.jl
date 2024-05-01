@@ -1283,6 +1283,21 @@ end
 
     op1 = [:⋆₂, :∂ₜ, :d₁]
   end
+
+  t14_orig = @decapode begin
+    C == a(b(c(d(e(f(g(D)))))))
+  end
+  t14_contracted = contract_operators(t14_orig,
+    black_list=Set([:d]))
+  @test issetequal(t14_contracted[:op1], [:d, [:g, :f, :e], [:c, :b, :a]])
+
+  t15_orig = @decapode begin
+    C == a(b(c(d(e(f(g(D)))))))
+  end
+  t15_contracted = contract_operators(t15_orig,
+    white_list=Set([:a, :b, :c]),
+    black_list=Set([:d]))
+  @test issetequal(t15_contracted[:op1], [:g, :f, :e, :d, [:c, :b, :a]])
 end
 
 @testset "ASCII & Vector Calculus Operators" begin
