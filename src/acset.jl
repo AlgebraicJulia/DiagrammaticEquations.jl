@@ -353,7 +353,7 @@ function find_chains(d::SummationDecapode;
     [incident(d, Vector{Int64}(filter(i -> !isnothing(i), infer_states(d))), :src),
      incident(d, d[:res], :src),
      incident(d, d[:sum], :src),
-     d[rvrv(incident(d, collect(black_list), :op1)), :tgt]
+     d[collect(Iterators.flatten(incident(d, collect(black_list), :op1))), :tgt]
     ]))
 
 
