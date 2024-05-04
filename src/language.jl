@@ -9,9 +9,10 @@ term(s::Number) = Lit(Symbol(s))
 term(expr::Expr) = begin
     @match expr begin
         #TODO: Would we want ∂ₜ to be used with general expressions or just Vars?
-        Expr(:call, :∂ₜ, b) => Tan(Var(b))
-        Expr(:call, :dt, b) => Tan(Var(b))
-        Expr(:call, ∂, b) && if ishigherorderpartial(∂) end => Partial(term(b), ∂s[∂]..., 0) 
+        Expr(:call, :∂ₜ, b) => Partial(term(b), :t, 1)
+        Expr(:call, :dt, b) => Partial(term(b), :t, 1) 
+        # Tan(Var(b))
+        Expr(:call, ∂, b) && if ishigherorderpartial(∂) end => Partial(term(b), ∂s[∂]...) 
 
         Expr(:call, Expr(:call, :∘, a...), b) => AppCirc1(a, term(b))
         Expr(:call, a, b) => App1(a, term(b))
@@ -33,10 +34,8 @@ ishigherorderpartial(t::Expr) = @match t begin
 end
 
 ∂s = Dict(:∂ₜ¹ => (:t, 1), :∂ₜ² => (:t, 2), :∂ₜ³ => (:t, 3), :∂ₜ⁴ => (:t, 4), :∂ₜ⁵ => (:t, 5))
-ps = Dict(1 => :∂ₜ, 2 => :∂ₜ², 3 => :∂ₜ³)
 
 function parse_decapode(expr::Expr)
-    # XXX how does flatmap affect maps in this match expression?
     stmts = map(expr.args) do line 
         @match line begin
             ::LineNumberNode => missing
@@ -96,63 +95,55 @@ function reduce_term_plus!(ts::Vector{Term}, d::AbstractDecapode, syms::Dict{Sym
   return res_var
 end
 
-const MULT_SYM = Symbol("*")
-
-# TODO: res=res_var undefined
+# TODO this can probably be a fold
 function reduce_term_mult!(ts::Vector{Term}, d::AbstractDecapode, syms::Dict{Symbol, Int})
-        multiplicands  = [reduce_term!(t,d,syms) for t in ts]
-        res_var = add_part!(d, :Var, type=:infer, name=:mult)
-        m1,m2 = multiplicands[1:2]
-        add_part!(d, :Op2, proj1=m1, proj2=m2, res=res_var, op2=Symbol("*"))
-        for m in multiplicands[3:end]
-          m1 = res_var
-          m2 = m
-          res_var = add_part!(d, :Var, type=:infer, name=:mult)
-          add_part!(d, :Op2, proj1=m1, proj2=m2, res=res_var, op2=Symbol("*"))
-        end
-    return res_var
-#   multiplicands = [reduce_term!.(ts, Ref(d), Ref(syms))]
-#   out = foldl(((m1, m2) -> add_part!(d, :Op2, proj1=m1, proj2=m2, res=m1, op2=MULT_SYM))
-#         ,multiplicands, add_part!(d, :Var, type=:infer, name=:mult))
-#   @info "MULT" out
-#   out
+  multiplicands  = [reduce_term!(t,d,syms) for t in ts]
+  res_var = add_part!(d, :Var, type=:infer, name=:mult)
+  m1, m2 = multiplicands[1:2]
+  add_part!(d, :Op2, proj1=m1, proj2=m2, res=res_var, op2=Symbol("*"))
+  for m in multiplicands[3:end]
+    m1 = res_var
+    m2 = m
+    res_var = add_part!(d, :Var, type=:infer, name=:mult)
+    add_part!(d, :Op2, proj1=m1, proj2=m2, res=res_var, op2=Symbol("*"))
+  end
+  return res_var
 end
 
-append_doot(s) = Symbol(string(s)*"_1")
-
-# TODO do we want to 1) continue using DerivOp and 2) create a spurious var. with same name?
+# TODO change TVar table
 function reduce_term_tan!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int})
-  txv = add_part!(d, :Var, type=:infer, name=append_doot(t.name)) 
-  tx = add_part!(d, :TVar, incl=txv) # cache tvars in a list
-  src = incident(d, t.name, :name)[1]
+  txv = add_part!(d, :Var, type=:infer, name=append_dot(t.name)) 
+  tx = add_part!(d, :TVar, incl=txv)
+  tanop = add_part!(d, :Op1, src=reduce_term!(t, d, syms), tgt=txv, op1=DerivOp)
+  return txv
+end
+
+function reduce_term_partial!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int})
+  src = reduce_term!(Partial(t.var, t.wrt, t.order - 1), d, syms)
+  txv = add_part!(d, :Var, type=:infer, name=append_dot(d[src,:name]))
+  tx = add_part!(d, :TVar, incl=txv)
   tanop = add_part!(d, :Op1, src=src, tgt=txv, op1=DerivOp)
   return txv
 end
 
-function _reduce_term_partial!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int})
-  txv = reduce_term_tan!(t.var, d, syms)
-  reduce_term!(Partial(Var(d[txv,:name]), t.wrt, t.order-1, t.iteration+1), d, syms)
-  return txv
-end
-
-# TODO george said something about this
-function reduce_term_partial!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int})
-  txv = reduce_term!(Partial(t.var, t.wrt, t.order - 1, 0), d, syms)
-  txv = reduce_term_tan!(Var(d[txv,:name]), d, syms)
-  return txv
+function throw_reduce_error(t::Term)
+  @match t begin 
+    Partial(expr, _, _) => throw("Partial time derivatives of this expression '$expr' is not yet supported")
+    _ => throw("Inline judgements are not supported")
+  end
 end
 
 function reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int})
   @match t begin
-    Var(x) => reduce_term_var!(x, d, syms)
+    Var(x) || Partial(Var(x), wrt, 0) => reduce_term_var!(x, d, syms)
     Lit(x) => reduce_term_lit!(x, d, syms)
     App1(f, t) || AppCirc1(f, t) => reduce_term_app1circ!(f, t, d, syms)
     App2(f, t1, t2) => reduce_term_app2!(f, t1, t2, d, syms)
     Plus(ts) => reduce_term_plus!(ts, d, syms)
     Mult(ts) => reduce_term_mult!(ts, d, syms)
-    Tan(t) || Partial(t, wrt, 1, k) => reduce_term_tan!(t, d, syms)
-    Partial(u, wrt, n, k) => reduce_term_partial!(t, d, syms)
-    _ => throw("Inline type Judgements not yet supported!")
+    Tan(t) => reduce_term_tan!(t, d, syms)
+    Partial(Var(x), wrt, n) => reduce_term_partial!(t, d, syms)
+    e => throw_reduce_error(e)
   end
 end
 

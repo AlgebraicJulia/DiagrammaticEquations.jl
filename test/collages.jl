@@ -29,7 +29,7 @@ end
 
 DiffusionSymbols = Dict(
   :C => :K,
-  :Ċ => :K̇,
+  :Ċ => :Kₜ,
   :Cb1 => :Kb1,
   :Cb2 => :Kb2,
   :Zero => :Null)
@@ -54,7 +54,7 @@ DiffusionCollage = DiagrammaticEquations.collate(
   op1  = Any[:∂ₜ, [:d, :⋆, :d, :⋆]]
   op2  = [:rb1_leftwall, :rb2_rightwall, :rb3]
   type  = [:Form0, :infer, :Form0, :Form0, :Form0, :Form0, :infer, :Form0]
-  name  = [:r1_K, :r3_K̇, :r2_K, :Kb1, :K, :Kb2, :K̇, :Null]
+  name  = [:r1_K, :r3_Kₜ, :r2_K, :Kb1, :K, :Kb2, :Kₜ, :Null]
 end
 
 # Note: Since the order does not matter in which rb1 and rb2 are applied, it

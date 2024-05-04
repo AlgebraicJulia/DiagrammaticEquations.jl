@@ -41,6 +41,7 @@ pprint(io::IO, exp::Term, pad=0) = begin
     Plus(args) => print(io, "$(join(map(!, args), " + "))")
     Mult(args) => print(io, "($(join(map(!, args), " * "))")
     Tan(var) => print(io, "∂ₜ($(!var))")
+    Partial(var, wrt, order) => print(io, "∂ₜ($(!var))")
     _ => error("printing $exp")
   end
 end

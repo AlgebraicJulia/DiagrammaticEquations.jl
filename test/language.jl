@@ -14,6 +14,57 @@ using DiagrammaticEquations
 
 @testset "Parsing" begin
 
+ # does  
+_3pt = @decapode begin
+  U::Form0
+  #
+  ∂ₜ³(U) == ∂ₜ³U
+end
+@test _3pt[:name] == [:U, :Uₜ, :Uₜₜ, :∂ₜ³U]
+@test _3pt[:incl] == [2, 3, 4]
+@test _3pt[:src] == [1, 2, 3]
+@test _3pt[:tgt] == [2, 3, 4]
+
+_3pt_k = @decapode begin
+  U::Form0
+  k::Constant
+  #
+  ∂ₜ³(U) == k*U
+end  
+@test _3pt_k[:name] == [:U, :k, :Uₜ, :Uₜₜ, :Uₜₜₜ]
+@test _3pt_k[:incl] == [3, 4, 5]
+@test _3pt_k[:src] == [1, 3, 4]
+@test _3pt_k[:tgt] == [3, 4, 5]
+@test _3pt_k[:proj1] == [2]
+@test _3pt_k[:proj2] == [1]
+@test _3pt_k[:res] == [5]
+
+_ab = @decapode begin
+  (A,B)::Form0
+  #
+  A == dt(B)
+end
+@test _ab[:name] == [:A, :B]
+@test _ab[:incl] == [1]
+@test _ab[:src] == [2]
+@test _ab[:tgt] == [1]
+
+_abΣ = @decapode begin
+  (A,B,C)::Form0
+  #
+  A == dt(B)
+  C == A + B
+end
+
+@test _abΣ[:name] == [:A, :B, :C]
+@test _abΣ[:incl] == [1]
+@test _abΣ[:src] == [2]
+@test _abΣ[:tgt] == [1]
+@test _abΣ[:summand] == [1, 2]
+@test _abΣ[:summation] == [1, 1]
+
+
+
   # @present DiffusionSpace2D(FreeExtCalc2D) begin
   #   X::Space
   #   k::Hom(Form1(X), Form1(X)) # diffusivity of space, usually constant (scalar multiplication)
@@ -151,7 +202,7 @@ using DiagrammaticEquations
   end
   diffExpr7 = parse_decapode(DiffusionExprBody7)
   ddp7 = SummationDecapode(diffExpr7)
-  @test ddp7[:name] == [:ϕ, :Ċ, Symbol("2"), Symbol("•2"), :C]
+  @test ddp7[:name] == [:ϕ, :Cₜ, Symbol("2"), Symbol("•1"), :C]
   @test ddp7[:incl] == [2]
 
   # Vars can only be of certain types.
@@ -192,13 +243,13 @@ using DiagrammaticEquations
     E == ∂ₜ(D)
   end
   pt3 = SummationDecapode(parse_decapode(ParseTest3))
-  @test pt3[:name] == [:D, :E, :C]
-  @test pt3[:incl] == [1,2]
-  @test pt3[:src] == [3, 1]
-  @test pt3[:tgt] == [1, 2]
+  @test pt3[:name] == [:D, :C, :E]
+  @test pt3[:incl] == [1, 3]
+  @test pt3[:src] == [2, 1]
+  @test pt3[:tgt] == [1, 3]
 
   dot_rename!(pt3)
-  @test pt3[:name] == [Symbol('C'*'\U0307'), Symbol('C'*'\U0307'*'\U0307'), :C]
+  @test pt3[:name] == [Symbol('C'*'\U0209C'), :C, Symbol('C'*'\U0209C'*'\U0209C')]
 
   # TODO: We should eventually recognize this equivalence
   #= ParseTest4 = quote
@@ -218,9 +269,9 @@ using DiagrammaticEquations
     ∂ₜ(V) == -1*k*(X)
   end))
 
-  @test pt5[:name] == [:X, :V, :k, :mult_1, Symbol('V'*'\U0307'), Symbol("-1")]
+  @test pt5[:name] == [:X, :V, :k, :mult_1, Symbol('V'*'\U0209C'), Symbol("-1")]
   dot_rename!(pt5)
-  @test pt5[:name] == [:X, Symbol('X'*'\U0307'), :k, :mult_1, Symbol('X'*'\U0307'*'\U0307'), Symbol("-1")]
+  @test pt5[:name] == [:X, Symbol('X'*'\U0209C'), :k, :mult_1, Symbol('X'*'\U0209C'*'\U0209C'), Symbol("-1")]
 
 end
 Deca = quote
@@ -237,7 +288,7 @@ end
   # @test term(:(∘(k, d₀)(C))) == AppCirc1([:k, :d₀], Var(:C)) #(:App1, ((:Circ, :k, :d₀), Var(:C)))
   # @test term(:(∘(k, d₀{X})(C))) == (:App1, ((:Circ, :k, :(d₀{X})), Var(:C)))
   @test_throws MethodError term(:(Ċ == ∘(⋆₀⁻¹{X}, dual_d₁{X}, ⋆₁{X})(ϕ)))
-  @test term(:(∂ₜ(C))) == Tan(Var(:C))
+  @test term(:(∂ₜ(C))) == Partial(Var(:C), :t, 1)
   # @test term(:(∂ₜ{Form0}(C))) == App1(:Tan, Var(:C))
 end
 
@@ -870,7 +921,57 @@ end
   names_types_hx = zip(HeatXfer[:name], HeatXfer[:type])
 
   names_types_expected_hx = [
-    (:T, :Form0), (:continuity_Ṫ₁, :Form0), (:continuity_diffusion_ϕ, :DualForm1), (:continuity_diffusion_k, :Parameter), (Symbol("continuity_diffusion_•1"), :DualForm2), (Symbol("continuity_diffusion_•2"), :Form1), (Symbol("continuity_diffusion_•3"), :Form1), (:M, :Form1), (:continuity_advection_V, :Form1), (:ρ, :Form0), (:P, :Form0), (:continuity_Ṫₐ, :Form0), (Symbol("continuity_advection_•1"), :Form0), (Symbol("continuity_advection_•2"), :Form1), (Symbol("continuity_advection_•3"), :DualForm2), (Symbol("continuity_advection_•4"), :Form0), (Symbol("continuity_advection_•5"), :DualForm2), (:continuity_Ṫ, :Form0), (:navierstokes_Ṁ, :Form1), (:navierstokes_G, :Form1), (:navierstokes_V, :Form1), (:navierstokes_ṗ, :Form0), (:navierstokes_two, :Parameter), (:navierstokes_three, :Parameter), (:navierstokes_kᵥ, :Parameter), (Symbol("navierstokes_•1"), :DualForm2), (Symbol("navierstokes_•2"), :Form1), (Symbol("navierstokes_•3"), :Form1), (Symbol("navierstokes_•4"), :DualForm1), (Symbol("navierstokes_•5"), :DualForm1), (Symbol("navierstokes_•6"), :DualForm1), (Symbol("navierstokes_•7"), :Form1), (Symbol("navierstokes_•8"), :Form1), (Symbol("navierstokes_•9"), :Form1), (Symbol("navierstokes_•10"), :Form1), (Symbol("navierstokes_•11"), :Form1), (:navierstokes_sum_1, :Form1), (Symbol("navierstokes_•12"), :Form0), (Symbol("navierstokes_•13"), :Form1), (Symbol("navierstokes_•14"), :Form1), (Symbol("navierstokes_•15"), :Form0), (Symbol("navierstokes_•16"), :DualForm0), (Symbol("navierstokes_•17"), :DualForm1), (Symbol("navierstokes_•18"), :Form1), (Symbol("navierstokes_•19"), :Form1), (Symbol("navierstokes_•20"), :Form1), (:navierstokes_sum_2, :Form0), (Symbol("navierstokes_•21"), :Form1), (Symbol("navierstokes_•22"), :Form1), (Symbol("navierstokes_•23"), :DualForm2)]
+    (:T, :Form0), 
+    (:continuity_Ṫ₁, :Form0), 
+    (:continuity_diffusion_ϕ, :DualForm1), 
+    (:continuity_diffusion_k, :Parameter), 
+    (Symbol("continuity_diffusion_•1"), :DualForm2), 
+    (Symbol("continuity_diffusion_•2"), :Form1), 
+    (Symbol("continuity_diffusion_•3"), :Form1), 
+    (:M, :Form1), 
+    (:continuity_advection_V, :Form1), 
+    (:ρ, :Form0), 
+    (:P, :Form0), 
+    (:continuity_Ṫₐ, :Form0), 
+    (Symbol("continuity_advection_•1"), :Form0), 
+    (Symbol("continuity_advection_•2"), :Form1), 
+    (Symbol("continuity_advection_•3"), :DualForm2), 
+    (Symbol("continuity_advection_•4"), :Form0), 
+    (Symbol("continuity_advection_•5"), :DualForm2), 
+    (:continuity_Ṫ, :Form0), 
+    (:navierstokes_Ṁ, :Form1), 
+    (:navierstokes_G, :Form1), 
+    (:navierstokes_V, :Form1), 
+    (:navierstokes_ṗ, :Form0), 
+    (:navierstokes_two, :Parameter), 
+    (:navierstokes_three, :Parameter), 
+    (:navierstokes_kᵥ, :Parameter), 
+    (Symbol("navierstokes_•1"), :DualForm2), 
+    (Symbol("navierstokes_•2"), :Form1), 
+    (Symbol("navierstokes_•3"), :Form1), 
+    (Symbol("navierstokes_•4"), :DualForm1), 
+    (Symbol("navierstokes_•5"), :DualForm1), 
+    (Symbol("navierstokes_•6"), :DualForm1), 
+    (Symbol("navierstokes_•7"), :Form1), 
+    (Symbol("navierstokes_•8"), :Form1), 
+    (Symbol("navierstokes_•9"), :Form1), 
+    (Symbol("navierstokes_•10"), :Form1), 
+    (Symbol("navierstokes_•11"), :Form1), 
+    (:navierstokes_sum_1, :Form1), 
+    (Symbol("navierstokes_•12"), :Form0), 
+    (Symbol("navierstokes_•13"), :Form1), 
+    (Symbol("navierstokes_•14"), :Form1), 
+    (Symbol("navierstokes_•15"), :Form0), 
+    (Symbol("navierstokes_•16"), :DualForm0), 
+    (Symbol("navierstokes_•17"), :DualForm1), 
+    (Symbol("navierstokes_•18"), :Form1), 
+    (Symbol("navierstokes_•19"), :Form1), 
+    (Symbol("navierstokes_•20"), :Form1), 
+    (:navierstokes_sum_2, :Form0), 
+    (Symbol("navierstokes_•21"), :Form1),
+    (Symbol("navierstokes_•22"), :Form1),
+    (Symbol("navierstokes_sum_2"), :Form0), 
+    (Symbol("navierstokes_Mₜ"), :DualForm2)]
 
   @test issetequal(names_types_hx, names_types_expected_hx)
 
@@ -1077,7 +1178,7 @@ end
 
     ∂ₜ(B) == ⋆₂(d₁(E))
   end))
-  Veronis_rec_del = recursive_delete_parents(Veronis, incident(Veronis, :Ḃ, :name))
+  Veronis_rec_del = recursive_delete_parents(Veronis, incident(Veronis, :Bₜ, :name))
   @test Veronis_rec_del == SummationDecapode(parse_decapode(quote
     B::DualForm0{X}
     E::Form1{X}
@@ -1100,7 +1201,7 @@ end
 
     ∂ₜ(B) == ⋆₂(d₁(E))
   end))
-  Veronis_rec_del = recursive_delete_parents(Veronis, incident(Veronis, :Ė, :name))
+  Veronis_rec_del = recursive_delete_parents(Veronis, incident(Veronis, :Eₜ, :name))
   # We should test if Decapodes are isomorphic, but Catlab
   # doesn't do this yet.
   #@test Veronis_rec_del == SummationDecapode(parse_decapode(quote
@@ -1115,7 +1216,7 @@ end
     Op1  = 3
 
     type = [:DualForm0, :Form1, :infer, :infer]
-    name = [:B, :E, :sum_1, :Ḃ]
+    name = [:B, :E, :sum_1, :Bₜ]
     
     incl = [4]
 
