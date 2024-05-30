@@ -136,7 +136,7 @@ function infer_states(d::SummationDecapode)
       length(incident(d, v, :res)) == 0 &&
       length(incident(d, v, :sum)) == 0 &&
       d[v, :type] != :Literal
-  end
+  end ∪ d[incident(d, :∂ₜ, :op1), :src]
 end
 
 infer_state_names(d) = d[infer_states(d), :name]

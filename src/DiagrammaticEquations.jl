@@ -44,7 +44,14 @@ import Unicode
 normalize_unicode(s::String) = Unicode.normalize(s, compose=true, stable=true, chartransform=Unicode.julia_chartransform)
 normalize_unicode(s::Symbol)  = Symbol(normalize_unicode(String(s)))
 DerivOp = Symbol("∂ₜ")
-append_dot(s::Symbol) = Symbol(string(s)*'\U0307')
+# append_dot(s::Symbol) = Symbol(string(s)*'\U0307')
+append_dot(s::Symbol) = Symbol(string(s)*'\U0209C')
+append_dot(s::Symbol, wrt::Symbol) =
+  @match wrt begin
+    :t => Symbol(string(s)*'\U0209C')
+    :x => Symbol(string(s)*'\U02093')
+    _ => s
+  end
 
 include("acset.jl")
 include("language.jl")

@@ -15,7 +15,7 @@ function Term(s::SummationDecapode)
     y = Var(s[op, [:tgt, :name]])
     f = s[op, :op1]
     if f == :∂ₜ
-      Eq(y, Tan(x))
+      Eq(y, Partial(x, :t, 1))
     elseif typeof(f) == Vector{Symbol}
       Eq(y, AppCirc1(f, x))
     else
