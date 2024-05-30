@@ -129,18 +129,30 @@ function expand_operators!(e::AbstractNamedDecapode, d::AbstractNamedDecapode)
   return newvar
 end
 
-## TODO NEW
+"""    function infer_states(d::SummationDecapode)
+
+Find variables which have a time derivative or are not the source of a computation.
+See also: [`infer_state_names`](@ref).
+"""
 function infer_states(d::SummationDecapode)
-  filter(parts(d, :Var)) do v
-      length(incident(d, v, :tgt)) == 0 &&
-      length(incident(d, v, :res)) == 0 &&
-      length(incident(d, v, :sum)) == 0 &&
-      d[v, :type] != :Literal
+  childless = filter(parts(d, :Var)) do v
+    length(incident(d, v, :tgt)) == 0 &&
+    length(incident(d, v, :res)) == 0 &&
+    length(incident(d, v, :sum)) == 0 &&
+    d[v, :type] != :Literal
   end
+  parents_of_tvars =
+    union(d[incident(d,:∂ₜ, :op1), :src],
+          d[incident(d,:dt, :op1), :src])
+  union(childless, parents_of_tvars)
 end
 
-infer_state_names(d) = d[infer_states(d), :name]
+"""    function infer_state_names(d)
 
+Find names of variables which have a time derivative or are not the source of a computation.
+See also: [`infer_states`](@ref).
+"""
+infer_state_names(d) = d[infer_states(d), :name]
 
 """    function expand_operators(d::SummationDecapode)
 
