@@ -346,6 +346,16 @@ end
   @test nparts(advdiffdp, :Summand) == 2
 end
 
+@testset "State Variable Inference" begin
+  oscillator = @decapode begin
+   (X,V)::Form0
+   k::Constant
+   ∂ₜ(X) == V
+   ∂ₜ(V) == -k*(X)
+  end
+  @test issetequal([:V,:X,:k], infer_state_names(oscillator))
+end
+
 @testset "Type Inference" begin
   # Warning, this testing depends on the fact that varname, form information is 
   # unique within a decapode even though this is not enforced
