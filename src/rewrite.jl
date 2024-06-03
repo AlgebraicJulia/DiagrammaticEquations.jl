@@ -70,7 +70,8 @@ function average_rewrite!(d::SummationDecapode)
     Sigma = add_part!(d, :Σ, sum=summed_inters)
     inters = reduce(vcat, [int_op1s, int_op2s, int_sums])
     add_parts!(d, :Summand, summand=inters, summation=fill(Sigma,length(inters)), length(inters))
-    add_part!(d, :Op1, src=summed_inters, tgt=v, op1=Symbol("avg$(id_num-1)"))
+    lit = add_part!(d, :Var, name=Symbol(string(id_num-1)), type=:Literal)
+    add_part!(d, :Op2, proj1=summed_inters, proj2=lit, res=v, op2=Symbol("/"))
   end
   d
 end
