@@ -60,6 +60,8 @@ function Catlab.Graphics.to_graphviz_property_graph(d::AbstractNamedDecapode; ty
     return pg
 end
 
+draw_composition(deca) = to_graphviz(deca, box_labels=:name, junction_labels=:variable, prog="circo")
+
 savevizsvg(g, fname::String) = open(fname, "w") do fp
   run_graphviz(fp, to_graphviz(to_graphviz_property_graph(nsdp)), prog="neato", format="svg")
 end

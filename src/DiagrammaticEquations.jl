@@ -22,7 +22,7 @@ apply_inference_rule_op1!, apply_inference_rule_op2!,
 # ~~~~~
 Plus, AppCirc1, Var, Tan, App1, App2,
 ## visualization
-to_graphviz_property_graph, typename,
+to_graphviz_property_graph, typename, draw_composition,
 ## rewrite
 average_rewrite
 
