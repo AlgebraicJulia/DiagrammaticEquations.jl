@@ -54,14 +54,20 @@ Test1 = SummationDecapode(parse_decapode(DecaTest1))
 Test1Res = average_rewrite(Test1)
 
 Test1Expected = @acset SummationDecapode{Any, Any, Symbol} begin
-  Var = 6
-  type = [:Form0, :Form1, :Form2, :Form0, :Form1, :Form2]
-  name = [:D₁, :D₂, :F, Symbol("••1"), Symbol("••2"), Symbol("••sum0")]
+  Var = 7
+  type = [:Form0, :Form1, :Form2, :Form2, :Form2, :Form2, :Literal]
+  name = [:D₁, :D₂, :F, :oc0_F, :oc1_F, :oc2_F, Symbol("2")]
 
-  Op1 = 3
-  src = [1, 2, 6]
-  tgt = [4, 5, 3]
-  op1 = [:c₁, :c₂, :avg2]
+  Op1 = 2
+  src = [1, 2]
+  tgt = [4, 5]
+  op1 = [:c₁, :c₂]
+
+  Op2 = 1
+  proj1 = [6]
+  proj2 = [7]
+  res = [3]
+  op2 = [:/]
 
   Σ = 1
   sum = [6]
@@ -92,24 +98,28 @@ Test2 = SummationDecapode(parse_decapode(DecaTest2))
 Test2Res = average_rewrite(Test2)
 
 Test2Expected = @acset SummationDecapode{Any, Any, Symbol} begin
-  Var = 11
+  Var = 13
 
-  type = [:Form0, :Form0, :Form1, :Form0, :Form0, 
-  :Form1, :Form1, :Form1, :Form1, :Form1, :Form1]
+  type = [:Form0, :Form0, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Literal, :Form1, :Form1, :Form1, :Literal]
 
-  name = [:C₁, :C₂, :D₁, Symbol("••1"), Symbol("••2"), Symbol("••sum0"), 
-  :D₂, :F, Symbol("••3"), Symbol("••4"), Symbol("••sum1")]
+  name = [:C₁, :C₂, :D₁, :D₂, :F, :oc0_D₁, :oc1_D₁, :oc2_D₁, Symbol("2"), :oc0_F, :oc1_F, :oc2_F, Symbol("2")]
 
-  Op1 = 6
-  src = [1, 2, 6, 3, 7, 11]
-  tgt = [4, 5, 3, 9, 10, 8]
-  op1 = [:d₀, :d₀, :avg2, :c₁, :c₂, :avg2]
+  Op1 = 4
+  src = [1, 2, 3, 4]
+  tgt = [6, 7, 10, 11]
+  op1 = [:d₀, :d₀, :c₁, :c₂]
+
+  Op2 = 2
+  proj1 = [8, 12]
+  proj2 = [9, 13]
+  res = [3, 5]
+  op2 = [:/, :/]
 
   Σ = 2
-  sum = [6, 11]
+  sum = [8, 12]
 
   Summand = 4
-  summand = [4, 5, 9, 10]
+  summand = [6, 7, 10, 11]
   summation = [1, 1, 2, 2]
 end
 
@@ -135,31 +145,29 @@ Test3 = SummationDecapode(parse_decapode(DecaTest3))
 Test3Res = average_rewrite(Test3)
 
 Test3Expected = @acset SummationDecapode{Any, Any, Symbol} begin
-  Var = 14
+  Var = 13
 
-  type = Any[:Form2, :Form2, :Form0, :Form0, :Form2, :Form2, 
-  :Form2, :Form0, :Form0, :Form2, :Form0, :Form0, :Form2, :Form1]
+  type = [:Form0, :Form0, :Form0, :Form0, :Form1, :Form2, :Form2,  :Form2,  :Form2,  :Form2,  :Form2,  :Form2, :Literal]
 
-  name = [:Temp_0, :Temp_1, :C, :D, :G, Symbol("••1"), Symbol("••2"), 
-  Symbol("••3"), Symbol("••4"), Symbol("••sum0"), :A, :B, :F, :E]
+  name = [:A, :B, :C, :D, :E, :F, :G, :oc0_G, :oc1_G, :oc2_G, :oc3_G, :oc4_G, Symbol("4")]
 
-  Op1 = 5
-  src = [1, 2, 3, 4, 10]
-  tgt = [6, 7, 8, 9, 5]
-  op1 = [:temp, :temp, :k, :t, :avg4]
+  Op1 = 2
+  src = [3, 4]
+  tgt = [8, 9]
+  op1 = [:k, :t]
 
-  Op2 = 1
-  proj1 = [11]
-  proj2 = [12]
-  res = [1]
-  op2 = [:∧]
+  Op2 = 2
+  proj1 = [1, 12]
+  proj2 = [2, 13]
+  res = [10, 7]
+  op2 = [:∧, :/]
 
   Σ = 2
-  sum = [10, 2]
+  sum = [11, 12]
 
   Summand = 6
-  summand = [6, 7, 8, 9, 13, 14]
-  summation = [1, 1, 1, 1, 2, 2]
+  summand = [6, 5, 8, 9, 10, 11]
+  summation = [1, 1, 2, 2, 2, 2]
 end
 
 @test Test3Res == Test3Expected
@@ -178,14 +186,20 @@ Test4 = SummationDecapode(parse_decapode(DecaTest4))
 Test4Res = average_rewrite(Test4)
 
 Test4Expected = @acset SummationDecapode{Any, Any, Symbol}  begin
-  Var = 6
-  type = Any[:Form0, :Form1, :Form0, :Form0, :Form0, :Form1] 
-  name = [:C, :D, Symbol("••1"), Symbol("••2"), Symbol("••3"), Symbol("••sum0")]
+  Var = 7
+  type = [:Form0, :Form1, :Form1, :Form1, :Form1, :Form1, :Literal]
+  name = [:C, :D, :oc0_D, :oc1_D, :oc2_D, :oc3_D, Symbol("3")]
 
-  Op1 = 4
-  src = [1, 1, 1, 6]
-  tgt = [3, 4, 5, 2]
-  op1 = Any[:k, :t, :p, :avg3]
+  Op1 = 3
+  src = [1, 1, 1]
+  tgt = [3, 4, 5]
+  op1 = [:k, :t, :p]
+
+  Op2 = 1
+  proj1 = [6]
+  proj2 = [7]
+  res = [2]
+  op2 = [:/]
 
   Σ = 1
   sum = [6]
@@ -219,15 +233,21 @@ Test5 = SummationDecapode(parse_decapode(DecaTest5))
 Test5Res = average_rewrite(Test5)
 
 Test5Expected = @acset SummationDecapode{Any, Any, Symbol}  begin
-  Var = 14
-  type = Any[:Form0, :Form1, :Form2, :Form1, :Form0, :Form0, 
-  :Form2, :Form0, :Form1, :Form2, :Form1, :Form0, :Form0, :Form2]
-  name = [:F, :E, :D, :C, :B, :A, :G, Symbol("••1"), Symbol("••2"), Symbol("••3"), Symbol("••4"), Symbol("••5"), Symbol("••6"), Symbol("••sum0")]
+  Var = 15
+  type = [:Form0, :Form0, :Form1, :Form2, :Form1, :Form0, 
+          :Form2, :Form2, :Form2, :Form2, :Form2, :Form2, :Form2, :Form2, :Literal]
+  name = [:A, :B, :C, :D, :E, :F, :G, :oc0_G, :oc1_G, :oc2_G, :oc3_G, :oc4_G, :oc5_G, :oc6_G, Symbol("6")]
 
-  Op1 = 7
-  src = [1, 2, 3, 4, 5, 6, 14]
-  tgt = [8, 9, 10, 11, 12, 13, 7]
-  op1 = Any[:f, :e, :d, :c, :b, :a, :avg6]
+  Op1 = 6
+  src = [6, 5, 4, 3, 2, 1]
+  tgt = [8, 9, 10, 11, 12, 13]
+  op1 = [:f, :e, :d, :c, :b, :a]
+
+  Op2 = 1
+  proj1 = [14]
+  proj2 = [15]
+  res = [7]
+  op2 = [:/]
 
   Σ = 1
   sum = [14]
@@ -259,26 +279,26 @@ Test6Res = average_rewrite(Test6)
 
 Test6Expected = @acset SummationDecapode{Any, Any, Symbol}  begin
   Var = 14
-  type = Any[:Form1, :Form1, :Form1, :Form1, :Form1, :Form1, 
-  :Form0, :Form2, :Form0, :Form1, :Form2, :Form1, :Form2, :Form0]
-  name = [:Temp_0, :Temp_1, :E, Symbol("••1"), Symbol("••2"), Symbol("••sum0"), :A, :F, Symbol("••3"), Symbol("••4"), Symbol("••sum1"), :B, :C, :D]
+  type = [:Form0, :Form1, :Form2, :Form0, :Form1, :Form2, 
+  :Form1, :Form1, :Form1, :Literal, :Form2, :Form2, :Form2, :Literal]
+  name = [:A, :B, :C, :D, :E, :F, :oc0_E, :oc1_E, :oc2_E, Symbol("2"), :oc0_F, :oc1_F, :oc2_F, Symbol("2")]
 
-  Op1 = 6
-  src = [1, 2, 6, 7, 3, 11]
-  tgt = [4, 5, 3, 9, 10, 8]
-  op1 = Any[:temp, :temp, :avg2, :k, :t, :avg2]
+  Op1 = 2
+  src = [1, 5]
+  tgt = [11, 12]
+  op1 = [:k, :t]
 
-  Op2 = 2
-  proj1 = [12, 12]
-  proj2 = [13, 14]
-  res = [1, 2]
-  op2 = Any[:p, :q]
+  Op2 = 4
+  proj1 = [2, 2, 9, 13]
+  proj2 = [3, 4, 10, 14]
+  res = [7, 8, 5, 6]
+  op2 = [:p, :q, :/, :/]
 
   Σ = 2
-  sum = [6, 11]
+  sum = [9, 13]
 
   Summand = 4
-  summand = [4, 5, 9, 10]
+  summand = [7, 8, 11, 12]
   summation = [1, 1, 2, 2]
 end
 
@@ -301,22 +321,22 @@ Test7 = SummationDecapode(parse_decapode(DecaTest7))
 Test7Res = average_rewrite(Test7)
 
 Test7Expected = @acset SummationDecapode{Any, Any, Symbol}  begin
-  Var = 11
-  type = Any[:Form2, :Form2, :Form2, :Form2, :Form2, :Form2, 
-  :Form0, :Form1, :Form2, :Form1, :Form0]
-  name = [:Temp_0, :Temp_1, :F, Symbol("••1"), Symbol("••2"), Symbol("••sum0"), :A, :B, :C, :D, :E]
+  Var = 10
+  type = [:Form0, :Form1, :Form2, :Form1, :Form0, :Form2, :Form2, :Form2, :Form2, :Literal]
+  name = [:A, :B, :C, :D, :E, :F, :oc0_F, :oc1_F, :oc2_F, Symbol("2")]
 
-  Op1 = 3
-  src = [1, 2, 6]
-  tgt = [4, 5, 3]
-  op1 = Any[:temp, :temp, :avg2]
+  Op2 = 1
+  proj1 = [9]
+  proj2 = [10]
+  res = [6]
+  op2 = [:/]
 
   Σ = 3
-  sum = [6, 1, 2]
+  sum = [7, 8, 9]
 
   Summand = 7
-  summand = [4, 5, 7, 8, 9, 10, 11]
-  summation = [1, 1, 2, 2, 3, 3, 3]
+  summand = [1, 2, 3, 4, 5, 7, 8]
+  summation = [1, 1, 2, 2, 2, 3, 3]
 end
 
 @test Test7Res == Test7Expected
@@ -337,7 +357,7 @@ Test8Res = average_rewrite(Test8)
 
 Test8Expected = @acset SummationDecapode{Any, Any, Symbol}  begin
   Var = 3
-  type = Any[:Form1, :Form2, :Form0]
+  type = [:Form1, :Form2, :Form0]
   name = [:D₁, :D₂, :F]
 
   TVar = 1
@@ -346,7 +366,7 @@ Test8Expected = @acset SummationDecapode{Any, Any, Symbol}  begin
   Op1 = 2
   src = [1, 2]
   tgt = [3, 3]
-  op1 = Any[:∂ₜ, :c₂]
+  op1 = [:∂ₜ, :c₂]
 end
 
 @test Test8Res == Test8Expected
@@ -388,24 +408,29 @@ Test10 = SummationDecapode(parse_decapode(DecaTest10))
 Test10Res = average_rewrite(Test10)
 
 Test10Expected = @acset SummationDecapode{Any, Any, Symbol}  begin
-  Var = 9
-  type = Any[:Form0, :Form0, :Form0, :Form0, :Form0, :Form0, 
-  :Form0, :Form2, :Form2]
-  name = [:B, :D, :A, Symbol("••1"), Symbol("••2"), Symbol("••sum0"), :C, :Ḣ, :H]
+  Var = 10
+  type = [:Form0, :Form0, :Form0, :Form0, :Form2, :Form2, :Form0, :Form0, :Form0, :Literal]
+  name = [:A, :B, :C, :D, :Ḣ, :H, :oc0_A, :oc1_A, :oc2_A, Symbol("2")]
 
   TVar = 1
-  incl = [8]
+  incl = [5]
 
-  Op1 = 5
-  src = [1, 2, 6, 7, 9]
-  tgt = [4, 5, 3, 8, 8]
-  op1 = Any[:b, :d, :avg2, :c, :∂ₜ]
+  Op1 = 4
+  src = [2, 4, 3, 6]
+  tgt = [7, 8, 5, 5]
+  op1 = [:b, :d, :c, :∂ₜ]
+
+  Op2 = 1
+  proj1 = [9]
+  proj2 = [10]
+  res = [1]
+  op2 = [:/]
 
   Σ = 1
-  sum = [6]
+  sum = [9]
 
   Summand = 2
-  summand = [4, 5]
+  summand = [7, 8]
   summation = [1, 1]
 end
 
@@ -433,27 +458,28 @@ BinTest = makePerfectBinaryDeca(h)
 BinTestRes = average_rewrite(BinTest)
 
 BinTestExpected = @acset SummationDecapode{Any, Any, Symbol}  begin
-  Var = 76
-  type = Any[:Form1, :Form1, :Form1, :Form1, :Form1, :Form1, 
-  :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, 
-  :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1]
-  name = [Symbol("•2"), Symbol("•3"), Symbol("•1"), Symbol("••1"), Symbol("••2"), Symbol("••sum0"), Symbol("•4"), Symbol("•5"), Symbol("••3"), Symbol("••4"), Symbol("••sum1"), Symbol("•6"), Symbol("•7"), Symbol("••5"), Symbol("••6"), Symbol("••sum2"), Symbol("•8"), Symbol("•9"), Symbol("••7"), Symbol("••8"), Symbol("••sum3"), Symbol("•10"), Symbol("•11"), Symbol("••9"), Symbol("••10"), Symbol("••sum4"), Symbol("•12"), Symbol("•13"), Symbol("••11"), Symbol("••12"), Symbol("••sum5"), Symbol("•14"), Symbol("•15"), Symbol("••13"), 
-  Symbol("••14"), Symbol("••sum6"), Symbol("•16"), Symbol("•17"), Symbol("••15"), Symbol("••16"), Symbol("••sum7"), Symbol("•18"), Symbol("•19"), Symbol("••17"), Symbol("••18"), Symbol("••sum8"), Symbol("•20"), Symbol("•21"), Symbol("••19"), Symbol("••20"), Symbol("••sum9"), Symbol("•22"), Symbol("•23"), Symbol("••21"), Symbol("••22"), Symbol("••sum10"), Symbol("•24"), Symbol("•25"), Symbol("••23"), Symbol("••24"), Symbol("••sum11"), Symbol("•26"), Symbol("•27"), Symbol("••25"), Symbol("••26"), Symbol("••sum12"), Symbol("•28"), Symbol("•29"), Symbol("••27"), Symbol("••28"), Symbol("••sum13"), Symbol("•30"), Symbol("•31"), Symbol("••29"), Symbol("••30"), Symbol("••sum14")]
+  Var = 91
+  type = [:Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Form1, :Literal, :Form1, :Form1, :Form1, :Literal, :Form1, :Form1, :Form1, :Literal, :Form1, :Form1, :Form1, :Literal, :Form1, :Form1, :Form1, :Literal, :Form1, :Form1, :Form1, :Literal, :Form1, :Form1, :Form1, :Literal, :Form1, :Form1, :Form1, :Literal, :Form1, :Form1, :Form1, :Literal, :Form1, :Form1, :Form1, :Literal, :Form1, :Form1, :Form1, :Literal, :Form1, :Form1, :Form1, :Literal, :Form1, :Form1, :Form1, :Literal, :Form1, :Form1, :Form1, :Literal, :Form1, :Form1, :Form1, :Literal]
+  name = [Symbol("•1"), Symbol("•2"), Symbol("•3"), Symbol("•4"), Symbol("•5"), Symbol("•6"), Symbol("•7"), Symbol("•8"), Symbol("•9"), Symbol("•10"), Symbol("•11"), Symbol("•12"), Symbol("•13"), Symbol("•14"), Symbol("•15"), Symbol("•16"), Symbol("•17"), Symbol("•18"), Symbol("•19"), Symbol("•20"), Symbol("•21"), Symbol("•22"), Symbol("•23"), Symbol("•24"), Symbol("•25"), Symbol("•26"), Symbol("•27"), Symbol("•28"), Symbol("•29"), Symbol("•30"), Symbol("•31"), Symbol("oc0_•1"), Symbol("oc1_•1"), Symbol("oc2_•1"), Symbol("2"), Symbol("oc0_•2"), Symbol("oc1_•2"), Symbol("oc2_•2"), Symbol("2"), Symbol("oc0_•3"), Symbol("oc1_•3"), Symbol("oc2_•3"), Symbol("2"), Symbol("oc0_•4"), Symbol("oc1_•4"), Symbol("oc2_•4"), Symbol("2"), Symbol("oc0_•5"), Symbol("oc1_•5"), Symbol("oc2_•5"), Symbol("2"), Symbol("oc0_•6"), Symbol("oc1_•6"), Symbol("oc2_•6"), Symbol("2"), Symbol("oc0_•7"), Symbol("oc1_•7"), Symbol("oc2_•7"), Symbol("2"), Symbol("oc0_•8"), Symbol("oc1_•8"), Symbol("oc2_•8"), Symbol("2"), Symbol("oc0_•9"), Symbol("oc1_•9"), Symbol("oc2_•9"), Symbol("2"), Symbol("oc0_•10"), Symbol("oc1_•10"), Symbol("oc2_•10"), Symbol("2"), Symbol("oc0_•11"), Symbol("oc1_•11"), Symbol("oc2_•11"), Symbol("2"), Symbol("oc0_•12"), Symbol("oc1_•12"), Symbol("oc2_•12"), Symbol("2"), Symbol("oc0_•13"), Symbol("oc1_•13"), Symbol("oc2_•13"), Symbol("2"), Symbol("oc0_•14"), Symbol("oc1_•14"), Symbol("oc2_•14"), Symbol("2"), Symbol("oc0_•15"), Symbol("oc1_•15"), Symbol("oc2_•15"), Symbol("2")]
 
-  Op1 = 45
-  src = [1, 2, 6, 7, 8, 11, 12, 13, 16, 17, 18, 21, 22, 23, 26, 27, 28, 31, 32, 33, 36, 37, 38, 41, 42, 43, 46, 47, 48, 
-  51, 52, 53, 56, 57, 58, 61, 62, 63, 66, 67, 68, 71, 72, 73, 76]
-  tgt = [4, 5, 3, 9, 10, 1, 14, 15, 2, 19, 20, 7, 24, 25, 8, 
-  29, 30, 12, 34, 35, 13, 39, 40, 17, 44, 45, 18, 49, 50, 22, 54, 55, 23, 59, 60, 27, 64, 65, 28, 69, 70, 32, 74, 75, 33]
-  op1 = Any[:op1, :op16, :avg2, :op2, :op17, :avg2, :op3, :op18, :avg2, :op4, :op19, :avg2, :op5, :op20, :avg2, :op6, :op21, :avg2, :op7, :op22, :avg2, :op8, :op23, :avg2, :op9, :op24, :avg2, :op10, :op25, :avg2, :op11, :op26, :avg2, :op12, :op27, :avg2, :op13, :op28, :avg2, :op14, :op29, :avg2, 
-  :op15, :op30, :avg2]
+
+  Op1 = 30
+  src = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31]
+  tgt = [32, 36, 40, 44, 48, 52, 56, 60, 64, 68, 72, 76, 80, 84, 88, 33, 37, 41, 45, 49, 53, 57, 61, 65, 69, 73, 77, 81, 85, 89]
+  op1 = [Symbol("op1"), Symbol("op2"), Symbol("op3"), Symbol("op4"), Symbol("op5"), Symbol("op6"), Symbol("op7"), Symbol("op8"), Symbol("op9"), Symbol("op10"), Symbol("op11"), Symbol("op12"), Symbol("op13"), Symbol("op14"), Symbol("op15"), Symbol("op16"), Symbol("op17"), Symbol("op18"), Symbol("op19"), Symbol("op20"), Symbol("op21"), Symbol("op22"), Symbol("op23"), Symbol("op24"), Symbol("op25"), Symbol("op26"), Symbol("op27"), Symbol("op28"), Symbol("op29"), Symbol("op30")]
+
+  Op2 = 15
+  proj1 = [34, 38, 42, 46, 50, 54, 58, 62, 66, 70, 74, 78, 82, 86, 90]
+  proj2 = [35, 39, 43, 47, 51, 55, 59, 63, 67, 71, 75, 79, 83, 87, 91]
+  res = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+  op2 = [:/, :/, :/, :/, :/, :/, :/, :/, :/, :/, :/, :/, :/, :/, :/]
 
   Σ = 15
-  sum = [6, 11, 16, 21, 26, 31, 36, 41, 46, 51, 56, 61, 66, 71, 76]
+  sum = [34, 38, 42, 46, 50, 54, 58, 62, 66, 70, 74, 78, 82, 86, 90]
 
   Summand = 30
-  summand = [4, 5, 9, 10, 14, 15, 19, 20, 24, 25, 29, 30, 34, 35, 39, 40, 44, 45, 49, 50, 54, 55, 59, 60, 64, 65, 69, 70, 74, 75]
-  summation = [1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15]    
+  summand = [32, 33, 36, 37, 40, 41, 44, 45, 48, 49, 52, 53, 56, 57, 60, 61, 64, 65, 68, 69, 72, 73, 76, 77, 80, 81, 84, 85, 88, 89]
+  summation = [1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15]
 end
 
 @test BinTestRes == BinTestExpected
