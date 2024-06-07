@@ -26,7 +26,9 @@ Plus, AppCirc1, Var, Tan, App1, App2,
 ## visualization
 to_graphviz_property_graph, typename, draw_composition,
 ## rewrite
-average_rewrite
+average_rewrite,
+## openoperators
+transfer_parents!, transfer_children!, replace_operators!
 
 using Catlab
 using Catlab.Theories
@@ -56,6 +58,7 @@ include("visualization.jl")
 include("rewrite.jl")
 include("pretty.jl")
 include("colanguage.jl")
+include("openoperators.jl")
 include("deca/Deca.jl")
 include("learn/Learn.jl")
 

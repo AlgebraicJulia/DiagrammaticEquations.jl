@@ -35,3 +35,7 @@ end
 @testset "SummationDecapode Deconstruction" begin
   include("colanguage.jl")
 end
+
+@testset "Open Operators" begin
+  include("openoperators.jl")
+end
