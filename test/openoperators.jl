@@ -3,7 +3,10 @@ using DiagrammaticEquations
 using Test
 
 @testset "Open Operators" begin
-  # Test error handling.
+  # Error handling
+  # --------------
+
+  # Test erroneous left-hand side.
   LHS = @decapode begin
     y == Δ(X) + ∇(Z)
   end
@@ -15,6 +18,7 @@ using Test
   end
   @test_throws "Only single operator replacement is supported for now, but found Op1s: [:Δ, :∇]" replace_op1!(Heat, LHS, RHS)
 
+  # Test erroneous right-hand side.
   LHS = @decapode begin
     y == Δ(X)
   end
@@ -25,6 +29,9 @@ using Test
     ∂ₜ(C) == Δ(C)
   end
   @test_throws "The replacement for Δ must have a single input and a single output, but found inputs: [:X, :Z] and outputs [:y]" replace_op1!(Heat, LHS, RHS)
+
+  # Transfering variables
+  # ---------------------
 
   # Test transfering variables on the Brusselator.
   Brusselator = @decapode begin
@@ -54,6 +61,9 @@ using Test
     ∂ₜ(V) == U̇
     ∂ₜ(V) == V̇
   end
+
+  # Opening Op1s
+  # ------------
 
   # Test expanding the Heat equation.
   LHS = @decapode begin
@@ -190,4 +200,42 @@ using Test
   end
   replace_all_op1s!(Brusselator, LHS, RHS)
   @test Brusselator[:op1] == Any[[:d,:⋆,:d,:⋆], [:d,:⋆,:d,:⋆], :∂ₜ, :∂ₜ]
+
+  # Opening Op2s
+  # ------------
+
+  # Test expanding the interior product.
+  Interior = @decapode begin
+    ∂ₜ(C) == ι(A, B)
+  end
+  LHS = @decapode begin
+    y == ι(X, Z)
+  end
+  RHS = @decapode begin
+    y == -1*⋆((⋆p1) ∧ p2)
+  end
+  replace_all_op2s!(Interior, LHS, RHS)
+  @test Interior == @acset SummationDecapode{Any,Any,Symbol} begin
+    Var = 8
+    TVar = 1
+    Op1 = 3
+    Op2 = 2
+    src = [2, 4, 1]
+    tgt = [5, 3, 8]
+    proj1 = [7, 3]
+    proj2 = [8, 6]
+    res = [5, 1]
+    incl = [5]
+    op1 = [:∂ₜ, :⋆, :⋆]
+    op2 = [:*, :∧]
+    type = [:infer, :infer, :infer, :infer, :infer, :infer, :Literal, :infer]
+    name = [Symbol("•2"), :C, Symbol("•3"), :A, :Ċ, :B, Symbol("-1"), Symbol("•1")]
+  end
+  Interior = @decapode begin
+    ∂ₜ(C) == ι(A, B)
+  end
+  @test replace_all_op2s!(copy(Interior), LHS, RHS) ==
+    replace_all_op2s!(copy(Interior), LHS, RHS,
+      only(incident(RHS, :p1, :name)), only(incident(RHS, :p2, :name)))
 end
+

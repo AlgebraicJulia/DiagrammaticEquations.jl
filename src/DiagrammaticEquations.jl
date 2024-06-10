@@ -28,7 +28,7 @@ to_graphviz_property_graph, typename, draw_composition,
 ## rewrite
 average_rewrite,
 ## openoperators
-transfer_parents!, transfer_children!, replace_op1!, replace_all_op1s!
+transfer_parents!, transfer_children!, replace_op1!, replace_op2!, replace_all_op1s!, replace_all_op2s!
 
 using Catlab
 using Catlab.Theories
