@@ -172,7 +172,7 @@ function validate_op2_match(d::SummationDecapode, LHS::SummationDecapode)
 end
 
 # Validate whether RHS represents a valid replacement for an op2.
-function validate_op2_replacement(d::SummationDecapode, LHS::Symbol, RHS::SummationDecapode, proj1, proj2)
+function validate_op2_replacement(d::SummationDecapode, LHS::Symbol, RHS::SummationDecapode, proj1::Int, proj2::Int)
   if length(infer_states(RHS)) != 2 || length(infer_terminals(RHS)) != 1
     error("The replacement for $(LHS) must have two inputs and a single output, but found inputs: $(RHS[infer_states(RHS), :name]) and outputs $(RHS[infer_terminals(RHS), :name])")
   end
@@ -181,7 +181,7 @@ function validate_op2_replacement(d::SummationDecapode, LHS::Symbol, RHS::Summat
   end
 end
 
-"""    function replace_op2!(d::SummationDecapode, LHS::Symbol, RHS::SummationDecapode, proj1, proj2)
+"""    function replace_op2!(d::SummationDecapode, LHS::Symbol, RHS::SummationDecapode, proj1::Int, proj2::Int)
 
 Given a Decapode, d, replace at most one instance of the left-hand-side binary operator with those of the right-hand-side.
 
@@ -191,7 +191,7 @@ Return the index of the replaced operator, 0 if no match was found.
 
 See also: [`replace_op1!`](@ref), [`replace_all_op2s!`](@ref)
 """
-function replace_op2!(d::SummationDecapode, LHS::Symbol, RHS::SummationDecapode, proj1, proj2)
+function replace_op2!(d::SummationDecapode, LHS::Symbol, RHS::SummationDecapode, proj1::Int, proj2::Int)
   validate_op2_replacement(d, LHS, RHS, proj1, proj2)
   isempty(incident(d, LHS, :op2)) && return 0
   # Identify the "matched" operation.
@@ -227,7 +227,7 @@ function replace_op2!(d::SummationDecapode, LHS::Symbol, RHS::SummationDecapode,
   LHS_op2
 end
 
-"""    function replace_op2!(d::SummationDecapode, LHS::SummationDecapode, RHS::SummationDecapode, proj1, proj2)
+"""    function replace_op2!(d::SummationDecapode, LHS::SummationDecapode, RHS::SummationDecapode, proj1::Int, proj2::Int)
 
 Given a Decapode, d, replace at most one instance of the left-hand-side binary operator with those of the right-hand-side.
 
@@ -236,7 +236,7 @@ proj1 and proj2 are the indices of the intended proj1 and proj2 in RHS.
 Return the index of the replaced binary operator, 0 if no match was found.
 See also: [`replace_op1!`](@ref), [`replace_all_op2s!`](@ref)
 """
-function replace_op2!(d::SummationDecapode, LHS::SummationDecapode, RHS::SummationDecapode, proj1, proj2)
+function replace_op2!(d::SummationDecapode, LHS::SummationDecapode, RHS::SummationDecapode, proj1::Int, proj2::Int)
   validate_op2_match(d, LHS)
   replace_op2!(d, only(LHS[:op2]), RHS, proj1, proj2)
 end
@@ -259,7 +259,7 @@ end
 replace_op2!(d::SummationDecapode, LHS::Symbol, RHS::Symbol, proj1, proj2) =
   replace_op2!(d, LHS, RHS)
 
-"""    function replace_all_op2s!(d::SummationDecapode, LHS::Union{Symbol, SummationDecapode}, RHS::Union{Symbol, SummationDecapode}, proj1, proj2)
+"""    function replace_all_op2s!(d::SummationDecapode, LHS::Union{Symbol, SummationDecapode}, RHS::Union{Symbol, SummationDecapode}, proj1::Int, proj2::Int)
 
 Given a Decapode, d, replace all instances of the left-hand-side binary operator with those of the right-hand-side.
 
@@ -269,7 +269,7 @@ Return true if any replacements were made, otherwise false.
 
 See also: [`replace_op2!`](@ref), [`replace_all_op1s!`](@ref)
 """
-function replace_all_op2s!(d::SummationDecapode, LHS::Union{Symbol, SummationDecapode}, RHS::Union{Symbol, SummationDecapode}, proj1, proj2)
+function replace_all_op2s!(d::SummationDecapode, LHS::Union{Symbol, SummationDecapode}, RHS::Union{Symbol, SummationDecapode}, proj1::Int, proj2::Int)
   any_replaced = false
   while replace_op2!(d,LHS,RHS, proj1, proj2) != 0
     any_replaced = true
