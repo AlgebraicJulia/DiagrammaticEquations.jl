@@ -11,7 +11,7 @@ recursive_delete_parents, spacename, varname, unicode!, vec_to_dec!,
 ## collages
 Collage, collate,
 ## composition
-oapply, unique_by, unique_by!, OpenSummationDecapodeOb, OpenSummationDecapode, Open,
+oapply, unique_by, unique_by!, OpenSummationDecapodeOb, OpenSummationDecapode, Open, default_composition_diagram,
 ## acset
 SchDecapode, SchNamedDecapode, AbstractDecapode, AbstractNamedDecapode, NamedDecapode, SummationDecapode,
 contract_operators!, contract_operators, add_constant!, add_parameter, fill_names!, dot_rename!, expand_operators, infer_state_names, recognize_types,

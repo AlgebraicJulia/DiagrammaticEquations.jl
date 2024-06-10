@@ -3,24 +3,8 @@
 import Catlab.CategoricalAlgebra: apex, feet, legs
 import Catlab.WiringDiagrams: oapply
 
-OpenSummationDecapodeOb, OpenSummationDecapode = OpenACSetTypes(SummationDecapode, :Var)
-
-#FIXME: why can't we just add a constructor for OpenSummationDecapode
-"""    Open(d::SummationDecapode{T,U,V}, names::AbstractVector{Symbol}) where {T,U,V}
-
-creates an OpenSummationDecapode based on named variables rather than variable indices. 
-See AlgebraicPetri.jl's Open for the analogous verion for LabelledReactionNetworks.
-"""
-function Open(d::SummationDecapode{T,U,V}, names::AbstractVector{Symbol}) where {T,U,V}
-  legs = map(names) do name
-    FinFunction(incident(d, name, :name), nparts(d, :Var))
-  end
-  OpenSummationDecapode{T,U,V}(d, legs...)
-end
-
-apex(Decapode::OpenSummationDecapode) = apex(Decapode.cospan)
-legs(Decapode::OpenSummationDecapode) = legs(Decapode.cospan)
-feet(Decapode::OpenSummationDecapode) = Decapode.feet
+# ACSet manipulation helper functions
+# -----------------------------------
 
 """    function unique_by!(acset, column_names::Vector{Symbol})
 
@@ -66,6 +50,28 @@ function unique_by(acset, table::Symbol, columns::Vector{Symbol})
   acset_copy = copy(acset)
   unique_by!(acset_copy, table, columns)
 end
+
+# Operadic composition
+# --------------------
+
+OpenSummationDecapodeOb, OpenSummationDecapode = OpenACSetTypes(SummationDecapode, :Var)
+
+#FIXME: why can't we just add a constructor for OpenSummationDecapode
+"""    Open(d::SummationDecapode{T,U,V}, names::AbstractVector{Symbol}) where {T,U,V}
+
+creates an OpenSummationDecapode based on named variables rather than variable indices. 
+See AlgebraicPetri.jl's Open for the analogous verion for LabelledReactionNetworks.
+"""
+function Open(d::SummationDecapode{T,U,V}, names::AbstractVector{Symbol}) where {T,U,V}
+  legs = map(names) do name
+    FinFunction(incident(d, name, :name), nparts(d, :Var))
+  end
+  OpenSummationDecapode{T,U,V}(d, legs...)
+end
+
+apex(Decapode::OpenSummationDecapode) = apex(Decapode.cospan)
+legs(Decapode::OpenSummationDecapode) = legs(Decapode.cospan)
+feet(Decapode::OpenSummationDecapode) = Decapode.feet
 
 """    function type_check_Decapodes_composition(relation::RelationDiagram, decs::Vector{OpenSummationDecapode})
 
@@ -212,3 +218,30 @@ oapply(r::RelationDiagram, podes::Vector{D}) where {D<:OpenSummationDecapode} =
 # oapply(r, OpenPode(Heat, [:H]))
 
 oapply(r::RelationDiagram, pode::OpenSummationDecapode) = oapply(r, [pode])
+
+# Default composition
+# -------------------
+
+"""    function default_composition_diagram(podes::Vector{D}, names::Vector{Symbol}) where {D<:SummationDecapode}
+
+Given a list of Decapodes and their names, return a composition diagram which assumes that variables sharing the same name ought to be composed.
+
+Throw an error if any individual Decapode already contains a repeated name (except for Literals).
+"""
+function default_composition_diagram(podes::Vector{D}, names::Vector{Symbol}) where {D<:SummationDecapode}
+  non_literals = map(podes) do pode
+    findall(!=(:Literal), pode[:type])
+  end
+  for (pode, name, non_lits) in zip(podes, names, non_literals)
+    allunique(pode[non_lits, :name]) || error("Decapode $name contains a repeated variable name.")
+  end
+  all_names = union((pode[non_lits, :name] for (pode,non_lits) in zip(podes,non_literals))...)
+  tables = map(podes,names,non_literals) do pode, name, non_lits
+    Expr(:call, name, intersect(all_names, pode[non_lits, :name])...)
+  end
+  # XXX: This is the simplest way to use the 
+  quote @relation () begin $(tables...) end end |> eval
+end
+
+# TODO: Add a macro which provides names for boxes via the lval of the Decapode.
+
