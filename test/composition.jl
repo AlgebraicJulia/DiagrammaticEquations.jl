@@ -195,4 +195,35 @@ end
 # Test none of the decapodes were mutated
 @test isequal(adv_adv, deep_copies)
 
+@testset "Default Composition Diagrams" begin
+  # Compose Diffusion, Advection, and Superposition.
+  # Observe that we have pre-named ϕ to ϕ₁ or ϕ₂.
+  # Note that only one Decapode contains TVars.
+  Diffusion = @decapode begin
+    C::Form0
+    ϕ₁::Form1
+    ϕ₁ ==  ∘(k, d₀)(C)
+  end
+  Advection = @decapode begin
+    C::Form0
+    (V, ϕ₂)::Form1
+    ϕ₂ == ∧₀₁(C,V)
+  end
+  Superposition = @decapode begin
+    (C, Ċ)::Form0
+    (ϕ, ϕ₁, ϕ₂)::Form1
+    ϕ == ϕ₁ + ϕ₂
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    ∂ₜ(C) == Ċ
+  end
+  expected =
+    @relation () begin
+      Diffusion(C,ϕ₁)
+      Advection(C,V,ϕ₂)
+      Superposition(C,ϕ₁,ϕ₂,Ċ,ϕ)
+    end
+  @test default_composition_diagram(
+    [Diffusion, Advection, Superposition], [:Diffusion, :Advection, :Superposition]) == expected
+end
+
 # end

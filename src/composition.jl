@@ -1,5 +1,3 @@
-## TODO: Decapodey
-
 import Catlab.CategoricalAlgebra: apex, feet, legs
 import Catlab.WiringDiagrams: oapply
 
@@ -222,26 +220,45 @@ oapply(r::RelationDiagram, pode::OpenSummationDecapode) = oapply(r, [pode])
 # Default composition
 # -------------------
 
+# TODO: Add a macro which provides names for boxes via the Symbol of the Decapode.
 """    function default_composition_diagram(podes::Vector{D}, names::Vector{Symbol}) where {D<:SummationDecapode}
 
 Given a list of Decapodes and their names, return a composition diagram which assumes that variables sharing the same name ought to be composed.
 
+Only variables which are found in multiple Decapodes are exposed. No Literals are exposed.
+
 Throw an error if any individual Decapode already contains a repeated name (except for Literals).
+
+Note that composing immediately with [`oapply`](@ref) will fail if types do not match (e.g. (:infer, :Form0) or (:Form0, :Form1)). So, use the function [`infer_types_from_diagram!`](@ref) after this if needed.
 """
 function default_composition_diagram(podes::Vector{D}, names::Vector{Symbol}) where {D<:SummationDecapode}
-  non_literals = map(podes) do pode
-    findall(!=(:Literal), pode[:type])
+  non_lit_names = map(podes) do pode
+    pode[findall(!=(:Literal), pode[:type]), :name]
   end
-  for (pode, name, non_lits) in zip(podes, names, non_literals)
-    allunique(pode[non_lits, :name]) || error("Decapode $name contains a repeated variable name.")
+  for (nln, name) in zip(non_lit_names, names)
+    allunique(nln) || error("Decapode $name contains a repeated variable name.")
   end
-  all_names = union((pode[non_lits, :name] for (pode,non_lits) in zip(podes,non_literals))...)
-  tables = map(podes,names,non_literals) do pode, name, non_lits
-    Expr(:call, name, intersect(all_names, pode[non_lits, :name])...)
+  all_names = union(non_lit_names...)
+  tables = map(names, non_lit_names) do name, nln
+    Expr(:call, name, intersect(all_names, nln)...)
   end
-  # XXX: This is the simplest way to use the 
+  # XXX: The only means of creating a RelationDiagram is via the DSL or
+  # tracking your own indices via @acset/ imperatively.
   quote @relation () begin $(tables...) end end |> eval
 end
 
-# TODO: Add a macro which provides names for boxes via the lval of the Decapode.
+"""    function infer_types_from_diagram!(r::RelationDiagram, podes::Vector{D}) where {D<:SummationDecapode}
+
+Infer that variables sharing a name should have the same type.
+
+If [`oapply`](@ref) fails due to types not matching (e.g. :infer and :Form0), then this is a useful pre-processing step.
+"""
+function infer_types_from_diagram!(r::RelationDiagram, podes::Vector{D}) where {D<:SummationDecapode}
+  for j in parts(r, :Junction)
+    vbl = r[j, :variable]
+    boxes = r[incident(r, j, :junction), :box]
+    # TODO
+  end
+  podes
+end
 
