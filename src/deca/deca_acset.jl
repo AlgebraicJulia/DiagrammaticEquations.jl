@@ -29,7 +29,10 @@ op1_inf_rules_1D = [
   # Rules for negation
   (src_type = :Form0, tgt_type = :Form0, op_names = [:neg, :(-)]),
   (src_type = :Form1, tgt_type = :Form1, op_names = [:neg, :(-)]),
-
+  
+  # Rules for the averaging operator
+  (src_type = :Form0, tgt_type = :Form1, op_names = [:avg₀₁, :avg_01]),
+  
   # Rules for magnitude/ norm
   (src_type = :Form0, tgt_type = :Form0, op_names = [:mag, :norm]),
   (src_type = :Form1, tgt_type = :Form1, op_names = [:mag, :norm])]
@@ -118,6 +121,9 @@ op1_inf_rules_2D = [
   # Rules for δ
   (src_type = :Form1, tgt_type = :Form0, op_names = [:δ, :δ₁, :codif]),
   (src_type = :Form2, tgt_type = :Form1, op_names = [:δ, :δ₂, :codif]),
+
+  # Rules for the averaging operator
+  (src_type = :Form0, tgt_type = :Form1, op_names = [:avg₀₁, :avg_01]),
 
   # Rules for negation
   (src_type = :Form0, tgt_type = :Form0, op_names = [:neg, :(-)]),
@@ -277,6 +283,7 @@ ascii_to_unicode_op1 = Pair{Symbol, Any}[
                         (:star     => :⋆),
                         (:lapl     => :Δ),
                         (:codif    => :δ),
+                        (:avg_01    => :avg₀₁),
                         (:star_inv => :⋆⁻¹)]
 
 ascii_to_unicode_op2 = [
