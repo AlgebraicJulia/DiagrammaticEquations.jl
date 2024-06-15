@@ -17,6 +17,8 @@ SchDecapode, SchNamedDecapode, AbstractDecapode, AbstractNamedDecapode, NamedDec
 contract_operators!, contract_operators, add_constant!, add_parameter, fill_names!, dot_rename!, expand_operators, infer_state_names, recognize_types,
 resolve_overloads!, replace_names!,
 apply_inference_rule_op1!, apply_inference_rule_op2!,
+transfer_parents!, transfer_children!,
+unique_lits!,
 ## language
 @decapode, Term, parse_decapode, term, Eq, DecaExpr,
 # ~~~~~
