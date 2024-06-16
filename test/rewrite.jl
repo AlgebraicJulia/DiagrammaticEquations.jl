@@ -5,12 +5,8 @@ import DiagrammaticEquations: average_rewrite
 
 using Catlab.ACSetInterface
 
-
-#= draw(g; kw...) = to_graphviz(g; node_labels=true, edge_labels=true, kw...)
-draw(f::ACSetTransformation; kw...) =
-  to_graphviz(f; node_labels=true, edge_labels=true, draw_codom=false, kw...) =#
-
-#########################
+# Average Rewriting
+###################
 
 # No valid rewrites, return original Decapode
 DecaTest0 = quote
@@ -483,3 +479,76 @@ BinTestExpected = @acset SummationDecapode{Any, Any, Symbol}  begin
 end
 
 @test BinTestRes == BinTestExpected
+
+# Remove redundant literals
+###########################
+
+@testset "Redundant Literals" begin
+# No literals:
+let
+NoLits = @decapode begin
+  ∂ₜ(C) == D*Δ(C)
+end
+@test copy(NoLits) == unique_lits!(NoLits)
+end # let
+
+# Distinct literals:
+let
+DistinctLits = @decapode begin
+  ∂ₜ(C) == 5 + -1*D*Δ(C)
+end
+@test copy(DistinctLits) == unique_lits!(DistinctLits)
+end # let
+
+# A repeated literal interacting directly with itself:
+let
+InteractingLits = @decapode begin
+  ∂ₜ(C) == 1*1*D*Δ(C)
+end
+@test unique_lits!(InteractingLits) ==
+  @acset SummationDecapode{Any, Any, Symbol} begin
+    Var = 7
+    TVar = 1
+    Op1 = 2
+    Op2 = 3
+    src = [2, 2]
+    tgt = [1, 5]
+    # Observe that the Literal 1 is multiplied by itself:
+    proj1 = [3, 6, 7]
+    proj2 = [3, 4, 5]
+    res = [6, 7, 1]
+    incl = [1]
+    op1 = [:∂ₜ, :Δ]
+    op2 = [:*, :*, :*]
+    type = [:infer, :infer, :Literal, :infer, :infer, :infer, :infer]
+    name = [:Ċ, :C, Symbol("1"), :D, Symbol("•2") , :mult_1, :mult_2]
+  end
+end # let
+
+# A repeated literal used in separate places:
+let
+RepeatedLits = @decapode begin
+  ∂ₜ(C) == -1*D*Δ(C)
+  ∂ₜ(E) == -1*F*Δ(E)
+end
+@test unique_lits!(RepeatedLits) ==
+  @acset SummationDecapode{Any, Any, Symbol} begin
+    Var = 11
+    TVar = 2
+    Op1 = 4
+    Op2 = 4
+    src = [2, 2, 9, 9]
+    tgt = [1, 5, 8, 11]
+    # Observe -1, Var 3, is used in two multiplications:
+    proj1 = [3, 6, 3, 7]
+    proj2 = [4, 5, 10, 11]
+    res = [6, 1, 7, 8]
+    incl = [1, 8]
+    op1 = [:∂ₜ, :Δ, :∂ₜ, :Δ]
+    op2 = [:*, :*, :*, :*]
+    type = [:infer, :infer, :Literal, :infer, :infer, :infer, :infer, :infer, :infer, :infer, :infer]
+    name = [:Ċ, :C, Symbol("-1"), :D, Symbol("•2"), :mult_1, :mult_2, :Ė, :E, :F, Symbol("•4")]
+  end
+end # let
+
+end # testset

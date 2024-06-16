@@ -535,15 +535,18 @@ function unique_lits!(d::SummationDecapode)
     Symbol() # Sentinel value
   end
   lit_names(d) = d[incident(d, :Literal, :type), :name]
+
   while true
     # while
-    lit = first_repeat(lit_names(d)) != Symbol()
+    lit = first_repeat(lit_names(d))
     lit == Symbol() && break
     # do
-    lits = incident(d, lit, :name)
-    keep = first(lits)
-    # TODO
+    keep = first(incident(d, lit, :name))
+    nl = length(incident(d, lit, :name))
     # Note that Literals do not have parents.
+    for _ in 2:nl
+      transfer_children!(d, incident(d, lit, [:name])[2], keep)
+    end
   end
   d
 end
