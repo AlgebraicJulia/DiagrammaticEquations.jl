@@ -534,18 +534,20 @@ function unique_lits!(d::SummationDecapode)
     end
     Symbol() # Sentinel value
   end
-  lit_names(d) = d[incident(d, :Literal, :type), :name]
 
   while true
     # while
-    lit = first_repeat(lit_names(d))
+    lit = first_repeat(d[incident(d, :Literal, :type), :name])
     lit == Symbol() && break
     # do
+    # XXX: Since indices may change, Iterators.peel is not suitable.
     keep = first(incident(d, lit, :name))
     nl = length(incident(d, lit, :name))
     # Note that Literals do not have parents.
     for _ in 2:nl
-      transfer_children!(d, incident(d, lit, [:name])[2], keep)
+      remove = incident(d, lit, [:name])[2]
+      transfer_children!(d, remove, keep)
+      rem_part!(d, :Var, remove)
     end
   end
   d
