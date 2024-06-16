@@ -521,35 +521,31 @@ function replace_names!(d::SummationDecapode, op1_repls::Vector{Pair{Symbol, Any
   d
 end
 
+# Return a dict of Literals and the indices of Vars equal to that Literal.
+# XXX: Does not copy the result of incident.
+# XXX: A generalization for given subpart must be type stable.
+function group_lits_by_name(d::SummationDecapode{Any,Any,Symbol})
+  dict = Dict{Symbol,Vector{Int}}()
+  for v in incident(d, :Literal, :type)
+    lit = d[v,:name]
+    (lit in keys(dict)) ? (continue) : (setindex!(dict, incident(d,lit,:name), lit))
+  end
+  dict
+end
 
 """    function unique_lits!(d::SummationDecapode)
 
 Remove repeated Literals from a Decapode.
 """
 function unique_lits!(d::SummationDecapode)
-  function first_repeat(names::Vector{Symbol})
-    founds = Set{Symbol}()
-    for n in names
-      (n in founds) ? (return n) : push!(founds, n)
-    end
-    Symbol() # Sentinel value
+  lit_idxs = group_lits_by_name(d)
+  filter!(((l,i),) -> 1 < length(i), lit_idxs)
+  isempty(lit_idxs) && return d
+  to_remove = map(keys(lit_idxs), values(lit_idxs)) do lit, idxs
+    foreach(x -> transfer_children!(d, x, idxs[1]), idxs[2:end])
+    idxs[2:end]
   end
-
-  while true
-    # while
-    lit = first_repeat(d[incident(d, :Literal, :type), :name])
-    lit == Symbol() && break
-    # do
-    # XXX: Since indices may change, Iterators.peel is not suitable.
-    keep = first(incident(d, lit, :name))
-    nl = length(incident(d, lit, :name))
-    # Note that Literals do not have parents.
-    for _ in 2:nl
-      remove = incident(d, lit, [:name])[2]
-      transfer_children!(d, remove, keep)
-      rem_part!(d, :Var, remove)
-    end
-  end
+  rem_parts!(d, :Var, sort!(reduce(vcat, to_remove)))
   d
 end
 
