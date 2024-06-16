@@ -7,6 +7,76 @@ using ACSets.InterTypes
 
 using .decapodeacset
 
+# Transferring pointers
+# --------------------
+
+"""    function transfer_parents!(d::SummationDecapode, x, y)
+
+Transfer the parents of x to y. Also transfer TVar status from x to y.
+"""
+function transfer_parents!(d::SummationDecapode, x, y)
+  #set_subpart!(d, incident(d, x, [:tgt], copy=true), :tgt, y)
+  #set_subpart!(d, incident(d, x, [:res], copy=true), :res, y)
+  #set_subpart!(d, incident(d, x, [:sum], copy=true), :sum, y)
+  #set_subpart!(d, incident(d, x, [:incl], copy=true), :incl, y)
+  # XXX: This avoids allocations.
+  for i in parts(d, :Op1)
+    if d.subparts.tgt[i] == x
+      d.subparts.tgt[i] = y
+    end
+  end
+  for i in parts(d, :Op2)
+    if d.subparts.res[i] == x
+      d.subparts.res[i] = y
+    end
+  end
+  for i in parts(d, :Σ)
+    if d.subparts.sum[i] == x
+      d.subparts.sum[i] = y
+    end
+  end
+  for i in parts(d, :TVar)
+    if d.subparts.incl[i] == x
+      d.subparts.incl[i] = y
+    end
+  end
+  d
+end
+
+"""    function transfer_children!(d::SummationDecapode, x, y)
+
+Transfer the children of x to y.
+"""
+function transfer_children!(d::SummationDecapode, x, y)
+  #set_subpart!(d, incident(d, x, [:src], copy=true), :src, y)
+  #set_subpart!(d, incident(d, x, [:proj1], copy=true), :proj1, y)
+  #set_subpart!(d, incident(d, x, [:proj2], copy=true), :proj2, y)
+  #set_subpart!(d, incident(d, x, [:summand], copy=true), :summand, y)
+  # XXX: This avoids allocations.
+  for i in parts(d, :Op1)
+    if d.subparts.src[i] == x
+      d.subparts.src[i] = y
+    end
+  end
+  for i in parts(d, :Op2)
+    if d.subparts.proj1[i] == x
+      d.subparts.proj1[i] = y
+    end
+  end
+  for i in parts(d, :Op2)
+    if d.subparts.proj2[i] == x
+      d.subparts.proj2[i] = y
+    end
+  end
+  for i in parts(d, :Summand)
+    if d.subparts.summand[i] == x
+      d.subparts.summand[i] = y
+    end
+  end
+  d
+end
+
+
 """    function fill_names!(d::AbstractNamedDecapode; lead_symbol::Symbol = Symbol("•"))
 
 Provide a variable name to all the variables that don't have names.
@@ -451,4 +521,31 @@ function replace_names!(d::SummationDecapode, op1_repls::Vector{Pair{Symbol, Any
   d
 end
 
+# Return a dict of Literals and the indices of Vars equal to that Literal.
+# XXX: Does not copy the result of incident.
+# XXX: A generalization for given subpart must be type stable.
+function group_lits_by_name(d::SummationDecapode{Any,Any,Symbol})
+  dict = Dict{Symbol,Vector{Int}}()
+  for v in incident(d, :Literal, :type)
+    lit = d[v,:name]
+    (lit in keys(dict)) ? (continue) : (setindex!(dict, incident(d,lit,:name), lit))
+  end
+  dict
+end
+
+"""    function unique_lits!(d::SummationDecapode)
+
+Remove repeated Literals from a Decapode.
+"""
+function unique_lits!(d::SummationDecapode)
+  lit_idxs = group_lits_by_name(d)
+  filter!(((l,i),) -> 1 < length(i), lit_idxs)
+  isempty(lit_idxs) && return d
+  to_remove = map(keys(lit_idxs), values(lit_idxs)) do lit, idxs
+    foreach(x -> transfer_children!(d, x, idxs[1]), idxs[2:end])
+    idxs[2:end]
+  end
+  rem_parts!(d, :Var, sort!(reduce(vcat, to_remove)))
+  d
+end
 

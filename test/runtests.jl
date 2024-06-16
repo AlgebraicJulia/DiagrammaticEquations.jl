@@ -24,6 +24,10 @@ end
   include("rewrite.jl")
 end
 
+@testset "Redundant Literals" begin
+  include("redundant_lits.jl")
+end
+
 @testset "Collages" begin
   include("collages.jl")
 end

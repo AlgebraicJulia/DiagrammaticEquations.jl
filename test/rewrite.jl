@@ -5,12 +5,8 @@ import DiagrammaticEquations: average_rewrite
 
 using Catlab.ACSetInterface
 
-
-#= draw(g; kw...) = to_graphviz(g; node_labels=true, edge_labels=true, kw...)
-draw(f::ACSetTransformation; kw...) =
-  to_graphviz(f; node_labels=true, edge_labels=true, draw_codom=false, kw...) =#
-
-#########################
+# Average Rewriting
+###################
 
 # No valid rewrites, return original Decapode
 DecaTest0 = quote
@@ -483,3 +479,4 @@ BinTestExpected = @acset SummationDecapode{Any, Any, Symbol}  begin
 end
 
 @test BinTestRes == BinTestExpected
+
