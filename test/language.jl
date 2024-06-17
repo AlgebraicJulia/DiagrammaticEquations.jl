@@ -1,11 +1,5 @@
 using Test
 using Catlab
-using Catlab.Theories
-using Catlab.CategoricalAlgebra
-using Catlab.WiringDiagrams
-using Catlab.WiringDiagrams.DirectedWiringDiagrams
-using Catlab.Graphics
-using Catlab.Programs
 using LinearAlgebra
 using MLStyle
 using Base.Iterators
@@ -22,20 +16,20 @@ using DiagrammaticEquations
   #   sum₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
   #   prod₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
   # end
-  
-  
+
+
   # Diffusion = @decapode DiffusionSpace2D begin
   #     (C, Ċ₁, Ċ₂)::Form0{X}
   #     Ċ₁ == ⋆₀⁻¹{X}(dual_d₁{X}(⋆₁{X}(k(d₀{X}(C)))))
   #     Ċ₂ == ⋆₀⁻¹{X}(dual_d₁{X}(⋆₁{X}(d₀{X}(C))))
   #     ∂ₜ{Form0{X}}(C) == Ċ₁ + Ċ₂
   # end
-  
+
   # Tests
   #######
-  
+
   # Construct roughly what the @decapode macro should return for Diffusion
-  js = [Judgement(:C, :Form0, :X), 
+  js = [Judgement(:C, :Form0, :X),
         Judgement(:Ċ₁, :Form0, :X),
         Judgement(:Ċ₂, :Form0, :X)
   ]
@@ -52,17 +46,17 @@ using DiagrammaticEquations
   # equations are the same and so can share a new variable
   eqs = [Eq(Plus([Var(:Ċ₁), Var(:Ċ₂)]), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :k, :d₀], Var(:C))),
          Eq(Plus([Var(:Ċ₁), Var(:Ċ₂)]), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁, :d₀], Var(:C))),
-         Eq(Tan(Var(:C)), Plus([Var(:Ċ₁), Var(:Ċ₂)]))    
+         Eq(Tan(Var(:C)), Plus([Var(:Ċ₁), Var(:Ċ₂)]))
   ]
   test_d = DecaExpr(js, eqs)
   # test_cset = Decapode(test_d)
   test_cset_named = SummationDecapode(test_d)
-  
+
   # TODO: Write tests for recursive expressions
-  
+
   all(isassigned(test_cset_named[:name], i) for i in parts(test_cset_named,:Var))
-  
-  sup_js = js = [Judgement(:C, :Form0, :X), 
+
+  sup_js = js = [Judgement(:C, :Form0, :X),
   Judgement(:ϕ₁, :Form0, :X),
   Judgement(:ϕ₂, :Form0, :X)
   ]
@@ -73,12 +67,12 @@ using DiagrammaticEquations
   sup_d = DecaExpr(sup_js, sup_eqs)
   # sup_cset = Decapode(sup_d)
   sup_cset_named = SummationDecapode(sup_d)
-  
-  
+
+
   # Decapodes.compile(diffusion_cset_named, [:C,])
   # Decapodes.compile(test_cset_named, [:C,])
   # Decapodes.compile(sup_cset_named, [:C,])
-  
+
   term(:(∧₀₁(C,V)))
 
   # No need to parameterize forms over a space (i.e. {X} syntax)
@@ -265,7 +259,7 @@ end
   DiffusionExprBody =  quote
       (C, Ċ)::Form0{X}
       ϕ::Form1{X}
-  
+
       # Fick's first law
       ϕ ==  ∘(k, d₀)(C)
       # Diffusion equation
@@ -357,7 +351,7 @@ end
 end
 
 @testset "Type Inference" begin
-  # Warning, this testing depends on the fact that varname, form information is 
+  # Warning, this testing depends on the fact that varname, form information is
   # unique within a decapode even though this is not enforced
   function get_name_type_pair(d::SummationDecapode)
     Set(zip(d[:name], d[:type]))
@@ -821,7 +815,7 @@ end
   SuperpositionExprBody = quote
     (T, Ṫ, Ṫ₁, Ṫₐ)::Form0{X}
     Ṫ == Ṫ₁ + Ṫₐ
-    ∂ₜ(T) == Ṫ 
+    ∂ₜ(T) == Ṫ
   end
   Superposition = SummationDecapode(parse_decapode(SuperpositionExprBody))
   compose_continuity = @relation () begin
@@ -840,7 +834,7 @@ end
     (T, ρ, p, ṗ)::Form0{X}
     (two,three,kᵥ)::Parameter{X}
     V == M/avg(ρ)
-    Ṁ == neg(L(V, ⋆(V)))*avg(ρ) + 
+    Ṁ == neg(L(V, ⋆(V)))*avg(ρ) +
           kᵥ*(Δ(V) + d(δ(V))/three) +
           d(i(V, ⋆(V))/two)*avg(ρ) +
           neg(d(p)) +
@@ -1126,7 +1120,7 @@ end
 
     type = [:DualForm0, :Form1, :infer, :infer]
     name = [:B, :E, :sum_1, :Ḃ]
-    
+
     incl = [4]
 
     src = [3, 1, 2]
