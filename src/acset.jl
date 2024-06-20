@@ -341,13 +341,25 @@ function add_parameter(d::AbstractNamedDecapode, k::Symbol)
     return add_part!(d, :Var, type=:Parameter, name=k)
 end
 
-function safe_modifytype(tgt_type::Symbol, src_type::Symbol)
-  modify = (tgt_type == :infer && !(src_type == :Literal || src_type == :Constant || src_type == :Parameter))
-  return (modify, modify ? src_type : tgt_type)
+
+"""
+    safe_modifytype(org_type::Symbol, new_type::Symbol)
+
+This function accepts an original type and a new type and determines if the original type
+  can be safely overwritten by the new type.
+"""
+function safe_modifytype(org_type::Symbol, new_type::Symbol)
+  modify = (org_type == :infer && !(new_type == :Literal || new_type == :Constant || new_type == :Parameter))
+  return (modify, modify ? new_type : org_type)
 end
 
-function safe_modifytype!(d::SummationDecapode, var_idx::Int, tgt_type::Symbol, src_type::Symbol)
-  modify, d[var_idx, :type] = safe_modifytype(tgt_type, src_type)
+"""
+    safe_modifytype!(d::SummationDecapode, var_idx::Int, org_type::Symbol, new_type::Symbol)
+
+This function calls `safe_modifytype` to safely modify a Decapode's variable type.
+"""
+function safe_modifytype!(d::SummationDecapode, var_idx::Int, org_type::Symbol, new_type::Symbol)
+  modify, d[var_idx, :type] = safe_modifytype(org_type, new_type)
   return modify
 end
 

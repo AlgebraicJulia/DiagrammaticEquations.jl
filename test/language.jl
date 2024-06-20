@@ -710,6 +710,38 @@ end
   names_types_18 = get_name_type_pair(t18)
   names_types_expected_18 = Set([(:A, :Constant), (:C, :Constant), (:D, :Constant)])
   @test issetequal(names_types_18, names_types_expected_18)
+
+  let d = @decapode begin
+      h::Form0
+      Γ::Form1
+      n::Constant
+
+      ḣ == ∂ₜ(h)
+      ḣ == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
+    end
+
+    infer_types!(d, op1_inf_rules_1D, op2_inf_rules_1D)
+
+    # TODO: This is modifying an intermediate var to be :Constant, which is user-defined
+    @test_broken d[18, :type] != :Constant
+  end
+
+  let d = @decapode begin
+      h::Form0
+      Γ::Form1
+      n::Constant
+
+      ḣ == ∂ₜ(h)
+      ḣ == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
+
+    end
+
+    d = expand_operators(d)
+    infer_types!(d, op1_inf_rules_1D, op2_inf_rules_1D)
+
+    @test d[8, :type] != :Literal
+  end
+
 end
 
 @testset "Overloading Resolution" begin
