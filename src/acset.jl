@@ -283,7 +283,7 @@ end
 
 Find chains of Op1s in the given Decapode. A chain ends when the
 target of the last Op1 is part of an Op2 or sum, or is a target
-of multiple Op1s. Only operators with names included in the 
+of multiple Op1s. Only operators with names included in the
 allowable_ops set are allowed to be contracted. If the set is
 empty then all operators are allowed.
 """
@@ -297,9 +297,9 @@ function find_chains(d::SummationDecapode; allowable_ops::Set{Symbol} = Set{Symb
                          incident(d, d[:sum], :src)])))
 
   if(!isempty(allowable_ops))
-    filter!(x -> d[x, :op1] ∈ allowable_ops, chain_starts)  
+    filter!(x -> d[x, :op1] ∈ allowable_ops, chain_starts)
   end
-  
+
   s = Stack{Int64}()
   foreach(x -> push!(s, x), chain_starts)
   while !isempty(s)
@@ -342,6 +342,29 @@ function add_parameter(d::AbstractNamedDecapode, k::Symbol)
 end
 
 
+"""
+    safe_modifytype(org_type::Symbol, new_type::Symbol)
+
+This function accepts an original type and a new type and determines if the original type
+  can be safely overwritten by the new type.
+"""
+function safe_modifytype(org_type::Symbol, new_type::Symbol)
+  modify = (org_type == :infer && !(new_type == :Literal || new_type == :Constant || new_type == :Parameter))
+  return (modify, modify ? new_type : org_type)
+end
+
+"""
+    safe_modifytype!(d::SummationDecapode, var_idx::Int, org_type::Symbol, new_type::Symbol)
+
+This function calls `safe_modifytype` to safely modify a Decapode's variable type.
+"""
+function safe_modifytype!(d::SummationDecapode, var_idx::Int, org_type::Symbol, new_type::Symbol)
+  modify, d[var_idx, :type] = safe_modifytype(org_type, new_type)
+  return modify
+end
+
+# ! Warning: This is changing types to :Constant when they weren't originally.
+# ! This should be refactored to only change types into Forms
 function infer_summands_and_summations!(d::SummationDecapode)
   # Note that we are not doing any type checking here!
   # i.e. We are not checking for this: [Form0, Form1, Form0].
@@ -378,18 +401,14 @@ function apply_inference_rule_op1!(d::SummationDecapode, op1_id, rule)
   type_src = d[d[op1_id, :src], :type]
   type_tgt = d[d[op1_id, :tgt], :type]
 
-  if(type_src != :infer && type_tgt != :infer)
-    return false
-  end
-
   score_src = (rule.src_type == type_src)
   score_tgt = (rule.tgt_type == type_tgt)
   check_op = (d[op1_id, :op1] in rule.op_names)
 
   if(check_op && (score_src + score_tgt == 1))
-    d[d[op1_id, :src], :type] = rule.src_type
-    d[d[op1_id, :tgt], :type] = rule.tgt_type
-    return true
+    mod_src = safe_modifytype!(d, d[op1_id, :src], type_src, rule.src_type)
+    mod_tgt = safe_modifytype!(d, d[op1_id, :tgt], type_tgt, rule.tgt_type)
+    return mod_src || mod_tgt
   end
 
   return false
@@ -400,20 +419,16 @@ function apply_inference_rule_op2!(d::SummationDecapode, op2_id, rule)
   type_proj2 = d[d[op2_id, :proj2], :type]
   type_res = d[d[op2_id, :res], :type]
 
-  if(type_proj1 != :infer && type_proj2 != :infer && type_res != :infer)
-    return false
-  end
-
   score_proj1 = (rule.proj1_type == type_proj1)
   score_proj2 = (rule.proj2_type == type_proj2)
   score_res = (rule.res_type == type_res)
   check_op = (d[op2_id, :op2] in rule.op_names)
 
   if(check_op && (score_proj1 + score_proj2 + score_res == 2))
-    d[d[op2_id, :proj1], :type] = rule.proj1_type
-    d[d[op2_id, :proj2], :type] = rule.proj2_type
-    d[d[op2_id, :res], :type] = rule.res_type
-    return true
+    mod_proj1 = safe_modifytype!(d, d[op2_id, :proj1], type_proj1, rule.proj1_type)
+    mod_proj2 = safe_modifytype!(d, d[op2_id, :proj2], type_proj2, rule.proj2_type)
+    mod_res =   safe_modifytype!(d, d[op2_id, :res], type_res, rule.res_type)
+    return mod_proj1 || mod_proj2 || mod_res
   end
 
   return false
@@ -444,7 +459,7 @@ function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_t
 
   while true
     applied = false
-    
+
     for rule in op1_rules
       for op1_idx in parts(d, :Op1)
         types_known_op1[op1_idx] && continue
@@ -469,13 +484,13 @@ function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_t
 
     applied = applied || infer_summands_and_summations!(d)
     applied || break # Break if no rules were applied.
-  end 
+  end
 
   d
 end
 
 
-  
+
 """    function resolve_overloads!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :resolved_name, :op), NTuple{4, Symbol}}})
 
 Resolve function overloads based on types of src and tgt.
@@ -548,4 +563,3 @@ function unique_lits!(d::SummationDecapode)
   rem_parts!(d, :Var, sort!(reduce(vcat, to_remove)))
   d
 end
-
