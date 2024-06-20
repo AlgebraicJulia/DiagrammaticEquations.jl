@@ -346,6 +346,13 @@ function safe_modifytype(tgt_type::Symbol, src_type::Symbol)
   return (modify, modify ? src_type : tgt_type)
 end
 
+function safe_modifytype!(d::SummationDecapode, var_idx::Int, tgt_type::Symbol, src_type::Symbol)
+  modify, d[var_idx, :type] = safe_modifytype(tgt_type, src_type)
+  return modify
+end
+
+# ! Warning: This is changing types to :Constant when they weren't originally.
+# ! This should be refactored to only change types into Forms
 function infer_summands_and_summations!(d::SummationDecapode)
   # Note that we are not doing any type checking here!
   # i.e. We are not checking for this: [Form0, Form1, Form0].
@@ -387,8 +394,8 @@ function apply_inference_rule_op1!(d::SummationDecapode, op1_id, rule)
   check_op = (d[op1_id, :op1] in rule.op_names)
 
   if(check_op && (score_src + score_tgt == 1))
-    mod_src, d[d[op1_id, :src], :type] = safe_modifytype(type_src, rule.src_type)
-    mod_tgt, d[d[op1_id, :tgt], :type] = safe_modifytype(type_tgt, rule.tgt_type)
+    mod_src = safe_modifytype!(d, d[op1_id, :src], type_src, rule.src_type)
+    mod_tgt = safe_modifytype!(d, d[op1_id, :tgt], type_tgt, rule.tgt_type)
     return mod_src || mod_tgt
   end
 
@@ -406,9 +413,9 @@ function apply_inference_rule_op2!(d::SummationDecapode, op2_id, rule)
   check_op = (d[op2_id, :op2] in rule.op_names)
 
   if(check_op && (score_proj1 + score_proj2 + score_res == 2))
-    mod_proj1, d[d[op2_id, :proj1], :type] = safe_modifytype(type_proj1, rule.proj1_type)
-    mod_proj2, d[d[op2_id, :proj2], :type] = safe_modifytype(type_proj2, rule.proj2_type)
-    mod_res, d[d[op2_id, :res], :type] = safe_modifytype(type_res, rule.res_type)
+    mod_proj1 = safe_modifytype!(d, d[op2_id, :proj1], type_proj1, rule.proj1_type)
+    mod_proj2 = safe_modifytype!(d, d[op2_id, :proj2], type_proj2, rule.proj2_type)
+    mod_res =   safe_modifytype!(d, d[op2_id, :res], type_res, rule.res_type)
     return mod_proj1 || mod_proj2 || mod_res
   end
 
