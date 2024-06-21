@@ -354,45 +354,42 @@ function safe_modifytype(org_type::Symbol, new_type::Symbol)
 end
 
 """
-    safe_modifytype!(d::SummationDecapode, var_idx::Int, org_type::Symbol, new_type::Symbol)
+    safe_modifytype!(d::SummationDecapode, var_idx::Int, new_type::Symbol)
 
 This function calls `safe_modifytype` to safely modify a Decapode's variable type.
 """
-function safe_modifytype!(d::SummationDecapode, var_idx::Int, org_type::Symbol, new_type::Symbol)
-  modify, d[var_idx, :type] = safe_modifytype(org_type, new_type)
+function safe_modifytype!(d::SummationDecapode, var_idx::Int, new_type::Symbol)
+  modify, d[var_idx, :type] = safe_modifytype(d[var_idx, :type], new_type)
   return modify
 end
 
-# ! Warning: This is changing types to :Constant when they weren't originally.
-# ! This should be refactored to only change types into Forms
-function infer_summands_and_summations!(d::SummationDecapode)
-  # Note that we are not doing any type checking here!
-  # i.e. We are not checking for this: [Form0, Form1, Form0].
-  applied = false
-  for Σ_idx in parts(d, :Σ)
-    summands = d[:summand][incident(d, Σ_idx, :summation)]
-    sum = d[:sum][Σ_idx]
-    idxs = [summands; sum]
-    types = d[:type][idxs]
-    all(t != :infer for t in types) && continue # We need not infer
-    all(t == :infer for t in types) && continue # We can  not infer
+function filterfor_forms(types::AbstractVector{Symbol})
+  conditions = x -> x != :Literal && x != :Constant && x != :Parameter && x != :infer
+  filter(conditions, types)
+end
 
-    known_types = types[findall(!=(:infer), types)]
-    if :Literal ∈ known_types
-      # If anything is a Literal, then anything not inferred is a Constant.
-      inferred_type = :Constant
-    elseif !isnothing(findfirst(!=(:Constant), known_types))
-      # If anything is a Form, then any term in this sum is the same kind of Form.
-      # Note that we are not explicitly changing Constants to Forms here,
-      # although we should consider doing so.
-      inferred_type = known_types[findfirst(!=(:Constant), known_types)]
-    else
-      # All terms are now a mix of Constant or infer. Set them all to Constant.
-      inferred_type = :Constant
+# ! Warning: This is changing types to :Constant when they weren't originally.
+function infer_summands_and_summations!(d::SummationDecapode)
+  # Note that we are not doing any type checking here for users!
+  # i.e. We are not checking the underlying types of Constant or Parameter
+  applied = false
+
+  for Σ_idx in parts(d, :Σ)
+    summands = d[incident(d, Σ_idx, :summation), :summand]
+    sum = d[Σ_idx, :sum]
+    idxs = [summands; sum]
+
+    forms = unique(filterfor_forms(d[idxs, :type]))
+
+    form = @match length(forms) begin
+      0 => continue # We need not infer, We can not infer
+      1 => only(forms)
+      _ => error("Type mismatch in summation")
     end
-    to_infer_idxs = filter(i -> d[:type][i] == :infer, idxs)
-    d[to_infer_idxs, :type] = inferred_type
-    applied = true
+
+    for idx in idxs
+      applied |= safe_modifytype!(d, idx, form)
+    end
   end
   return applied
 end
@@ -406,8 +403,8 @@ function apply_inference_rule_op1!(d::SummationDecapode, op1_id, rule)
   check_op = (d[op1_id, :op1] in rule.op_names)
 
   if(check_op && (score_src + score_tgt == 1))
-    mod_src = safe_modifytype!(d, d[op1_id, :src], type_src, rule.src_type)
-    mod_tgt = safe_modifytype!(d, d[op1_id, :tgt], type_tgt, rule.tgt_type)
+    mod_src = safe_modifytype!(d, d[op1_id, :src], rule.src_type)
+    mod_tgt = safe_modifytype!(d, d[op1_id, :tgt], rule.tgt_type)
     return mod_src || mod_tgt
   end
 
@@ -425,9 +422,9 @@ function apply_inference_rule_op2!(d::SummationDecapode, op2_id, rule)
   check_op = (d[op2_id, :op2] in rule.op_names)
 
   if(check_op && (score_proj1 + score_proj2 + score_res == 2))
-    mod_proj1 = safe_modifytype!(d, d[op2_id, :proj1], type_proj1, rule.proj1_type)
-    mod_proj2 = safe_modifytype!(d, d[op2_id, :proj2], type_proj2, rule.proj2_type)
-    mod_res =   safe_modifytype!(d, d[op2_id, :res], type_res, rule.res_type)
+    mod_proj1 = safe_modifytype!(d, d[op2_id, :proj1], rule.proj1_type)
+    mod_proj2 = safe_modifytype!(d, d[op2_id, :proj2], rule.proj2_type)
+    mod_res =   safe_modifytype!(d, d[op2_id, :res], rule.res_type)
     return mod_proj1 || mod_proj2 || mod_res
   end
 
