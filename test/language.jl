@@ -766,6 +766,16 @@ end
     @test test_nametype_equality(d, names_types_expected)
   end
 
+  # Test #23: Check that different forms summed up error out
+  let
+    d = @decapode begin
+      B::Form0
+      C::Form1
+      A == C + D + B
+    end
+    @test_throws "Type mismatch in summation" infer_types!(d)
+  end
+
 end
 
 @testset "Overloading Resolution" begin
