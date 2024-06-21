@@ -373,28 +373,29 @@ function filterfor_forms(types::AbstractVector{Symbol})
   filter(conditions, types)
 end
 
-function infer_summands_and_summations!(d::SummationDecapode)
+function infer_summands_and_summations!(d::SummationDecapode, Σ_idx::Int)
   # Note that we are not doing any type checking here for users!
   # i.e. We are not checking the underlying types of Constant or Parameter
   applied = false
 
-  for Σ_idx in parts(d, :Σ)
-    summands = d[incident(d, Σ_idx, :summation), :summand]
-    sum = d[Σ_idx, :sum]
-    idxs = [summands; sum]
+  summands = d[incident(d, Σ_idx, :summation), :summand]
+  sum = d[Σ_idx, :sum]
+  idxs = [summands; sum]
+  types = d[idxs, :type]
+  all(t != :infer for t in types) && return applied # We need not infer
 
-    forms = unique(filterfor_forms(d[idxs, :type]))
+  forms = unique(filterfor_forms(types))
 
-    form = @match length(forms) begin
-      0 => continue # We need not infer, We can not infer
-      1 => only(forms)
-      _ => error("Type mismatch in summation")
-    end
-
-    for idx in idxs
-      applied |= safe_modifytype!(d, idx, form)
-    end
+  form = @match length(forms) begin
+    0 => return applied # We can not infer
+    1 => only(forms)
+    _ => error("Type mismatch in summation")
   end
+
+  for idx in idxs
+    applied |= safe_modifytype!(d, idx, form)
+  end
+
   return applied
 end
 
@@ -468,7 +469,7 @@ function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_t
         this_applied = apply_inference_rule_op1!(d, op1_idx, rule)
 
         types_known_op1[op1_idx] = this_applied
-        applied = applied || this_applied
+        applied |= this_applied
       end
     end
 
@@ -479,11 +480,14 @@ function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_t
         this_applied = apply_inference_rule_op2!(d, op2_idx, rule)
 
         types_known_op2[op2_idx] = this_applied
-        applied = applied || this_applied
+        applied |= this_applied
       end
     end
 
-    applied = applied || infer_summands_and_summations!(d)
+    for Σ_idx in parts(d, :Σ)
+      applied |= infer_summands_and_summations!(d, Σ_idx)
+    end
+
     applied || break # Break if no rules were applied.
   end
 
