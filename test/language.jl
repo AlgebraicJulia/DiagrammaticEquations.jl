@@ -704,7 +704,6 @@ end
   end
   infer_types!(t18)
 
-
   names_types_expected_18 = Set([(:A, :infer), (:C, :Constant), (:D, :infer)])
   @test test_nametype_equality(t18, names_types_expected_18)
 

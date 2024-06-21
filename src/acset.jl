@@ -389,7 +389,7 @@ function infer_summands_and_summations!(d::SummationDecapode, Σ_idx::Int)
   form = @match length(forms) begin
     0 => return applied # We can not infer
     1 => only(forms)
-    _ => error("Type mismatch in summation $Σ_idx, all the following forms appear $forms")
+    _ => error("Type mismatch in summation $Σ_idx, all the following forms appear: $forms")
   end
 
   for idx in idxs
