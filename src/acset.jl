@@ -373,21 +373,6 @@ function filterfor_forms(types::AbstractVector{Symbol})
   filter(conditions, types)
 end
 
-"""
-    filterfor_forms(types::AbstractVector{Symbol})
-
-Return the indices of any variables with form types.
-"""
-function filterfor_forms(d::SummationDecapode, type_idxs::AbstractVector{Int})
-  conditions = x -> d[x, :type] != :Literal &&
-    d[x, :type] != :Constant &&
-    d[x, :type] != :Parameter &&
-    d[x, :type] != :infer
-
-  filter(conditions, type_idxs)
-end
-
-
 function infer_summands_and_summations!(d::SummationDecapode)
   # Note that we are not doing any type checking here for users!
   # i.e. We are not checking the underlying types of Constant or Parameter
@@ -396,9 +381,9 @@ function infer_summands_and_summations!(d::SummationDecapode)
   for Σ_idx in parts(d, :Σ)
     summands = d[incident(d, Σ_idx, :summation), :summand]
     sum = d[Σ_idx, :sum]
-    idxs = filterfor_forms(d, [summands; sum])
+    idxs = [summands; sum]
 
-    forms = unique(d[idxs, :type])
+    forms = unique(filterfor_forms(d[idxs, :type]))
 
     form = @match length(forms) begin
       0 => continue # We need not infer, We can not infer

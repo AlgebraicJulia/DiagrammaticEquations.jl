@@ -384,6 +384,14 @@ import DiagrammaticEquations: safe_modifytype
   end
 end
 
+import DiagrammaticEquations: filterfor_forms
+
+@testset "Form Type Retrieval" begin
+  all_types = [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2, :Literal, :Constant, :Parameter, :infer]
+  @test filterfor_forms(all_types) == [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2]
+  @test isempty(filterfor_forms(Symbol[]))
+end
+
 @testset "Type Inference" begin
   # Warning, this testing depends on the fact that varname, form information is
   # unique within a decapode even though this is not enforced
