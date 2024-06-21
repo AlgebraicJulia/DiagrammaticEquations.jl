@@ -765,7 +765,21 @@ end
     @test test_nametype_equality(d, names_types_expected)
   end
 
-  # Test #23: Check that different forms summed up error out
+  # Test #23: Have target form information flow over Parameters and Constants
+  let
+    d = @decapode begin
+      A::Form0
+      C::Parameter
+      D::Constant
+      A == C + D + B
+    end
+    infer_types!(d)
+
+    names_types_expected = Set([(:A, :Form0), (:B, :Form0), (:C, :Parameter), (:D, :Constant)])
+    @test test_nametype_equality(d, names_types_expected)
+  end
+
+  # Test #24: Check that different forms summed up error out
   let
     d = @decapode begin
       B::Form0
