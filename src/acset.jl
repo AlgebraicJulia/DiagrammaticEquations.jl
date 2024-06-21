@@ -454,7 +454,7 @@ function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_t
   types_known_op1[incident(d, :infer, [:src, :type])] .= false
   types_known_op1[incident(d, :infer, [:tgt, :type])] .= false
 
-  types_known_op2 = zeros(Bool, nparts(d, :Op2))
+  types_known_op2 = ones(Bool, nparts(d, :Op2))
   types_known_op2[incident(d, :infer, [:proj1, :type])] .= false
   types_known_op2[incident(d, :infer, [:proj2, :type])] .= false
   types_known_op2[incident(d, :infer, [:res, :type])] .= false
