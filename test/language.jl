@@ -1,11 +1,5 @@
 using Test
 using Catlab
-using Catlab.Theories
-using Catlab.CategoricalAlgebra
-using Catlab.WiringDiagrams
-using Catlab.WiringDiagrams.DirectedWiringDiagrams
-using Catlab.Graphics
-using Catlab.Programs
 using LinearAlgebra
 using MLStyle
 using Base.Iterators

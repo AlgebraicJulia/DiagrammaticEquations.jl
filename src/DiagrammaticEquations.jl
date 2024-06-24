@@ -2,6 +2,8 @@
 """
 module DiagrammaticEquations
 
+using Catlab
+
 export
 DerivOp, append_dot, normalize_unicode, infer_states, infer_types!,
 # Deca
@@ -11,7 +13,8 @@ recursive_delete_parents, spacename, varname, unicode!, vec_to_dec!,
 ## collages
 Collage, collate,
 ## composition
-oapply, unique_by, unique_by!, OpenSummationDecapodeOb, OpenSummationDecapode, Open,
+oapply, unique_by, unique_by!, OpenSummationDecapodeOb, OpenSummationDecapode, Open, apex,
+@relation, # Re-exported from Catlab
 ## acset
 SchDecapode, SchNamedDecapode, AbstractDecapode, AbstractNamedDecapode, NamedDecapode, SummationDecapode,
 contract_operators!, contract_operators, add_constant!, add_parameter, fill_names!, dot_rename!, expand_operators, infer_state_names, recognize_types,
@@ -25,10 +28,10 @@ unique_lits!,
 Plus, AppCirc1, Var, Tan, App1, App2,
 ## visualization
 to_graphviz_property_graph, typename, draw_composition,
+to_graphviz, # Re-exported from Catlab
 ## rewrite
 average_rewrite
 
-using Catlab
 using Catlab.Theories
 import Catlab.Theories: otimes, oplus, compose, ⊗, ⊕, ⋅, associate, associate_unit, Ob, Hom, dom, codom
 using Catlab.Programs
