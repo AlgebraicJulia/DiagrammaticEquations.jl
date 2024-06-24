@@ -155,13 +155,33 @@ function make_sum_mult_unique!(d::AbstractNamedDecapode)
   end
 end
 
+# A collection of DecaType getters
+# TODO: This should be replaced by using a type hierarchy
+macro get_alltypes()
+  [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2, :Literal, :Parameter, :Constant, :infer]
+end
+
+macro get_formtypes() return [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2] end
+macro get_primalformtypes() return [:Form0, :Form1, :Form2] end
+macro get_dualformtypes() return [:DualForm0, :DualForm1, :DualForm2] end
+
+macro get_nonformtypes() return [:Constant, :Parameter, :Literal, :infer] end
+macro get_usertypes() return [:Constant, :Parameter] end
+macro get_numbertypes() return [:Literal] end
+macro get_infertypes() return [:infer] end
+
+# Types that can not ever be inferred
+macro get_noninferabletypes() return [:Constant, :Parameter, :Literal] end
+
+function get_unsupportedtypes(types)
+  setdiff(types, @get_alltypes())
+end
+
 # Note: This hard-bakes in Form0 through Form2, and higher Forms are not
 # allowed.
 function recognize_types(d::AbstractNamedDecapode)
   types = d[:type]
-  unrecognized_types = setdiff(d[:type], [:Form0, :Form1, :Form2, :DualForm0,
-                          :DualForm1, :DualForm2, :Literal, :Parameter,
-                          :Constant, :infer])
+  unrecognized_types = get_unsupportedtypes(types)
   isempty(unrecognized_types) ||
   error("Types $unrecognized_types are not recognized. CHECK: $types")
 end
@@ -349,7 +369,7 @@ This function accepts an original type and a new type and determines if the orig
   can be safely overwritten by the new type.
 """
 function safe_modifytype(org_type::Symbol, new_type::Symbol)
-  modify = (org_type == :infer && !(new_type == :Literal || new_type == :Constant || new_type == :Parameter))
+  modify = (org_type in @get_infertypes() && !(new_type in @get_noninferabletypes()))
   return (modify, modify ? new_type : org_type)
 end
 
@@ -369,8 +389,7 @@ end
 Return any form type symbols.
 """
 function filterfor_forms(types::AbstractVector{Symbol})
-  nonform_symbols = [:Literal, :Constant, :Parameter, :infer]
-  conditions = x -> !(x in nonform_symbols)
+  conditions = x -> !(x in @get_nonformtypes())
   filter(conditions, types)
 end
 

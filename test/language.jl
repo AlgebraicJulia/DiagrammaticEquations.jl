@@ -356,6 +356,45 @@ end
   @test issetequal([:V,:X,:k], infer_state_names(oscillator))
 end
 
+import DiagrammaticEquations: @get_alltypes, @get_formtypes, @get_primalformtypes, @get_dualformtypes,
+@get_nonformtypes, @get_usertypes, @get_numbertypes, @get_noninferabletypes, @get_infertypes
+@testset "Type Retrival" begin
+  calls = [:@get_alltypes, :@get_formtypes, :@get_primalformtypes, :@get_dualformtypes,
+  :@get_nonformtypes, :@get_usertypes, :@get_numbertypes, :@get_noninferabletypes, :@get_infertypes]
+
+  # No repeated types
+  for call in calls
+    res = @eval $(call)
+    @test unique(res) == res
+  end
+
+  equal_types(types_1, types_2) = issetequal(Set(types_1), Set(types_2))
+  no_overlaps(types_1, types_2) = isempty(intersect(types_1, types_2))
+
+  # Collections of these types should be the same
+  @test equal_types(@get_alltypes(), vcat(@get_formtypes(), @get_nonformtypes()))
+  @test equal_types(@get_formtypes(), vcat(@get_primalformtypes(), @get_dualformtypes()))
+  @test equal_types(@get_noninferabletypes(), vcat(@get_usertypes(), @get_numbertypes()))
+
+  # Proper seperation of types
+  @test no_overlaps(@get_formtypes(), @get_nonformtypes())
+  @test no_overlaps(@get_primalformtypes(), @get_dualformtypes())
+  @test no_overlaps(@get_noninferabletypes(), @get_formtypes())
+  @test @get_infertypes() == [:infer]
+
+  @test no_overlaps(@get_formtypes(), @get_numbertypes())
+  @test no_overlaps(@get_formtypes(), @get_usertypes())
+  @test no_overlaps(@get_usertypes(), @get_numbertypes())
+end
+
+import DiagrammaticEquations: get_unsupportedtypes
+@testset "Type Validation" begin
+  @test isempty(get_unsupportedtypes(@get_alltypes()))
+  @test [:A] == get_unsupportedtypes([:A])
+  @test [:A] == get_unsupportedtypes([:Form1, :A])
+  @test isempty(get_unsupportedtypes(Symbol[]))
+end
+
 import DiagrammaticEquations: safe_modifytype
 
 @testset "Safe Type Modification" begin
