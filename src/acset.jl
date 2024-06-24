@@ -157,24 +157,23 @@ end
 
 # A collection of DecaType getters
 # TODO: This should be replaced by using a type hierarchy
-macro get_alltypes()
-  [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2, :Literal, :Parameter, :Constant, :infer]
-end
+const ALL_TYPES = [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2,
+  :Literal, :Parameter, :Constant, :infer]
 
-macro get_formtypes() return [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2] end
-macro get_primalformtypes() return [:Form0, :Form1, :Form2] end
-macro get_dualformtypes() return [:DualForm0, :DualForm1, :DualForm2] end
+const FORM_TYPES = [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2]
+const PRIMALFORM_TYPES = [:Form0, :Form1, :Form2]
+const DUALFORM_TYPES = [:DualForm0, :DualForm1, :DualForm2]
 
-macro get_nonformtypes() return [:Constant, :Parameter, :Literal, :infer] end
-macro get_usertypes() return [:Constant, :Parameter] end
-macro get_numbertypes() return [:Literal] end
-macro get_infertypes() return [:infer] end
+const NONFORM_TYPES = [:Constant, :Parameter, :Literal, :infer]
+const USER_TYPES = [:Constant, :Parameter]
+const NUMBER_TYPES = [:Literal]
+const INFER_TYPES = [:infer]
 
 # Types that can not ever be inferred
-macro get_noninferabletypes() return [:Constant, :Parameter, :Literal] end
+const NONINFERABLE_TYPES = [:Constant, :Parameter, :Literal]
 
 function get_unsupportedtypes(types)
-  setdiff(types, @get_alltypes())
+  setdiff(types, ALL_TYPES)
 end
 
 # Note: This hard-bakes in Form0 through Form2, and higher Forms are not
@@ -369,7 +368,7 @@ This function accepts an original type and a new type and determines if the orig
   can be safely overwritten by the new type.
 """
 function safe_modifytype(org_type::Symbol, new_type::Symbol)
-  modify = (org_type in @get_infertypes() && !(new_type in @get_noninferabletypes()))
+  modify = (org_type in INFER_TYPES && !(new_type in NONINFERABLE_TYPES))
   return (modify, modify ? new_type : org_type)
 end
 
@@ -389,11 +388,11 @@ end
 Return any form type symbols.
 """
 function filterfor_forms(types::AbstractVector{Symbol})
-  conditions = x -> !(x in @get_nonformtypes())
+  conditions = x -> !(x in NONFORM_TYPES)
   filter(conditions, types)
 end
 
-function infer_summands_and_summations!(d::SummationDecapode, Σ_idx::Int)
+function infer_sum_types!(d::SummationDecapode, Σ_idx::Int)
   # Note that we are not doing any type checking here for users!
   # i.e. We are not checking the underlying types of Constant or Parameter
   applied = false
@@ -505,7 +504,7 @@ function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_t
     end
 
     for Σ_idx in parts(d, :Σ)
-      applied |= infer_summands_and_summations!(d, Σ_idx)
+      applied |= infer_sum_types!(d, Σ_idx)
     end
 
     applied || break # Break if no rules were applied.

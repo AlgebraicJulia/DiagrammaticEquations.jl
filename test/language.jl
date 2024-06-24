@@ -356,40 +356,42 @@ end
   @test issetequal([:V,:X,:k], infer_state_names(oscillator))
 end
 
-import DiagrammaticEquations: @get_alltypes, @get_formtypes, @get_primalformtypes, @get_dualformtypes,
-@get_nonformtypes, @get_usertypes, @get_numbertypes, @get_noninferabletypes, @get_infertypes
+import DiagrammaticEquations: ALL_TYPES, FORM_TYPES, PRIMALFORM_TYPES, DUALFORM_TYPES,
+  NONFORM_TYPES, USER_TYPES, NUMBER_TYPES, INFER_TYPES, NONINFERABLE_TYPES
+
 @testset "Type Retrival" begin
-  calls = [:@get_alltypes, :@get_formtypes, :@get_primalformtypes, :@get_dualformtypes,
-  :@get_nonformtypes, :@get_usertypes, :@get_numbertypes, :@get_noninferabletypes, :@get_infertypes]
+
+  type_groups = [ALL_TYPES, FORM_TYPES, PRIMALFORM_TYPES, DUALFORM_TYPES,
+    NONFORM_TYPES, USER_TYPES, NUMBER_TYPES, INFER_TYPES, NONINFERABLE_TYPES]
+
 
   # No repeated types
-  for call in calls
-    res = @eval $(call)
-    @test unique(res) == res
+  for type_group in type_groups
+    @test allunique(type_group)
   end
 
   equal_types(types_1, types_2) = issetequal(Set(types_1), Set(types_2))
   no_overlaps(types_1, types_2) = isempty(intersect(types_1, types_2))
 
   # Collections of these types should be the same
-  @test equal_types(@get_alltypes(), vcat(@get_formtypes(), @get_nonformtypes()))
-  @test equal_types(@get_formtypes(), vcat(@get_primalformtypes(), @get_dualformtypes()))
-  @test equal_types(@get_noninferabletypes(), vcat(@get_usertypes(), @get_numbertypes()))
+  @test equal_types(ALL_TYPES, vcat(FORM_TYPES, NONFORM_TYPES))
+  @test equal_types(FORM_TYPES, vcat(PRIMALFORM_TYPES, DUALFORM_TYPES))
+  @test equal_types(NONINFERABLE_TYPES, vcat(USER_TYPES, NUMBER_TYPES))
 
   # Proper seperation of types
-  @test no_overlaps(@get_formtypes(), @get_nonformtypes())
-  @test no_overlaps(@get_primalformtypes(), @get_dualformtypes())
-  @test no_overlaps(@get_noninferabletypes(), @get_formtypes())
-  @test @get_infertypes() == [:infer]
+  @test no_overlaps(FORM_TYPES, NONFORM_TYPES)
+  @test no_overlaps(PRIMALFORM_TYPES, DUALFORM_TYPES)
+  @test no_overlaps(NONINFERABLE_TYPES, FORM_TYPES)
+  @test INFER_TYPES == [:infer]
 
-  @test no_overlaps(@get_formtypes(), @get_numbertypes())
-  @test no_overlaps(@get_formtypes(), @get_usertypes())
-  @test no_overlaps(@get_usertypes(), @get_numbertypes())
+  @test no_overlaps(FORM_TYPES, NUMBER_TYPES)
+  @test no_overlaps(FORM_TYPES, USER_TYPES)
+  @test no_overlaps(USER_TYPES, NUMBER_TYPES)
 end
 
 import DiagrammaticEquations: get_unsupportedtypes
 @testset "Type Validation" begin
-  @test isempty(get_unsupportedtypes(@get_alltypes()))
+  @test isempty(get_unsupportedtypes(ALL_TYPES))
   @test [:A] == get_unsupportedtypes([:A])
   @test [:A] == get_unsupportedtypes([:Form1, :A])
   @test isempty(get_unsupportedtypes(Symbol[]))
@@ -819,7 +821,7 @@ end
     @test test_nametype_equality(d, names_types_expected)
   end
 
-  # Test #24: Check that different forms summed up error out
+  # Test #24: Summing mismatched forms throws an error
   let
     d = @decapode begin
       B::Form0
