@@ -205,7 +205,7 @@ Find variables which have a time derivative or are not the source of a computati
 See also: [`infer_state_names`](@ref).
 """
 function infer_states(d::SummationDecapode)
-  childless = filter(parts(d, :Var)) do v
+  parentless = filter(parts(d, :Var)) do v
     length(incident(d, v, :tgt)) == 0 &&
     length(incident(d, v, :res)) == 0 &&
     length(incident(d, v, :sum)) == 0 &&
@@ -214,7 +214,7 @@ function infer_states(d::SummationDecapode)
   parents_of_tvars =
     union(d[incident(d,:∂ₜ, :op1), :src],
           d[incident(d,:dt, :op1), :src])
-  union(childless, parents_of_tvars)
+  union(parentless, parents_of_tvars)
 end
 
 """    function infer_state_names(d)
@@ -223,6 +223,19 @@ Find names of variables which have a time derivative or are not the source of a 
 See also: [`infer_states`](@ref).
 """
 infer_state_names(d) = d[infer_states(d), :name]
+
+"""    function infer_terminals(d::SummationDecapode)
+Find variables which have no children.
+See also: [`infer_state_names`](@ref).
+"""
+function infer_terminals(d::SummationDecapode)
+  filter(parts(d, :Var)) do v
+    length(incident(d, v, :src)) == 0 &&
+    length(incident(d, v, :proj1)) == 0 &&
+    length(incident(d, v, :proj2)) == 0 &&
+    length(incident(d, v, :summand)) == 0
+  end
+end
 
 """    function expand_operators(d::SummationDecapode)
 
