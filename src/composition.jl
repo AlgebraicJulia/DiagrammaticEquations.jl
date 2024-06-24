@@ -239,7 +239,7 @@ Throw an error if any individual Decapode already contains a repeated name (exce
 
 If `only_states_terminals` is `true`, only expose state and terminal variables. Defaults to `false`.
 
-Note that composing immediately with [`oapply`](@ref) will fail if types do not match (e.g. (:infer, :Form0) or (:Form0, :Form1)). So, use the function [`infer_types_from_diagram!`](@ref) after this if needed.
+Note that composing immediately with [`oapply`](@ref) will fail if types do not match (e.g. (:infer, :Form0) or (:Form0, :Form1)).
 """
 function default_composition_diagram(podes::Vector{D}, names::Vector{Symbol}, only_states_terminals=false) where {D<:SummationDecapode}
   non_lit_names = map(podes) do pode
@@ -255,20 +255,5 @@ function default_composition_diagram(podes::Vector{D}, names::Vector{Symbol}, on
     end
   end
   construct_relation_diagram(names, non_lit_names)
-end
-
-"""    function infer_types_from_diagram!(r::RelationDiagram, podes::Vector{D}) where {D<:SummationDecapode}
-
-Infer that variables sharing a name should have the same type.
-
-If [`oapply`](@ref) fails due to types not matching (e.g. :infer and :Form0), then this is a useful pre-processing step.
-"""
-function infer_types_from_diagram!(r::RelationDiagram, podes::Vector{D}) where {D<:SummationDecapode}
-  for j in parts(r, :Junction)
-    vbl = r[j, :variable]
-    boxes = r[incident(r, j, :junction), :box]
-    # TODO
-  end
-  podes
 end
 
