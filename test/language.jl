@@ -390,6 +390,7 @@ import DiagrammaticEquations: filterfor_forms
   all_types = [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2, :Literal, :Constant, :Parameter, :infer]
   @test filterfor_forms(all_types) == [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2]
   @test isempty(filterfor_forms(Symbol[]))
+  @test isempty(filterfor_forms([:Literal, :Constant, :Parameter, :infer]))
 end
 
 @testset "Type Inference" begin

@@ -369,7 +369,8 @@ end
 Return any form type symbols.
 """
 function filterfor_forms(types::AbstractVector{Symbol})
-  conditions = x -> x != :Literal && x != :Constant && x != :Parameter && x != :infer
+  nonform_symbols = [:Literal, :Constant, :Parameter, :infer]
+  conditions = x -> !(x in nonform_symbols)
   filter(conditions, types)
 end
 
