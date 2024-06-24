@@ -222,8 +222,33 @@ end
       Advection(C,V,ϕ₂)
       Superposition(C,ϕ₁,ϕ₂,Ċ,ϕ)
     end
-  @test default_composition_diagram(
-    [Diffusion, Advection, Superposition], [:Diffusion, :Advection, :Superposition]) == expected
+  @test is_isomorphic(expected, default_composition_diagram(
+          [Diffusion, Advection, Superposition],
+          [:Diffusion, :Advection, :Superposition]))
+
+  # Compose Halfar's equation with Glen's law.
+  GlensLaw = @decapode begin
+    Γ::Form1
+    (A,ρ,g,n)::Constant
+
+    Γ == (2/(n+2))*A*(ρ*g)^n
+  end
+  HalfarsEquation = @decapode begin
+    h::Form0
+    Γ::Form1
+    n::Constant
+
+    ∂ₜ(h) == ∘(⋆, d, ⋆)(Γ  * d(h) ∧ (mag(♯(d(h)))^(n-1)) ∧ (h^(n+2)))
+  end
+  expected =
+    @relation () begin
+      GlensLaw(Γ,A,ρ,g,n)
+      HalfarsEquation(h,Γ,n,ḣ)
+    end
+  @test is_isomorphic(expected, default_composition_diagram(
+          [GlensLaw, HalfarsEquation],
+          [:GlensLaw, :HalfarsEquation],
+          true))
 end
 
 # end

@@ -220,31 +220,41 @@ oapply(r::RelationDiagram, pode::OpenSummationDecapode) = oapply(r, [pode])
 # Default composition
 # -------------------
 
+# TODO: Upstream this to Catlab?
+function construct_relation_diagram(boxes::Vector{Symbol}, junctions::Vector{Vector{Symbol}})
+  tables = map(boxes, junctions) do b, j
+    Expr(:call, b, j...)
+  end
+  quote @relation () begin $(tables...) end end |> eval
+end
+
 # TODO: Add a macro which provides names for boxes via the Symbol of the Decapode.
 """    function default_composition_diagram(podes::Vector{D}, names::Vector{Symbol}) where {D<:SummationDecapode}
 
 Given a list of Decapodes and their names, return a composition diagram which assumes that variables sharing the same name ought to be composed.
 
-Only variables which are found in multiple Decapodes are exposed. No Literals are exposed.
+No Literals are exposed. Use [`unique_lits!`](@ref) after composing.
 
 Throw an error if any individual Decapode already contains a repeated name (except for Literals).
 
+If `only_states_terminals` is `true`, only expose state and terminal variables. Defaults to `false`.
+
 Note that composing immediately with [`oapply`](@ref) will fail if types do not match (e.g. (:infer, :Form0) or (:Form0, :Form1)). So, use the function [`infer_types_from_diagram!`](@ref) after this if needed.
 """
-function default_composition_diagram(podes::Vector{D}, names::Vector{Symbol}) where {D<:SummationDecapode}
+function default_composition_diagram(podes::Vector{D}, names::Vector{Symbol}, only_states_terminals=false) where {D<:SummationDecapode}
   non_lit_names = map(podes) do pode
     pode[findall(!=(:Literal), pode[:type]), :name]
   end
   for (nln, name) in zip(non_lit_names, names)
-    allunique(nln) || error("Decapode $name contains a repeated variable name.")
+    allunique(nln) || error("Decapode $name contains repeated variable names: $nln.")
   end
-  all_names = union(non_lit_names...)
-  tables = map(names, non_lit_names) do name, nln
-    Expr(:call, name, intersect(all_names, nln)...)
+  if only_states_terminals
+    foreach(non_lit_names, podes) do nln, pode
+      outers = infer_state_names(pode) ∪ pode[infer_terminals(pode), :name]
+      filter!(x -> x ∈ outers, nln)
+    end
   end
-  # XXX: The only means of creating a RelationDiagram is via the DSL or
-  # tracking your own indices via @acset/ imperatively.
-  quote @relation () begin $(tables...) end end |> eval
+  construct_relation_diagram(names, non_lit_names)
 end
 
 """    function infer_types_from_diagram!(r::RelationDiagram, podes::Vector{D}) where {D<:SummationDecapode}
