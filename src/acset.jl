@@ -202,7 +202,7 @@ end
 """    function infer_states(d::SummationDecapode)
 
 Find variables which have a time derivative or are not the source of a computation.
-See also: [`infer_state_names`](@ref).
+See also: [`infer_terminals`](@ref).
 """
 function infer_states(d::SummationDecapode)
   parentless = filter(parts(d, :Var)) do v
@@ -226,7 +226,7 @@ infer_state_names(d) = d[infer_states(d), :name]
 
 """    function infer_terminals(d::SummationDecapode)
 Find variables which have no children.
-See also: [`infer_state_names`](@ref).
+See also: [`infer_states`](@ref).
 """
 function infer_terminals(d::SummationDecapode)
   filter(parts(d, :Var)) do v
@@ -236,6 +236,13 @@ function infer_terminals(d::SummationDecapode)
     length(incident(d, v, :summand)) == 0
   end
 end
+
+"""    function infer_terminal_names(d)
+
+Find names of variables which have no children.
+See also: [`infer_terminals`](@ref).
+"""
+infer_terminal_names(d) = d[infer_terminals(d), :name]
 
 """    function expand_operators(d::SummationDecapode)
 

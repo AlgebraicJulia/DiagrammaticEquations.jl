@@ -220,6 +220,13 @@ oapply(r::RelationDiagram, pode::OpenSummationDecapode) = oapply(r, [pode])
 # Default composition
 # -------------------
 
+# This helper function finds elements which appear in an array more than once.
+function find_duplicates(vs::Vector{T}) where T
+  once, twice = Set{T}(), Set{T}()
+  foreach(v -> v ∈ once ? push!(twice,v) : push!(once,v), vs)
+  twice
+end
+
 # TODO: Upstream this to Catlab?
 function construct_relation_diagram(boxes::Vector{Symbol}, junctions::Vector{Vector{Symbol}})
   tables = map(boxes, junctions) do b, j
@@ -246,11 +253,11 @@ function default_composition_diagram(podes::Vector{D}, names::Vector{Symbol}, on
     pode[findall(!=(:Literal), pode[:type]), :name]
   end
   for (nln, name) in zip(non_lit_names, names)
-    allunique(nln) || error("Decapode $name contains repeated variable names: $nln.")
+    allunique(nln) || error("Decapode $name contains repeated variable names: $(find_duplicates(nln)).")
   end
   if only_states_terminals
     foreach(non_lit_names, podes) do nln, pode
-      outers = infer_state_names(pode) ∪ pode[infer_terminals(pode), :name]
+      outers = infer_state_names(pode) ∪ infer_terminal_names(pode)
       filter!(x -> x ∈ outers, nln)
     end
   end
