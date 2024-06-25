@@ -278,6 +278,193 @@ infer_types!(d::SummationDecapode) =
   infer_types!(d, op1_inf_rules_2D, op2_inf_rules_2D)
 
 
+# Canon names for DEC operations
+# These should be ascii only, no symbols like :(-) or :(+) and have their form inputs
+# seperated from the name by an underscore afterwards (only :name_form#s).
+# This should be the only underscore in the name one, since we want to be
+# able to get formless names (:d_0 and :d_1 -> :d).
+
+const PARTIAL_T = :dt
+
+const EXTDERIV_0 = :d_0
+const EXTDERIV_1 = :d_1
+const EXTDERIV_2 = :d_2
+
+const DUALDERIV_0 = :duald_0
+const DUALDERIV_1 = :duald_1
+const DUALDERIV_2 = :duald_2
+
+const HODGE_0 = :hdg_0
+const HODGE_1 = :hdg_1
+const HODGE_2 = :hdg_2
+
+const INVHODGE_0 = :invhdg_0
+const INVHODGE_1 = :invhdg_1
+const INVHODGE_2 = :invhdg_2
+
+const LAPLACE_0 = :lapl_0
+const LAPLACE_1 = :lapl_1
+const LAPLACE_2 = :lapl_2
+
+const CODIF_0 = :codif_0
+const CODIF_1 = :codif_1
+const CODIF_2 = :codif_2
+
+const AVG_01 = :avg_01
+
+const NEG = :negate
+const MAG = :mag
+
+# ! Names should have no more than 2 or 3 alternatives
+# TODO: Make this const
+CANON_OP1_NAMES = Dict{Symbol, Symbol}(
+  # Partial time derivative
+  :∂ₜ => PARTIAL_T,
+  PARTIAL_T => PARTIAL_T,
+
+  # Exterior derivatives
+  :d₀ => EXTDERIV_0,
+  EXTDERIV_0 => EXTDERIV_0,
+
+  :d₁ => EXTDERIV_1,
+  EXTDERIV_1 => EXTDERIV_1,
+
+  :d₂ => EXTDERIV_2,
+  EXTDERIV_2 => EXTDERIV_2,
+
+  # Dual derivatives
+  :d̃₀ => DUALDERIV_0,
+  :dual_d₀ => DUALDERIV_0,
+  :dual_d_0 => DUALDERIV_0,
+  DUALDERIV_0 => DUALDERIV_0,
+
+  :d̃₁ => DUALDERIV_1,
+  :dual_d₁ => DUALDERIV_1,
+  :dual_d_1 => DUALDERIV_1,
+  DUALDERIV_1 => DUALDERIV_1,
+
+  :d̃₂ => DUALDERIV_2,
+  :dual_d₂ => DUALDERIV_2,
+  :dual_d_2 => DUALDERIV_2,
+  DUALDERIV_2 => DUALDERIV_2,
+
+  # Hodge stars
+  :⋆₀ => HODGE_0,
+  :star_0 => HODGE_0,
+  HODGE_0 => HODGE_0,
+
+  :⋆₁ => HODGE_1,
+  :star_1 => HODGE_1,
+  HODGE_1 => HODGE_1,
+
+  :⋆₂ => HODGE_2,
+  :star_2 => HODGE_2,
+  HODGE_2 => HODGE_2,
+
+  # Inverse Hodge stars
+  :⋆₀⁻¹ => INVHODGE_0,
+  :invstar_0 => INVHODGE_0,
+  INVHODGE_0 => INVHODGE_0,
+
+  :⋆₁⁻¹ => INVHODGE_1,
+  :invstar_1 => INVHODGE_1,
+  INVHODGE_1 => INVHODGE_1,
+
+  :⋆₂⁻¹ => INVHODGE_2,
+  :invstar_2 => INVHODGE_2,
+  INVHODGE_2 => INVHODGE_2,
+
+  # Laplacian
+  :Δ₀ => LAPLACE_0,
+  LAPLACE_0 => LAPLACE_0,
+
+  :Δ₁ => LAPLACE_1,
+  LAPLACE_1 => LAPLACE_1,
+
+  :Δ₂ => LAPLACE_2,
+  LAPLACE_2 => LAPLACE_2,
+
+  # Co-differential
+  :δ₀ => CODIF_0,
+  CODIF_0 => CODIF_0,
+
+  :δ₁ => CODIF_1,
+  CODIF_1 => CODIF_1,
+
+  :δ₂ => CODIF_2,
+  CODIF_2 => CODIF_2,
+
+  # Averaging
+  :avg₀₁ => AVG_01,
+  AVG_01 => AVG_01,
+
+  # Math
+  :(-) => NEG,
+  NEG => NEG,
+
+  :norm => MAG,
+  MAG => MAG
+)
+
+const NOFORM_EXTDERIV = :d
+const NOFORM_DUALDERIV = :d
+
+const NOFORM_HODGE = :hdg
+const NOFORM_INVHODGE = :hdg
+
+const NOFORM_LAPLACE = :lapl
+const NOFORM_CODIF = :codif
+
+const NOFORM_AVG = :avg
+
+# This should only be called with canon names
+# TODO: Make this const
+# TODO: Decide if we should do this explicity like below or programmatically using an
+# agreed on canon naming convention
+FORMLESS_OP1_NAMES = Dict{Symbol, Symbol}(
+  EXTDERIV_0 => NOFORM_EXTDERIV,
+  EXTDERIV_1 => NOFORM_EXTDERIV,
+  EXTDERIV_2 => NOFORM_EXTDERIV,
+
+  DUALDERIV_0 => NOFORM_EXTDERIV,
+  DUALDERIV_1 => NOFORM_EXTDERIV,
+  DUALDERIV_2 => NOFORM_EXTDERIV,
+
+  HODGE_0 => NOFORM_HODGE,
+  HODGE_1 => NOFORM_HODGE,
+  HODGE_2 => NOFORM_HODGE,
+
+  INVHODGE_0 => NOFORM_HODGE,
+  INVHODGE_1 => NOFORM_HODGE,
+  INVHODGE_2 => NOFORM_HODGE,
+
+  LAPLACE_0 => NOFORM_LAPLACE,
+  LAPLACE_1 => NOFORM_LAPLACE,
+  LAPLACE_2 => NOFORM_LAPLACE,
+
+  CODIF_0 => NOFORM_CODIF,
+  CODIF_1 => NOFORM_CODIF,
+  CODIF_2 => NOFORM_CODIF,
+
+  AVG_01 => NOFORM_AVG
+)
+
+get_canon_name(var::Symbol) = get(CANON_OP1_NAMES, var, var)
+
+function get_formless_canon_name(var::Symbol)
+  canon_var = get_canon_name(var)
+  get(FORMLESS_OP1_NAMES, canon_var, canon_var)
+end
+
+function get_deca_canon_name(d::SummationDecapode, idx::Int)
+  return get_canon_name(d[idx, :name])
+end
+
+function get_deca_canon_name(d::SummationDecapode, idx::AbstractVector{Int})
+  return get_canon_name.(d[idx..., :name])
+end
+
+
 ascii_to_unicode_op1 = Pair{Symbol, Any}[
                         (:dt       => :∂ₜ),
                         (:star     => :⋆),
@@ -339,4 +526,3 @@ Resolve function overloads based on types of src and tgt.
 """
 resolve_overloads!(d::SummationDecapode) =
   resolve_overloads!(d, op1_res_rules_2D, op2_res_rules_2D)
-
