@@ -26,24 +26,29 @@ See also: [`replace_all_op1s!`](@ref)
 function replace_op1!(d::SummationDecapode, LHS::Symbol, RHS::SummationDecapode)
   validate_op1_replacement(d, LHS, RHS)
   isempty(incident(d, LHS, :op1)) && return 0
+
   # Identify the "matched" operation.
   LHS_op1 = first(incident(d, LHS, :op1))
   LHS_input = d[LHS_op1, :src]
   LHS_output = d[LHS_op1, :tgt]
+
   # Add in the "replace" operation(s).
   added_vars = copy_parts!(d, RHS).Var
   RHS_input = only(intersect(infer_states(d), added_vars))
   RHS_output = only(intersect(infer_terminals(d), added_vars))
+
   # Transfer LHS_input's pointers to RHS_input.
   transfer_parents!(d, LHS_input, RHS_input)
   transfer_children!(d, LHS_input, RHS_input)
   d[RHS_input, :name] = d[LHS_input, :name]
   d[RHS_input, :type] = d[LHS_input, :type]
+
   # Transfer LHS_output's pointers to RHS_output.
   transfer_parents!(d, LHS_output, RHS_output)
   transfer_children!(d, LHS_output, RHS_output)
   d[RHS_output, :name] = d[LHS_output, :name]
   d[RHS_output, :type] = d[LHS_output, :type]
+
   # Remove the replaced match and variables.
   rem_parts!(d, :Var, sort!([LHS_input, LHS_output]))
   rem_part!(d, :Op1, LHS_op1)
@@ -125,33 +130,40 @@ See also: [`replace_op1!`](@ref), [`replace_all_op2s!`](@ref)
 function replace_op2!(d::SummationDecapode, LHS::Symbol, RHS::SummationDecapode, proj1::Int, proj2::Int)
   validate_op2_replacement(d, LHS, RHS, proj1, proj2)
   isempty(incident(d, LHS, :op2)) && return 0
+
   # Identify the "matched" operation.
   LHS_op2 = first(incident(d, LHS, :op2))
   LHS_proj1, LHS_proj2 = d[LHS_op2, :proj1], d[LHS_op2, :proj2]
   LHS_output = d[LHS_op2, :res]
+
   # Add in the "replace" operation(s).
   added_vars = copy_parts!(d, RHS).Var
   RHS_proj1, RHS_proj2 = intersect(infer_states(d), added_vars)
+
   # Preserve the order of proj1 and proj2.
   if d[RHS_proj1, :name] != RHS[proj1, :name]
     RHS_proj1, RHS_proj2 = RHS_proj2, RHS_proj1
   end
   RHS_output = only(intersect(infer_terminals(d), added_vars))
+
   # Transfer LHS_proj1's pointers to RHS_proj1.
   transfer_parents!(d, LHS_proj1, RHS_proj1)
   transfer_children!(d, LHS_proj1, RHS_proj1)
   d[RHS_proj1, :name] = d[LHS_proj1, :name]
   d[RHS_proj1, :type] = d[LHS_proj1, :type]
+
   # Transfer LHS_proj2's pointers to RHS_proj2.
   transfer_parents!(d, LHS_proj2, RHS_proj2)
   transfer_children!(d, LHS_proj2, RHS_proj2)
   d[RHS_proj2, :name] = d[LHS_proj2, :name]
   d[RHS_proj2, :type] = d[LHS_proj2, :type]
+
   # Transfer LHS_output's pointers to RHS_output.
   transfer_parents!(d, LHS_output, RHS_output)
   transfer_children!(d, LHS_output, RHS_output)
   d[RHS_output, :name] = d[LHS_output, :name]
   d[RHS_output, :type] = d[LHS_output, :type]
+
   # Remove the replaced match and variables.
   rem_parts!(d, :Var, sort!([LHS_proj1, LHS_proj2, LHS_output]))
   rem_part!(d, :Op2, LHS_op2)

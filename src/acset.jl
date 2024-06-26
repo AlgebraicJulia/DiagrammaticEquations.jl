@@ -185,6 +185,16 @@ function recognize_types(d::AbstractNamedDecapode)
   error("Types $unrecognized_types are not recognized. CHECK: $types")
 end
 
+"""    is_expanded(d::AbstractNamedDecapode)
+
+Check that no unary operator is a composition of unary operators.
+"""
+is_expanded(d::AbstractNamedDecapode) = !any(x -> x isa AbstractVector, d[:op1])
+
+"""    function expand_operators(d::AbstractNamedDecapode)
+
+If any unary operator is a composition, expand it out using intermediate variables.
+"""
 function expand_operators(d::AbstractNamedDecapode)
   #e = SummationDecapode{Symbol, Symbol, Symbol}()
   e = SummationDecapode{Any, Any, Symbol}()
