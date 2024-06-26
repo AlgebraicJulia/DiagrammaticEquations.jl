@@ -424,7 +424,7 @@ function apply_inference_rule_op1!(d::SummationDecapode, op1_id, rule)
 
   score_src = (rule.src_type == type_src)
   score_tgt = (rule.tgt_type == type_tgt)
-  check_op = (deca_formless_op1(d, op1_id) in rule.op_names)
+  check_op = (deca_canon_op1(d, op1_id) in rule.op_names)
 
   if(check_op && (score_src + score_tgt == 1))
     mod_src = safe_modifytype!(d, d[op1_id, :src], rule.src_type)

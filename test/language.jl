@@ -1067,7 +1067,7 @@ end
       B == d_0(invhdg_0(hdg_0(A)))
       C == d_1(invhdg_1(hdg_1(B)))
       D == invhdg_2(hdg_2(C))
-      E == duald_1(duald_2(hdg_2(D)))
+      E == duald_1(duald_0(hdg_2(D)))
     end
     check_canontyping(gen_d1, d)
   end
@@ -1078,7 +1078,7 @@ end
       B == d₀(⋆₀⁻¹(⋆₀(A)))
       C == d₁(⋆₁⁻¹(⋆₁(B)))
       D == ⋆₂⁻¹(⋆₂(C))
-      E == d̃₁(d̃₂(⋆₂(D)))
+      E == d̃₁(d̃₀(⋆₂(D)))
     end
     check_canontyping(gen_d1, d)
   end
@@ -1100,7 +1100,7 @@ end
       B == d(⋆(hdg(A)))
       C == d₁(hdg(⋆₁(B)))
       D == invhdg_2(⋆₂(C))
-      E == d̃₁(duald_2(hdg_2(D)))
+      E == d̃₁(duald_0(hdg_2(D)))
     end
     check_canontyping(gen_d1, d)
   end
@@ -1165,6 +1165,77 @@ end
     check_canontyping(gen_d3, d)
   end
 
+  let # Typing respects typed exterior derivative
+    d = @decapode begin
+      A::Form2
+      B0 == d_0(A)
+      B2 == d_1(A)
+    end
+    infer_types!(d)
+    @test d[:type] == [:Form2, :infer, :infer]
+  end
+
+  let # Typing respects typed dual derivatives
+    d = @decapode begin
+      A::DualForm2
+      B0 == duald_0(A)
+      B2 == duald_1(A)
+    end
+    infer_types!(d)
+    @test d[:type] == [:DualForm2, :infer, :infer]
+  end
+
+  let # Typing respects typed hodges
+    d = @decapode begin
+      A::Form0
+      B0 == hdg_0(A)
+      B1 == hdg_1(A)
+      B2 == hdg_2(A)
+    end
+    infer_types!(d)
+    @test d[:type] == [:Form0, :DualForm2, :infer, :infer]
+  end
+
+  let # Typing respects typed inverse hodges
+    d = @decapode begin
+      A::DualForm2
+      B0 == invhdg_0(A)
+      B1 == invhdg_1(A)
+      B2 == invhdg_2(A)
+    end
+    infer_types!(d)
+    @test d[:type] == [:DualForm2, :Form0, :infer, :infer]
+  end
+
+  let # Typing respects typed laplacians
+    d = @decapode begin
+      A::Form0
+      B0 == lapl_0(A)
+      B1 == lapl_1(A)
+      B2 == lapl_2(A)
+    end
+    infer_types!(d)
+    @test d[:type] == [:Form0, :Form0, :infer, :infer]
+  end
+
+  let # Typing respects typed codifferentials
+    d = @decapode begin
+     A::Form0
+     B0 == codif_1(A)
+     B1 == codif_2(A)
+    end
+    infer_types!(d)
+    @test d[:type] == [:Form0, :infer, :infer]
+  end
+
+  let # Typing respects typed average
+    d = @decapode begin
+      A::Form2
+      B == avg_01(A)
+    end
+    infer_types!(d)
+    @test d[:type] == [:Form2, :infer]
+  end
 end
 
 @testset "Compilation Transformation" begin
