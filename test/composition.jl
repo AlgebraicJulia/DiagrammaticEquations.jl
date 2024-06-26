@@ -249,6 +249,55 @@ end
           [GlensLaw, HalfarsEquation],
           [:GlensLaw, :HalfarsEquation],
           true))
+
+  # Test an error is thrown when # of models ≠ # of names.
+  Diffusion = @decapode begin
+    C::Form0
+    ϕ₁::Form1
+    ϕ₁ ==  ∘(k, d₀)(C)
+  end
+  Advection = @decapode begin
+    C::Form0
+    (V, ϕ₂)::Form1
+    ϕ₂ == ∧₀₁(C,V)
+  end
+  Superposition = @decapode begin
+    (C, Ċ)::Form0
+    (ϕ, ϕ₁, ϕ₂)::Form1
+    ϕ == ϕ₁ + ϕ₂
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    ∂ₜ(C) == Ċ
+  end
+  @test_throws "3 models given, but 2 names provided." default_composition_diagram(
+    [Diffusion, Advection, Superposition],
+    [:Diffusion, :Advection])
+
+  # Test an error is thrown when a single model contains duplicate names.
+  Diffusion = @decapode begin
+    C::Form0
+    ϕ₁::Form1
+    ϕ₁ ==  ∘(k, d₀)(C)
+  end
+  AdvectionDuplicates = @acset SummationDecapode{Any, Any, Symbol} begin
+    Var = 4
+    type = [:Form0, :Form1, :Form1, :Form1]
+    name = [:C, :V, :ϕ₂, :ϕ₂]
+    Op2 = 1
+    proj1 = [1]
+    proj2 = [2]
+    res = [3]
+    op2 = [:∧₀₁]
+  end
+  Superposition = @decapode begin
+    (C, Ċ)::Form0
+    (ϕ, ϕ₁, ϕ₂)::Form1
+    ϕ == ϕ₁ + ϕ₂
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    ∂ₜ(C) == Ċ
+  end
+  @test_throws "Decapode AdvectionDuplicates contains repeated variable names: Set([:ϕ₂])." default_composition_diagram(
+    [Diffusion, AdvectionDuplicates, Superposition],
+    [:Diffusion, :AdvectionDuplicates, :Superposition])
 end
 
 # end

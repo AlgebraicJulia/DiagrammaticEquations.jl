@@ -249,6 +249,7 @@ If `only_states_terminals` is `true`, only expose state and terminal variables. 
 Note that composing immediately with [`oapply`](@ref) will fail if types do not match (e.g. (:infer, :Form0) or (:Form0, :Form1)).
 """
 function default_composition_diagram(podes::Vector{D}, names::Vector{Symbol}, only_states_terminals=false) where {D<:SummationDecapode}
+  length(podes) == length(names) || error("$(length(podes)) models given, but $(length(names)) names provided.")
   non_lit_names = map(podes) do pode
     pode[findall(!=(:Literal), pode[:type]), :name]
   end
