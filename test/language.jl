@@ -1021,7 +1021,7 @@ end
 
   # TODO: Fix this test/decapode, pretty sure there is mixing of primal/dual forms
   # This is likely since this decapode existed before we made Lie/inner primal-dual only
-  @test_broken issetequal(names_types_hx, names_types_expected_hx)
+  @test issetequal(names_types_hx, names_types_expected_hx)
 
   bespoke_op2_res_rules = [
   # Rules for L.
@@ -1038,6 +1038,133 @@ end
   op2s_hx = HeatXfer[:op2]
   op2s_expected_hx = [:*, :/, :/, :L₀, :/, :L₁, :*, :/, :*, :i₁, :/, :*, :*, :L₀]
   @test op2s_hx == op2s_expected_hx # Correct but probably by chance, see above
+end
+
+@testset "Op1 Canonicalization" begin
+  function check_canontyping(control::SummationDecapode, test::SummationDecapode)
+    infer_test = infer_types!(deepcopy(test))
+    @test control[:type] == infer_test[:type]
+    @test infer_test[:op1] == test[:op1]
+    @test infer_test[:op2] == test[:op2]
+  end
+
+  # Test exterior derivative and hodge
+  gen_d1 = @decapode begin
+    A::Form0
+    B == d(hdg(hdg(A)))
+    C == d(hdg(hdg(B)))
+    D == hdg(hdg(C))
+    E == d(d(hdg(D)))
+  end
+  infer_types!(gen_d1)
+  @test gen_d1[:type]  ==
+    [:Form0, :Form1, :DualForm2, :Form0, :DualForm2, :Form2,
+    :DualForm0, :Form1, :DualForm1, :Form2, :DualForm1, :DualForm0]
+
+  let # Ascii and tagged
+    d = @decapode begin
+      A::Form0
+      B == d_0(invhdg_0(hdg_0(A)))
+      C == d_1(invhdg_1(hdg_1(B)))
+      D == invhdg_2(hdg_2(C))
+      E == duald_1(duald_2(hdg_2(D)))
+    end
+    check_canontyping(gen_d1, d)
+  end
+
+  let # Unicode and tagged
+    d = @decapode begin
+      A::Form0
+      B == d₀(⋆₀⁻¹(⋆₀(A)))
+      C == d₁(⋆₁⁻¹(⋆₁(B)))
+      D == ⋆₂⁻¹(⋆₂(C))
+      E == d̃₁(d̃₂(⋆₂(D)))
+    end
+    check_canontyping(gen_d1, d)
+  end
+
+  let # Unicode and not tagged
+    d = @decapode begin
+      A::Form0
+      B == d(⋆(⋆(A)))
+      C == d(⋆(⋆(B)))
+      D == ⋆(⋆(C))
+      E == d̃(d̃(⋆(D)))
+    end
+    check_canontyping(gen_d1, d)
+  end
+
+  let # Combination of names
+    d = @decapode begin
+      A::Form0
+      B == d(⋆(hdg(A)))
+      C == d₁(hdg(⋆₁(B)))
+      D == invhdg_2(⋆₂(C))
+      E == d̃₁(duald_2(hdg_2(D)))
+    end
+    check_canontyping(gen_d1, d)
+  end
+
+  # Test laplacian and codifferential
+  gen_d2 = @decapode begin
+    A::Form0
+    B == codif(codif(lapl(d(lapl(d(lapl(A)))))))
+  end
+  infer_types!(gen_d2)
+  @test gen_d2[:type] == [:Form0, :Form0, :Form0, :Form1, :Form2, :Form2, :Form1, :Form1]
+
+  let # Ascii and tagged
+    d = @decapode begin
+      A::Form0
+      B == codif_1(codif_2(lapl_2(d_1(lapl_1(d_0(lapl_0(A)))))))
+    end
+    check_canontyping(gen_d2, d)
+  end
+
+  let # Unicode and tagged
+    d = @decapode begin
+      A::Form0
+      B == δ₁(δ₂(Δ₂(d₁(Δ₁(d₀(Δ₀(A)))))))
+    end
+    check_canontyping(gen_d2, d)
+  end
+
+  let # Unicode and not tagged
+    d = @decapode begin
+      A::Form0
+      B == δ(δ(Δ(d(Δ(d(Δ(A)))))))
+    end
+    check_canontyping(gen_d2, d)
+  end
+
+  let # Combination of names
+    d = @decapode begin
+      A::Form0
+      B == δ(codif(Δ₂(d₁(lapl(d_0(Δ(A)))))))
+    end
+    check_canontyping(gen_d2, d)
+  end
+
+  # Test average, neg and mag
+  gen_d3 = @decapode begin
+    A::Form0
+    C::Form2
+    B == neg(mag(avg(neg(mag(A)))))
+    D == neg(mag(C))
+  end
+  infer_types!(gen_d3)
+  @test gen_d3[:type] == [:Form0, :Form2, :Form1, :Form2, :Form1, :Form1, :Form0, :Form0, :Form2]
+
+  let # Alternate names
+    d = @decapode begin
+      A::Form0
+      C::Form2
+      B == -(norm(avg_01(-(norm(A)))))
+      D == -(norm(C))
+    end
+    check_canontyping(gen_d3, d)
+  end
+
 end
 
 @testset "Compilation Transformation" begin

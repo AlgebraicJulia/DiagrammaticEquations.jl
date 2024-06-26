@@ -32,7 +32,7 @@ const CODIF_2 = :codif_2
 
 const AVG_01 = :avg_01
 
-const NEG = :negate
+const NEG = :neg
 const MAG = :mag
 
 # Canon names to use when form is not known, useful for type-inference
@@ -428,6 +428,7 @@ FORMLESS_OP1_NAMES = Dict{Symbol, Symbol}(
   DUALDERIV_0 => NOFORM_EXTDERIV,
   DUALDERIV_1 => NOFORM_EXTDERIV,
   DUALDERIV_2 => NOFORM_EXTDERIV,
+  :d̃ => NOFORM_EXTDERIV,
 
   HODGE_0 => NOFORM_HODGE,
   HODGE_1 => NOFORM_HODGE,
