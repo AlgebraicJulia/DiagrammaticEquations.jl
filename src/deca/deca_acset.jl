@@ -48,6 +48,156 @@ const NOFORM_CODIF = :codif
 
 const NOFORM_AVG = :avg
 
+# ! Names should have no more than 2 or 3 alternatives
+# TODO: Make this const
+CANON_OP1_NAMES = Dict{Symbol, Symbol}(
+  # Partial time derivative
+  :∂ₜ => PARTIAL_T,
+  PARTIAL_T => PARTIAL_T,
+
+  # Exterior derivatives
+  :d₀ => EXTDERIV_0,
+  EXTDERIV_0 => EXTDERIV_0,
+
+  :d₁ => EXTDERIV_1,
+  EXTDERIV_1 => EXTDERIV_1,
+
+  :d₂ => EXTDERIV_2,
+  EXTDERIV_2 => EXTDERIV_2,
+
+  # Dual derivatives
+  :d̃₀ => DUALDERIV_0,
+  :dual_d₀ => DUALDERIV_0,
+  :dual_d_0 => DUALDERIV_0,
+  DUALDERIV_0 => DUALDERIV_0,
+
+  :d̃₁ => DUALDERIV_1,
+  :dual_d₁ => DUALDERIV_1,
+  :dual_d_1 => DUALDERIV_1,
+  DUALDERIV_1 => DUALDERIV_1,
+
+  :d̃₂ => DUALDERIV_2,
+  :dual_d₂ => DUALDERIV_2,
+  :dual_d_2 => DUALDERIV_2,
+  DUALDERIV_2 => DUALDERIV_2,
+
+  :d̃ => NOFORM_EXTDERIV,
+
+  # Hodge stars
+  :⋆₀ => HODGE_0,
+  :star_0 => HODGE_0,
+  HODGE_0 => HODGE_0,
+
+  :⋆₁ => HODGE_1,
+  :star_1 => HODGE_1,
+  HODGE_1 => HODGE_1,
+
+  :⋆₂ => HODGE_2,
+  :star_2 => HODGE_2,
+  HODGE_2 => HODGE_2,
+
+  :⋆ => NOFORM_HODGE,
+
+  # Inverse Hodge stars
+  :⋆₀⁻¹ => INVHODGE_0,
+  :invstar_0 => INVHODGE_0,
+  INVHODGE_0 => INVHODGE_0,
+
+  :⋆₁⁻¹ => INVHODGE_1,
+  :invstar_1 => INVHODGE_1,
+  INVHODGE_1 => INVHODGE_1,
+
+  :⋆₂⁻¹ => INVHODGE_2,
+  :invstar_2 => INVHODGE_2,
+  INVHODGE_2 => INVHODGE_2,
+
+  :⋆ => NOFORM_HODGE,
+
+  # Laplacian
+  :Δ₀ => LAPLACE_0,
+  LAPLACE_0 => LAPLACE_0,
+
+  :Δ₁ => LAPLACE_1,
+  LAPLACE_1 => LAPLACE_1,
+
+  :Δ₂ => LAPLACE_2,
+  LAPLACE_2 => LAPLACE_2,
+
+  :Δ => NOFORM_LAPLACE,
+
+  # Co-differential
+  :δ₀ => CODIF_0,
+  CODIF_0 => CODIF_0,
+
+  :δ₁ => CODIF_1,
+  CODIF_1 => CODIF_1,
+
+  :δ₂ => CODIF_2,
+  CODIF_2 => CODIF_2,
+
+  :δ => NOFORM_CODIF,
+
+  # Averaging
+  :avg₀₁ => AVG_01,
+  AVG_01 => AVG_01,
+
+  # Math
+  :(-) => NEG,
+  NEG => NEG,
+
+  :norm => MAG,
+  MAG => MAG
+)
+
+# This should only be called with canon names
+# TODO: Make this const
+# TODO: Decide if we should do this explicity like below or programmatically using an
+# agreed on canon naming convention
+REMOVEFORM_OP1 = Dict{Symbol, Symbol}(
+  EXTDERIV_0 => NOFORM_EXTDERIV,
+  EXTDERIV_1 => NOFORM_EXTDERIV,
+  EXTDERIV_2 => NOFORM_EXTDERIV,
+
+  DUALDERIV_0 => NOFORM_EXTDERIV,
+  DUALDERIV_1 => NOFORM_EXTDERIV,
+  DUALDERIV_2 => NOFORM_EXTDERIV,
+
+  HODGE_0 => NOFORM_HODGE,
+  HODGE_1 => NOFORM_HODGE,
+  HODGE_2 => NOFORM_HODGE,
+
+  INVHODGE_0 => NOFORM_HODGE,
+  INVHODGE_1 => NOFORM_HODGE,
+  INVHODGE_2 => NOFORM_HODGE,
+
+  LAPLACE_0 => NOFORM_LAPLACE,
+  LAPLACE_1 => NOFORM_LAPLACE,
+  LAPLACE_2 => NOFORM_LAPLACE,
+
+  CODIF_0 => NOFORM_CODIF,
+  CODIF_1 => NOFORM_CODIF,
+  CODIF_2 => NOFORM_CODIF,
+
+  AVG_01 => NOFORM_AVG
+)
+
+get_canon_name(var::Symbol) = get(CANON_OP1_NAMES, var, var)
+get_canon_name(var::AbstractVector{Symbol}) = return get_formless_canon_name.(var)
+
+function get_formless_canon_name(var::Symbol)
+  canon_var = get_canon_name(var)
+  get(REMOVEFORM_OP1, canon_var, canon_var)
+end
+get_formless_canon_name(var::AbstractVector{Symbol}) = return get_formless_canon_name.(var)
+
+# TODO: Name liable to change, needs to be clear but concise
+deca_canon_op1(d::SummationDecapode, idx::Int) = get_canon_name(d[idx, :op1])
+deca_canon_op1(d::SummationDecapode, idx::AbstractVector{Int}) = get_canon_name.(d[idx, :op1])
+
+# TODO: Name liable to change, needs to be clear but concise
+deca_formless_op1(d::SummationDecapode, idx::Int) = get_formless_canon_name(d[idx, :op1])
+deca_formless_op1(d::SummationDecapode, idx::AbstractVector{Int}) = get_formless_canon_name.(d[idx, :op1])
+
 # TODO: You could write a method which auto-generates these rules given degree N.
 """
 These are the default rules used to do type inference in the 1D exterior calculus.
@@ -229,24 +379,24 @@ op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
   """
   op1_res_rules_1D = [
     # Rules for d.
-    (src_type = :Form0, tgt_type = :Form1, resolved_name = :d₀, op = :d),
-    (src_type = :DualForm0, tgt_type = :DualForm1, resolved_name = :dual_d₀, op = :d),
+    (src_type = :Form0, tgt_type = :Form1, resolved_name = :d₀, op = NOFORM_EXTDERIV),
+    (src_type = :DualForm0, tgt_type = :DualForm1, resolved_name = :dual_d₀, op = NOFORM_DUALDERIV),
     # Rules for ⋆.
-    (src_type = :Form0, tgt_type = :DualForm1, resolved_name = :⋆₀, op = :⋆),
-    (src_type = :Form1, tgt_type = :DualForm0, resolved_name = :⋆₁, op = :⋆),
-    (src_type = :DualForm1, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = :⋆),
-    (src_type = :DualForm0, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :⋆),
-    (src_type = :Form0, tgt_type = :DualForm1, resolved_name = :⋆₀, op = :star),
-    (src_type = :Form1, tgt_type = :DualForm0, resolved_name = :⋆₁, op = :star),
-    (src_type = :DualForm1, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = :star),
-    (src_type = :DualForm0, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :star),
+    (src_type = :Form0, tgt_type = :DualForm1, resolved_name = :⋆₀, op = NOFORM_HODGE),
+    (src_type = :Form1, tgt_type = :DualForm0, resolved_name = :⋆₁, op = NOFORM_HODGE),
+    (src_type = :DualForm1, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = NOFORM_INVHODGE),
+    (src_type = :DualForm0, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = NOFORM_INVHODGE),
+    # (src_type = :Form0, tgt_type = :DualForm1, resolved_name = :⋆₀, op = :star),
+    # (src_type = :Form1, tgt_type = :DualForm0, resolved_name = :⋆₁, op = :star),
+    # (src_type = :DualForm1, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = :star),
+    # (src_type = :DualForm0, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :star),
     # Rules for δ.
-    (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :δ),
-    (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :codif),
+    (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = NOFORM_CODIF),
+    # (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :codif),
      # Rules for Δ
-    (src_type = :Form0, tgt_type = :Form0, resolved_name = :Δ₀, op = :Δ),
-    (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₁, op = :Δ)]
-  
+    (src_type = :Form0, tgt_type = :Form0, resolved_name = :Δ₀, op = NOFORM_LAPLACE),
+    (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₁, op = NOFORM_LAPLACE)]
+
   # We merge 1D and 2D rules since it seems op2 rules are metric-free. If
   # this assumption is false, this needs to change.
   op2_res_rules_1D = [
@@ -262,48 +412,50 @@ op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
     (proj1_type = :Form1, proj2_type = :DualForm1, res_type = :DualForm1, resolved_name = :L₁, op = :L),
     # Rules for i.
     (proj1_type = :Form1, proj2_type = :DualForm1, res_type = :DualForm0, resolved_name = :i₁, op = :i)]
-  
-  
+
+
   """
   These are the default rules used to do function resolution in the 2D exterior calculus.
   """
   op1_res_rules_2D = [
     # Rules for d.
-    (src_type = :Form0, tgt_type = :Form1, resolved_name = :d₀, op = :d),
-    (src_type = :Form1, tgt_type = :Form2, resolved_name = :d₁, op = :d),
-    (src_type = :DualForm0, tgt_type = :DualForm1, resolved_name = :dual_d₀, op = :d),
-    (src_type = :DualForm1, tgt_type = :DualForm2, resolved_name = :dual_d₁, op = :d),
+    (src_type = :Form0, tgt_type = :Form1, resolved_name = :d₀, op = NOFORM_EXTDERIV),
+    (src_type = :Form1, tgt_type = :Form2, resolved_name = :d₁, op = NOFORM_EXTDERIV),
+    (src_type = :DualForm0, tgt_type = :DualForm1, resolved_name = :dual_d₀, op = NOFORM_DUALDERIV),
+    (src_type = :DualForm1, tgt_type = :DualForm2, resolved_name = :dual_d₁, op = NOFORM_DUALDERIV),
     # Rules for ⋆.
-    (src_type = :Form0, tgt_type = :DualForm2, resolved_name = :⋆₀, op = :⋆),
-    (src_type = :Form1, tgt_type = :DualForm1, resolved_name = :⋆₁, op = :⋆),
-    (src_type = :Form2, tgt_type = :DualForm0, resolved_name = :⋆₂, op = :⋆),
-    (src_type = :DualForm2, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = :⋆),
-    (src_type = :DualForm1, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :⋆),
-    (src_type = :DualForm0, tgt_type = :Form2, resolved_name = :⋆₂⁻¹, op = :⋆),
-    (src_type = :Form0, tgt_type = :DualForm2, resolved_name = :⋆₀, op = :star),
-    (src_type = :Form1, tgt_type = :DualForm1, resolved_name = :⋆₁, op = :star),
-    (src_type = :Form2, tgt_type = :DualForm0, resolved_name = :⋆₂, op = :star),
-    (src_type = :DualForm2, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = :star),
-    (src_type = :DualForm1, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :star),
-    (src_type = :DualForm0, tgt_type = :Form2, resolved_name = :⋆₂⁻¹, op = :star),
+    (src_type = :Form0, tgt_type = :DualForm2, resolved_name = :⋆₀, op = NOFORM_HODGE),
+    (src_type = :Form1, tgt_type = :DualForm1, resolved_name = :⋆₁, op = NOFORM_HODGE),
+    (src_type = :Form2, tgt_type = :DualForm0, resolved_name = :⋆₂, op = NOFORM_HODGE),
+    (src_type = :DualForm2, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = NOFORM_INVHODGE),
+    (src_type = :DualForm1, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = NOFORM_INVHODGE),
+    (src_type = :DualForm0, tgt_type = :Form2, resolved_name = :⋆₂⁻¹, op = NOFORM_INVHODGE),
+    # (src_type = :Form0, tgt_type = :DualForm2, resolved_name = :⋆₀, op = :star),
+    # (src_type = :Form1, tgt_type = :DualForm1, resolved_name = :⋆₁, op = :star),
+    # (src_type = :Form2, tgt_type = :DualForm0, resolved_name = :⋆₂, op = :star),
+    # (src_type = :DualForm2, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = :star),
+    # (src_type = :DualForm1, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :star),
+    # (src_type = :DualForm0, tgt_type = :Form2, resolved_name = :⋆₂⁻¹, op = :star),
     # Rules for δ.
-    (src_type = :Form2, tgt_type = :Form1, resolved_name = :δ₂, op = :δ),
-    (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :δ),
-    (src_type = :Form2, tgt_type = :Form1, resolved_name = :δ₂, op = :codif),
-    (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :codif),
+    (src_type = :Form2, tgt_type = :Form1, resolved_name = :δ₂, op = NOFORM_CODIF),
+    (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = NOFORM_CODIF),
+    # (src_type = :Form2, tgt_type = :Form1, resolved_name = :δ₂, op = :codif),
+    # (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :codif),
     # Rules for ∇².
     # TODO: Call this :nabla2 in ASCII?
+    # TODO: Do we support this operator anywhere?
+    # TODO: Overloaded name of this operator is inconsistent with something like inv hodge
     (src_type = :Form0, tgt_type = :Form0, resolved_name = :∇²₀, op = :∇²),
     (src_type = :Form1, tgt_type = :Form1, resolved_name = :∇²₁, op = :∇²),
     (src_type = :Form2, tgt_type = :Form2, resolved_name = :∇²₂, op = :∇²),
     # Rules for Δ.
-    (src_type = :Form0, tgt_type = :Form0, resolved_name = :Δ₀, op = :Δ),
-    (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₁, op = :Δ),
-    (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₂, op = :Δ),
-    (src_type = :Form0, tgt_type = :Form0, resolved_name = :Δ₀, op = :lapl),
-    (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₁, op = :lapl),
-    (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₂, op = :lapl)]
-  
+    (src_type = :Form0, tgt_type = :Form0, resolved_name = :Δ₀, op = NOFORM_LAPLACE),
+    (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₁, op = NOFORM_LAPLACE),
+    (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₂, op = NOFORM_LAPLACE)]
+    # (src_type = :Form0, tgt_type = :Form0, resolved_name = :Δ₀, op = :lapl),
+    # (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₁, op = :lapl),
+    # (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₂, op = :lapl)]
+
   # We merge 1D and 2D rules directly here since it seems op2 rules
   # are metric-free. If this assumption is false, this needs to change.
   op2_res_rules_2D = vcat(op2_res_rules_1D, [
@@ -324,152 +476,6 @@ op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
 # use dispatch to choose the correct set of rules.
 infer_types!(d::SummationDecapode) =
   infer_types!(d, op1_inf_rules_2D, op2_inf_rules_2D)
-
-# ! Names should have no more than 2 or 3 alternatives
-# TODO: Make this const
-CANON_OP1_NAMES = Dict{Symbol, Symbol}(
-  # Partial time derivative
-  :∂ₜ => PARTIAL_T,
-  PARTIAL_T => PARTIAL_T,
-
-  # Exterior derivatives
-  :d₀ => EXTDERIV_0,
-  EXTDERIV_0 => EXTDERIV_0,
-
-  :d₁ => EXTDERIV_1,
-  EXTDERIV_1 => EXTDERIV_1,
-
-  :d₂ => EXTDERIV_2,
-  EXTDERIV_2 => EXTDERIV_2,
-
-  # Dual derivatives
-  :d̃₀ => DUALDERIV_0,
-  :dual_d₀ => DUALDERIV_0,
-  :dual_d_0 => DUALDERIV_0,
-  DUALDERIV_0 => DUALDERIV_0,
-
-  :d̃₁ => DUALDERIV_1,
-  :dual_d₁ => DUALDERIV_1,
-  :dual_d_1 => DUALDERIV_1,
-  DUALDERIV_1 => DUALDERIV_1,
-
-  :d̃₂ => DUALDERIV_2,
-  :dual_d₂ => DUALDERIV_2,
-  :dual_d_2 => DUALDERIV_2,
-  DUALDERIV_2 => DUALDERIV_2,
-
-  # Hodge stars
-  :⋆₀ => HODGE_0,
-  :star_0 => HODGE_0,
-  HODGE_0 => HODGE_0,
-
-  :⋆₁ => HODGE_1,
-  :star_1 => HODGE_1,
-  HODGE_1 => HODGE_1,
-
-  :⋆₂ => HODGE_2,
-  :star_2 => HODGE_2,
-  HODGE_2 => HODGE_2,
-
-  # Inverse Hodge stars
-  :⋆₀⁻¹ => INVHODGE_0,
-  :invstar_0 => INVHODGE_0,
-  INVHODGE_0 => INVHODGE_0,
-
-  :⋆₁⁻¹ => INVHODGE_1,
-  :invstar_1 => INVHODGE_1,
-  INVHODGE_1 => INVHODGE_1,
-
-  :⋆₂⁻¹ => INVHODGE_2,
-  :invstar_2 => INVHODGE_2,
-  INVHODGE_2 => INVHODGE_2,
-
-  # Laplacian
-  :Δ₀ => LAPLACE_0,
-  LAPLACE_0 => LAPLACE_0,
-
-  :Δ₁ => LAPLACE_1,
-  LAPLACE_1 => LAPLACE_1,
-
-  :Δ₂ => LAPLACE_2,
-  LAPLACE_2 => LAPLACE_2,
-
-  # Co-differential
-  :δ₀ => CODIF_0,
-  CODIF_0 => CODIF_0,
-
-  :δ₁ => CODIF_1,
-  CODIF_1 => CODIF_1,
-
-  :δ₂ => CODIF_2,
-  CODIF_2 => CODIF_2,
-
-  # Averaging
-  :avg₀₁ => AVG_01,
-  AVG_01 => AVG_01,
-
-  # Math
-  :(-) => NEG,
-  NEG => NEG,
-
-  :norm => MAG,
-  MAG => MAG
-)
-
-# This should only be called with canon names or a set of formless alternatives
-# TODO: Make this const
-# TODO: Decide if we should do this explicity like below or programmatically using an
-# agreed on canon naming convention
-FORMLESS_OP1_NAMES = Dict{Symbol, Symbol}(
-  EXTDERIV_0 => NOFORM_EXTDERIV,
-  EXTDERIV_1 => NOFORM_EXTDERIV,
-  EXTDERIV_2 => NOFORM_EXTDERIV,
-
-  DUALDERIV_0 => NOFORM_EXTDERIV,
-  DUALDERIV_1 => NOFORM_EXTDERIV,
-  DUALDERIV_2 => NOFORM_EXTDERIV,
-  :d̃ => NOFORM_EXTDERIV,
-
-  HODGE_0 => NOFORM_HODGE,
-  HODGE_1 => NOFORM_HODGE,
-  HODGE_2 => NOFORM_HODGE,
-  :⋆ => NOFORM_HODGE,
-
-  INVHODGE_0 => NOFORM_HODGE,
-  INVHODGE_1 => NOFORM_HODGE,
-  INVHODGE_2 => NOFORM_HODGE,
-  :⋆ => NOFORM_HODGE,
-
-  LAPLACE_0 => NOFORM_LAPLACE,
-  LAPLACE_1 => NOFORM_LAPLACE,
-  LAPLACE_2 => NOFORM_LAPLACE,
-  :Δ => NOFORM_LAPLACE,
-
-  CODIF_0 => NOFORM_CODIF,
-  CODIF_1 => NOFORM_CODIF,
-  CODIF_2 => NOFORM_CODIF,
-  :δ => NOFORM_CODIF,
-
-  AVG_01 => NOFORM_AVG
-)
-
-get_canon_name(var::Symbol) = get(CANON_OP1_NAMES, var, var)
-get_canon_name(var::AbstractVector{Symbol}) = return get_formless_canon_name.(var)
-
-function get_formless_canon_name(var::Symbol)
-  canon_var = get_canon_name(var)
-  get(FORMLESS_OP1_NAMES, canon_var, canon_var)
-end
-get_formless_canon_name(var::AbstractVector{Symbol}) = return get_formless_canon_name.(var)
-
-# TODO: Name liable to change, needs to be clear but concise
-deca_canon_op1(d::SummationDecapode, idx::Int) = get_canon_name(d[idx, :op1])
-deca_canon_op1(d::SummationDecapode, idx::AbstractVector{Int}) = get_canon_name.(d[idx, :op1])
-
-# TODO: Name liable to change, needs to be clear but concise
-deca_formless_op1(d::SummationDecapode, idx::Int) = get_formless_canon_name(d[idx, :op1])
-deca_formless_op1(d::SummationDecapode, idx::AbstractVector{Int}) = get_formless_canon_name.(d[idx, :op1])
-
 
 ascii_to_unicode_op1 = Pair{Symbol, Any}[
                         (:dt       => :∂ₜ),

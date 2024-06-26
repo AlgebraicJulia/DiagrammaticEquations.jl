@@ -521,10 +521,10 @@ Resolve function overloads based on types of src and tgt.
 """
 function resolve_overloads!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :resolved_name, :op), NTuple{4, Symbol}}}, op2_rules::Vector{NamedTuple{(:proj1_type, :proj2_type, :res_type, :resolved_name, :op), NTuple{5, Symbol}}})
   for op1_idx in parts(d, :Op1)
-    src = d[:src][op1_idx]; tgt = d[:tgt][op1_idx]; op1 = d[:op1][op1_idx]
-    src_type = d[:type][src]; tgt_type = d[:type][tgt]
+    src = d[op1_idx, :src]; tgt = d[op1_idx, :tgt]
+    src_type = d[src, :type]; tgt_type = d[tgt, :type]
     for rule in op1_rules
-      if op1 == rule[:op] && src_type == rule[:src_type] && tgt_type == rule[:tgt_type]
+      if deca_canon_op1(d, op1_idx) == rule[:op] && src_type == rule[:src_type] && tgt_type == rule[:tgt_type]
         d[op1_idx, :op1] = rule[:resolved_name]
         break
       end
