@@ -431,10 +431,12 @@ op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
     # Rules for Δ.
     (src_type = :Form0, tgt_type = :Form0, resolved_name = :Δ₀, op = NOFORM_LAPLACE),
     (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₁, op = NOFORM_LAPLACE),
-    (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₂, op = NOFORM_LAPLACE)]
+    (src_type = :Form2, tgt_type = :Form2, resolved_name = :Δ₂, op = NOFORM_LAPLACE),
     # (src_type = :Form0, tgt_type = :Form0, resolved_name = :Δ₀, op = :lapl),
     # (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₁, op = :lapl),
     # (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₂, op = :lapl)]
+
+    (src_type = :Form0, tgt_type = :Form1, resolved_name = :avg₀₁, op = NOFORM_AVG)]
 
   # We merge 1D and 2D rules directly here since it seems op2 rules
   # are metric-free. If this assumption is false, this needs to change.
