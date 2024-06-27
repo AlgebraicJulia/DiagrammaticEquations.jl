@@ -443,7 +443,7 @@ function apply_inference_rule_op2!(d::SummationDecapode, op2_id, rule)
   score_proj1 = (rule.proj1_type == type_proj1)
   score_proj2 = (rule.proj2_type == type_proj2)
   score_res = (rule.res_type == type_res)
-  check_op = (d[op2_id, :op2] in rule.op_names)
+  check_op = (deca_canon_op2(d, op2_id) in rule.op_names)
 
   if(check_op && (score_proj1 + score_proj2 + score_res == 2))
     mod_proj1 = safe_modifytype!(d, d[op2_id, :proj1], rule.proj1_type)
@@ -532,10 +532,10 @@ function resolve_overloads!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(
   end
 
   for op2_idx in parts(d, :Op2)
-    proj1 = d[:proj1][op2_idx]; proj2 = d[:proj2][op2_idx]; res = d[:res][op2_idx]; op2 = d[:op2][op2_idx]
+    proj1 = d[:proj1][op2_idx]; proj2 = d[:proj2][op2_idx]; res = d[:res][op2_idx]
     proj1_type = d[:type][proj1]; proj2_type = d[:type][proj2]; res_type = d[:type][res]
     for rule in op2_rules
-      if op2 == rule[:op] && proj1_type == rule[:proj1_type] && proj2_type == rule[:proj2_type] && res_type == rule[:res_type]
+      if deca_canon_op2(d, op2_idx) == rule[:op] && proj1_type == rule[:proj1_type] && proj2_type == rule[:proj2_type] && res_type == rule[:res_type]
         d[op2_idx, :op2] = rule[:resolved_name]
         break
       end

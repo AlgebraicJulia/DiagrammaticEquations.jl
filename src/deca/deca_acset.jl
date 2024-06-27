@@ -4,6 +4,7 @@ using ..DiagrammaticEquations
 # These should be ascii only and have their form inputs
 # seperated from the name by an underscore afterwards (only :name_form#s).
 
+# Op 1 names
 const PARTIAL_T = :dt
 
 const EXTDERIV_0 = :d_0
@@ -32,8 +33,25 @@ const AVG_01 = :avg_01
 const NEG = :(-)
 const MAG = :mag
 
+# Op 2 names
+
+const WEDGE_00 = :wdg_00
+const WEDGE_01 = :wdg_01
+const WEDGE_10 = :wdg_10
+const WEDGE_11 = :wdg_11
+const WEDGE_02 = :wdg_02
+const WEDGE_20 = :wdg_20
+
+const LIE_0 = :L_0
+const LIE_1 = :L_1
+const LIE_2 = :L_2
+
+const INNERPROD_1 = :i_1
+const INNERPROD_2 = :i_2
+
 # Canon names to use when form is not known, useful for type-inference
 
+# Op1 names
 const NOFORM_EXTDERIV = :d
 const NOFORM_DUALDERIV = NOFORM_EXTDERIV
 
@@ -44,6 +62,13 @@ const NOFORM_LAPLACE = :lapl
 const NOFORM_CODIF = :codif
 
 const NOFORM_AVG = :avg
+
+# Op2 names
+const NOFORM_WEDGE = :wdg
+
+const NOFORM_LIE = :L
+
+const NOFORM_INNERPROD = :i
 
 # ! Names should have no more than 2 or 3 alternatives
 # TODO: Make this const
@@ -58,131 +83,92 @@ const NOFORM_AVG = :avg
 # avg₀₁, avg_01 | avg
 # -, neg | mag, norm
 
-CANON_OP1_NAMES = Dict{Symbol, Symbol}(
+CANON_NAMES = Dict{Symbol, Symbol}(
   # Partial time derivative
   :∂ₜ => PARTIAL_T,
-  PARTIAL_T => PARTIAL_T,
 
   # Exterior derivatives
   :d₀ => EXTDERIV_0,
-  EXTDERIV_0 => EXTDERIV_0,
-
   :d₁ => EXTDERIV_1,
-  EXTDERIV_1 => EXTDERIV_1,
 
   # Dual derivatives
   :d̃₀ => DUALDERIV_0,
   :dual_d₀ => DUALDERIV_0,
-  DUALDERIV_0 => DUALDERIV_0,
 
   :d̃₁ => DUALDERIV_1,
   :dual_d₁ => DUALDERIV_1,
-  DUALDERIV_1 => DUALDERIV_1,
 
   :d̃ => NOFORM_EXTDERIV,
 
   # Hodge stars
   :⋆₀ => HODGE_0,
-  HODGE_0 => HODGE_0,
-
   :⋆₁ => HODGE_1,
-  HODGE_1 => HODGE_1,
-
   :⋆₂ => HODGE_2,
-  HODGE_2 => HODGE_2,
 
   :⋆ => NOFORM_HODGE,
 
   # Inverse Hodge stars
   :⋆₀⁻¹ => INVHODGE_0,
-  INVHODGE_0 => INVHODGE_0,
-
   :⋆₁⁻¹ => INVHODGE_1,
-  INVHODGE_1 => INVHODGE_1,
-
   :⋆₂⁻¹ => INVHODGE_2,
-  INVHODGE_2 => INVHODGE_2,
 
   :⋆ => NOFORM_HODGE,
 
   # Laplacian
   :Δ₀ => LAPLACE_0,
-  LAPLACE_0 => LAPLACE_0,
-
   :Δ₁ => LAPLACE_1,
-  LAPLACE_1 => LAPLACE_1,
-
   :Δ₂ => LAPLACE_2,
-  LAPLACE_2 => LAPLACE_2,
 
   :Δ => NOFORM_LAPLACE,
 
   # Co-differential
   :δ₁ => CODIF_1,
-  CODIF_1 => CODIF_1,
-
   :δ₂ => CODIF_2,
-  CODIF_2 => CODIF_2,
-
   :δ => NOFORM_CODIF,
 
   # Averaging
   :avg₀₁ => AVG_01,
-  AVG_01 => AVG_01,
 
   # Math
   :neg => NEG,
-  NEG => NEG,
-
   :norm => MAG,
-  MAG => MAG
+
+  # Wedge
+  :∧₀₀ => WEDGE_00,
+  :∧₀₁ => WEDGE_01,
+  :∧₁₀ => WEDGE_10,
+  :∧₁₁ => WEDGE_11,
+  :∧₀₂ => WEDGE_02,
+  :∧₂₀ => WEDGE_20,
+
+  :∧ => NOFORM_WEDGE,
+
+  # Lie Derivative
+
+  :ℒ₀ => LIE_0,
+  :ℒ₁ => LIE_1,
+  :ℒ₂ => LIE_2,
+
+  :ℒ => NOFORM_LIE,
+
+  # Inner Product
+
+  :ι₁ => INNERPROD_1,
+  :ι₂ => INNERPROD_2,
+
+  :ι => NOFORM_INNERPROD
 )
 
-# # This should only be called with canon names
-# # TODO: Make this const
-# # TODO: Decide if we should do this explicity like below or programmatically using an
-# # agreed on canon naming convention
-# REMOVEFORM_OP1 = Dict{Symbol, Symbol}(
-#   EXTDERIV_0 => NOFORM_EXTDERIV,
-#   EXTDERIV_1 => NOFORM_EXTDERIV,
-
-#   DUALDERIV_0 => NOFORM_EXTDERIV,
-#   DUALDERIV_1 => NOFORM_EXTDERIV,
-
-#   HODGE_0 => NOFORM_HODGE,
-#   HODGE_1 => NOFORM_HODGE,
-#   HODGE_2 => NOFORM_HODGE,
-
-#   INVHODGE_0 => NOFORM_HODGE,
-#   INVHODGE_1 => NOFORM_HODGE,
-#   INVHODGE_2 => NOFORM_HODGE,
-
-#   LAPLACE_0 => NOFORM_LAPLACE,
-#   LAPLACE_1 => NOFORM_LAPLACE,
-#   LAPLACE_2 => NOFORM_LAPLACE,
-
-#   CODIF_1 => NOFORM_CODIF,
-#   CODIF_2 => NOFORM_CODIF,
-
-#   AVG_01 => NOFORM_AVG
-# )
-
-get_canon_name(var::Symbol) = get(CANON_OP1_NAMES, var, var)
+get_canon_name(var::Symbol) = get(CANON_NAMES, var, var)
 get_canon_name(var::AbstractVector{Symbol}) = return get_canon_name.(var)
-
-# function get_formless_canon_name(var::Symbol)
-#   canon_var = get_canon_name(var)
-#   get(REMOVEFORM_OP1, canon_var, canon_var)
-# end
-# get_formless_canon_name(var::AbstractVector{Symbol}) = return get_formless_canon_name.(var)
 
 # TODO: Name liable to change, needs to be clear but concise
 deca_canon_op1(d::SummationDecapode, idx::Int) = get_canon_name(d[idx, :op1])
 deca_canon_op1(d::SummationDecapode, idx::AbstractVector{Int}) = get_canon_name.(d[idx, :op1])
 
-# # TODO: Name liable to change, needs to be clear but concise
-# deca_formless_op1(d::SummationDecapode, idx::Int) = get_formless_canon_name(d[idx, :op1])
-# deca_formless_op1(d::SummationDecapode, idx::AbstractVector{Int}) = get_formless_canon_name.(d[idx, :op1])
+# TODO: Name liable to change, needs to be clear but concise
+deca_canon_op2(d::SummationDecapode, idx::Int) = get_canon_name(d[idx, :op2])
+deca_canon_op2(d::SummationDecapode, idx::AbstractVector{Int}) = get_canon_name.(d[idx, :op2])
 
 # TODO: You could write a method which auto-generates these rules given degree N.
 """
@@ -223,16 +209,16 @@ op1_inf_rules_1D = [
 
 op2_inf_rules_1D = [
   # Rules for ∧₀₀, ∧₁₀, ∧₀₁
-  (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, op_names = [:∧, :∧₀₀, :wedge]),
-  (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form1, op_names = [:∧, :∧₁₀, :wedge]),
-  (proj1_type = :Form0, proj2_type = :Form1, res_type = :Form1, op_names = [:∧, :∧₀₁, :wedge]),
+  (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, op_names = [NOFORM_WEDGE, WEDGE_00]),
+  (proj1_type = :Form0, proj2_type = :Form1, res_type = :Form1, op_names = [NOFORM_WEDGE, WEDGE_01]),
+  (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form1, op_names = [NOFORM_WEDGE, WEDGE_10]),
 
   # Rules for L₀, L₁
-  (proj1_type = :Form1, proj2_type = :DualForm0, res_type = :DualForm0, op_names = [:L, :L₀]),
-  (proj1_type = :Form1, proj2_type = :DualForm1, res_type = :DualForm1, op_names = [:L, :L₁]),    
+  (proj1_type = :Form1, proj2_type = :DualForm0, res_type = :DualForm0, op_names = [NOFORM_LIE, LIE_0]),
+  (proj1_type = :Form1, proj2_type = :DualForm1, res_type = :DualForm1, op_names = [NOFORM_LIE, LIE_1]),
 
   # Rules for i₁
-  (proj1_type = :Form1, proj2_type = :DualForm1, res_type = :DualForm0, op_names = [:i, :i₁]),
+  (proj1_type = :Form1, proj2_type = :DualForm1, res_type = :DualForm0, op_names = [NOFORM_INNERPROD, INNERPROD_1]),
 
   # Rules for divison and multiplication
   (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, op_names = [:/, :./, :*, :.*, :^, :.^]),
@@ -246,10 +232,10 @@ op2_inf_rules_1D = [
   (proj1_type = :Form0, proj2_type = :Parameter, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
   (proj1_type = :Form1, proj2_type = :Parameter, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
   (proj1_type = :Form2, proj2_type = :Parameter, res_type = :Form2, op_names = [:/, :./, :*, :.*]),=#
-  
+
   (proj1_type = :Form0, proj2_type = :Literal, res_type = :Form0, op_names = [:/, :./, :*, :.*, :^, :.^]),
   (proj1_type = :Form1, proj2_type = :Literal, res_type = :Form1, op_names = [:/, :./, :*, :.*, :^, :.^]),
-  
+
   (proj1_type = :DualForm0, proj2_type = :Literal, res_type = :DualForm0, op_names = [:/, :./, :*, :.*, :^, :.^]),
   (proj1_type = :DualForm1, proj2_type = :Literal, res_type = :DualForm1, op_names = [:/, :./, :*, :.*, :^, :.^]),
 
@@ -263,7 +249,7 @@ op2_inf_rules_1D = [
   (proj1_type = :Constant, proj2_type = :Form1, res_type = :Form1, op_names = [:/, :./, :*, :.*, :^, :.^]),
   (proj1_type = :Form0, proj2_type = :Constant, res_type = :Form0, op_names = [:/, :./, :*, :.*, :^, :.^]),
   (proj1_type = :Form1, proj2_type = :Constant, res_type = :Form1, op_names = [:/, :./, :*, :.*, :^, :.^]),
-  
+
   (proj1_type = :Constant, proj2_type = :DualForm0, res_type = :DualForm0, op_names = [:/, :./, :*, :.*, :^, :.^]),
   (proj1_type = :Constant, proj2_type = :DualForm1, res_type = :DualForm1, op_names = [:/, :./, :*, :.*, :^, :.^]),
   (proj1_type = :DualForm0, proj2_type = :Constant, res_type = :DualForm0, op_names = [:/, :./, :*, :.*, :^, :.^]),
@@ -321,15 +307,15 @@ op1_inf_rules_2D = [
 
 op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
   # Rules for ∧₁₁, ∧₂₀, ∧₀₂
-  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form2, op_names = [:∧, :∧₁₁, :wedge]),
-  (proj1_type = :Form2, proj2_type = :Form0, res_type = :Form2, op_names = [:∧, :∧₂₀, :wedge]),
-  (proj1_type = :Form0, proj2_type = :Form2, res_type = :Form2, op_names = [:∧, :∧₀₂, :wedge]),
+  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form2, op_names = [NOFORM_WEDGE, WEDGE_11]),
+  (proj1_type = :Form0, proj2_type = :Form2, res_type = :Form2, op_names = [NOFORM_WEDGE, WEDGE_02]),
+  (proj1_type = :Form2, proj2_type = :Form0, res_type = :Form2, op_names = [NOFORM_WEDGE, WEDGE_20]),
 
   # Rules for L₂
-  (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm2, op_names = [:L, :L₂]),    
+  (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm2, op_names = [NOFORM_LIE, LIE_2]),
 
   # Rules for i₁
-  (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm1, op_names = [:i, :i₂]),
+  (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm1, op_names = [NOFORM_INNERPROD, INNERPROD_2]),
 
   # Rules for ℒ
   (proj1_type = :DualForm1, proj2_type = :DualForm1, res_type = :DualForm1, op_names = [:ℒ₁]),
@@ -337,7 +323,7 @@ op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
   # Rules for ι
   (proj1_type = :DualForm1, proj2_type = :DualForm1, res_type = :DualForm0, op_names = [:ι₁₁]),
   (proj1_type = :DualForm1, proj2_type = :DualForm2, res_type = :DualForm1, op_names = [:ι₁₂]),
-  
+
   # Rules for subtraction
   (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, op_names = [:-, :.-]),
   (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form1, op_names = [:-, :.-]),
@@ -366,14 +352,9 @@ op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
     (src_type = :Form1, tgt_type = :DualForm0, resolved_name = :⋆₁, op = NOFORM_HODGE),
     (src_type = :DualForm1, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = NOFORM_INVHODGE),
     (src_type = :DualForm0, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = NOFORM_INVHODGE),
-    # (src_type = :Form0, tgt_type = :DualForm1, resolved_name = :⋆₀, op = :star),
-    # (src_type = :Form1, tgt_type = :DualForm0, resolved_name = :⋆₁, op = :star),
-    # (src_type = :DualForm1, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = :star),
-    # (src_type = :DualForm0, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :star),
     # Rules for δ.
     (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = NOFORM_CODIF),
-    # (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :codif),
-     # Rules for Δ
+    # Rules for Δ
     (src_type = :Form0, tgt_type = :Form0, resolved_name = :Δ₀, op = NOFORM_LAPLACE),
     (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₁, op = NOFORM_LAPLACE)]
 
@@ -381,17 +362,17 @@ op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
   # this assumption is false, this needs to change.
   op2_res_rules_1D = [
     # Rules for ∧.
-    (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, resolved_name = :∧₀₀, op = :∧),
-    (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form1, resolved_name = :∧₁₀, op = :∧),
-    (proj1_type = :Form0, proj2_type = :Form1, res_type = :Form1, resolved_name = :∧₀₁, op = :∧),
-    (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, resolved_name = :∧₀₀, op = :wedge),
-    (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form1, resolved_name = :∧₁₀, op = :wedge),
-    (proj1_type = :Form0, proj2_type = :Form1, res_type = :Form1, resolved_name = :∧₀₁, op = :wedge),
+    (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, resolved_name = :∧₀₀, op = NOFORM_WEDGE),
+    (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form1, resolved_name = :∧₁₀, op = NOFORM_WEDGE),
+    (proj1_type = :Form0, proj2_type = :Form1, res_type = :Form1, resolved_name = :∧₀₁, op = NOFORM_WEDGE),
+    # (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, resolved_name = :∧₀₀, op = :wedge),
+    # (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form1, resolved_name = :∧₁₀, op = :wedge),
+    # (proj1_type = :Form0, proj2_type = :Form1, res_type = :Form1, resolved_name = :∧₀₁, op = :wedge),
     # Rules for L.
-    (proj1_type = :Form1, proj2_type = :DualForm0, res_type = :DualForm0, resolved_name = :L₀, op = :L),
-    (proj1_type = :Form1, proj2_type = :DualForm1, res_type = :DualForm1, resolved_name = :L₁, op = :L),
+    (proj1_type = :Form1, proj2_type = :DualForm0, res_type = :DualForm0, resolved_name = :L₀, op = NOFORM_LIE),
+    (proj1_type = :Form1, proj2_type = :DualForm1, res_type = :DualForm1, resolved_name = :L₁, op = NOFORM_LIE),
     # Rules for i.
-    (proj1_type = :Form1, proj2_type = :DualForm1, res_type = :DualForm0, resolved_name = :i₁, op = :i)]
+    (proj1_type = :Form1, proj2_type = :DualForm1, res_type = :DualForm0, resolved_name = :i₁, op = NOFORM_INNERPROD)]
 
 
   """
@@ -442,18 +423,18 @@ op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
   # are metric-free. If this assumption is false, this needs to change.
   op2_res_rules_2D = vcat(op2_res_rules_1D, [
     # Rules for ∧.
-    (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form2, resolved_name = :∧₁₁, op = :∧),
-    (proj1_type = :Form2, proj2_type = :Form0, res_type = :Form2, resolved_name = :∧₂₀, op = :∧),
-    (proj1_type = :Form0, proj2_type = :Form2, res_type = :Form2, resolved_name = :∧₀₂, op = :∧),
-    (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form2, resolved_name = :∧₁₁, op = :wedge),
-    (proj1_type = :Form2, proj2_type = :Form0, res_type = :Form2, resolved_name = :∧₂₀, op = :wedge),
-    (proj1_type = :Form0, proj2_type = :Form2, res_type = :Form2, resolved_name = :∧₀₂, op = :wedge),
+    (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form2, resolved_name = :∧₁₁, op = NOFORM_WEDGE),
+    (proj1_type = :Form2, proj2_type = :Form0, res_type = :Form2, resolved_name = :∧₂₀, op = NOFORM_WEDGE),
+    (proj1_type = :Form0, proj2_type = :Form2, res_type = :Form2, resolved_name = :∧₀₂, op = NOFORM_WEDGE),
+    # (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form2, resolved_name = :∧₁₁, op = :wedge),
+    # (proj1_type = :Form2, proj2_type = :Form0, res_type = :Form2, resolved_name = :∧₂₀, op = :wedge),
+    # (proj1_type = :Form0, proj2_type = :Form2, res_type = :Form2, resolved_name = :∧₀₂, op = :wedge),
     # Rules for L.
-    (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm2, resolved_name = :L₂, op = :L),
+    (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm2, resolved_name = :L₂, op = NOFORM_LIE),
     # (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm2, resolved_name = :L₂ᵈ, op = :L),
     # Rules for i.
-    (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm1, resolved_name = :i₂, op = :i)])
-    
+    (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm1, resolved_name = :i₂, op = NOFORM_INNERPROD)])
+
 # TODO: When SummationDecapodes are annotated with the degree of their space,
 # use dispatch to choose the correct set of rules.
 infer_types!(d::SummationDecapode) =
