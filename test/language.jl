@@ -1040,7 +1040,7 @@ end
   @test op2s_hx == op2s_expected_hx # Correct but probably by chance, see above
 end
 
-@testset "Op1 Canonicalization" begin
+@testset "Canonicalization" begin
   function check_canontyping(control::SummationDecapode, test::SummationDecapode)
     infer_test = infer_types!(deepcopy(test))
     infer_control = infer_types!(deepcopy(control))
@@ -1049,7 +1049,7 @@ end
     @test infer_test[:op2] == test[:op2]
   end
 
-  function check_canonoverload(control::SummationDecapode, test::SummationDecapode)
+  function check_canonoverload_op1(control::SummationDecapode, test::SummationDecapode)
     over_test = resolve_overloads!(infer_types!(deepcopy(test)))
     over_control = resolve_overloads!(infer_types!(deepcopy(control)))
     @test get_canon_name(over_test[:op1]) == get_canon_name(over_control[:op1])
@@ -1058,7 +1058,8 @@ end
   setup_basecase(d::SummationDecapode) = resolve_overloads!(infer_types!(deepcopy(d)))
 
   # Test exterior derivative and hodge
-  gen_d1 = @decapode begin
+
+  gen_d = @decapode begin
     A::Form0
     B == d(hdg(hdg(A)))
     C == d(hdg(hdg(B)))
@@ -1067,7 +1068,7 @@ end
   end
 
   let # Check base case explicitly
-    d = setup_basecase(gen_d1)
+    d = setup_basecase(gen_d)
     @test d[:type]  == [:Form0, :Form1, :DualForm2, :Form0, :DualForm2, :Form2, :DualForm0, :Form1, :DualForm1, :Form2, :DualForm1, :DualForm0]
     @test get_canon_name(d[:op1]) == [:hdg_0, :invhdg_0, :d_0, :hdg_1, :invhdg_1, :d_1, :hdg_2, :invhdg_2, :hdg_2, :duald_0, :duald_1]
   end
@@ -1080,8 +1081,8 @@ end
       D == invhdg_2(hdg_2(C))
       E == duald_1(duald_0(hdg_2(D)))
     end
-    check_canontyping(gen_d1, d)
-    check_canonoverload(gen_d1, d)
+    check_canontyping(gen_d, d)
+    check_canonoverload_op1(gen_d, d)
   end
 
   let # Unicode and tagged
@@ -1092,8 +1093,8 @@ end
       D == ⋆₂⁻¹(⋆₂(C))
       E == d̃₁(d̃₀(⋆₂(D)))
     end
-    check_canontyping(gen_d1, d)
-    check_canonoverload(gen_d1, d)
+    check_canontyping(gen_d, d)
+    check_canonoverload_op1(gen_d, d)
   end
 
   let # Unicode and not tagged
@@ -1104,8 +1105,8 @@ end
       D == ⋆(⋆(C))
       E == d̃(d̃(⋆(D)))
     end
-    check_canontyping(gen_d1, d)
-    check_canonoverload(gen_d1, d)
+    check_canontyping(gen_d, d)
+    check_canonoverload_op1(gen_d, d)
   end
 
   let # Combination of names
@@ -1116,20 +1117,19 @@ end
       D == invhdg_2(⋆₂(C))
       E == d̃₁(duald_0(hdg_2(D)))
     end
-    check_canontyping(gen_d1, d)
-    check_canonoverload(gen_d1, d)
+    check_canontyping(gen_d, d)
+    check_canonoverload_op1(gen_d, d)
   end
 
   # Test laplacian and codifferential
-  gen_d2 = @decapode begin
+
+  gen_d = @decapode begin
     A::Form0
     B == codif(codif(lapl(d(lapl(d(lapl(A)))))))
   end
-  infer_types!(gen_d2)
-  @test gen_d2[:type] == [:Form0, :Form0, :Form0, :Form1, :Form2, :Form2, :Form1, :Form1]
 
   let # Check base case explicitly
-    d = setup_basecase(gen_d2)
+    d = setup_basecase(gen_d)
     @test d[:type]  == [:Form0, :Form0, :Form0, :Form1, :Form2, :Form2, :Form1, :Form1]
     @test get_canon_name(d[:op1]) == [:lapl_0, :d_0, :lapl_1, :d_1, :lapl_2, :codif_2, :codif_1]
   end
@@ -1139,8 +1139,8 @@ end
       A::Form0
       B == codif_1(codif_2(lapl_2(d_1(lapl_1(d_0(lapl_0(A)))))))
     end
-    check_canontyping(gen_d2, d)
-    check_canonoverload(gen_d2, d)
+    check_canontyping(gen_d, d)
+    check_canonoverload_op1(gen_d, d)
   end
 
   let # Unicode and tagged
@@ -1148,8 +1148,8 @@ end
       A::Form0
       B == δ₁(δ₂(Δ₂(d₁(Δ₁(d₀(Δ₀(A)))))))
     end
-    check_canontyping(gen_d2, d)
-    check_canonoverload(gen_d2, d)
+    check_canontyping(gen_d, d)
+    check_canonoverload_op1(gen_d, d)
   end
 
   let # Unicode and not tagged
@@ -1157,8 +1157,8 @@ end
       A::Form0
       B == δ(δ(Δ(d(Δ(d(Δ(A)))))))
     end
-    check_canontyping(gen_d2, d)
-    check_canonoverload(gen_d2, d)
+    check_canontyping(gen_d, d)
+    check_canonoverload_op1(gen_d, d)
   end
 
   let # Combination of names
@@ -1166,12 +1166,13 @@ end
       A::Form0
       B == δ(codif(Δ₂(d₁(lapl(d_0(Δ(A)))))))
     end
-    check_canontyping(gen_d2, d)
-    check_canonoverload(gen_d2, d)
+    check_canontyping(gen_d, d)
+    check_canonoverload_op1(gen_d, d)
   end
 
   # Test average, neg and mag
-  gen_d3 = @decapode begin
+
+  gen_d = @decapode begin
     A::Form0
     C::Form2
     B == neg(mag(avg(neg(mag(A)))))
@@ -1179,11 +1180,10 @@ end
   end
 
   let # Check base case explicitly
-    d = setup_basecase(gen_d3)
+    d = setup_basecase(gen_d)
     @test d[:type]  == [:Form0, :Form2, :Form1, :Form2, :Form1, :Form1, :Form0, :Form0, :Form2]
     @test get_canon_name(d[:op1]) == [:mag, :-, :avg_01, :mag, :-, :mag, :-]
   end
-
   let # Alternate names
     d = @decapode begin
       A::Form0
@@ -1191,8 +1191,8 @@ end
       B == -(norm(avg_01(-(norm(A)))))
       D == -(norm(C))
     end
-    check_canontyping(gen_d3, d)
-    check_canonoverload(gen_d3, d)
+    check_canontyping(gen_d, d)
+    check_canonoverload_op1(gen_d, d)
   end
 
   let # Typing respects typed exterior derivative
@@ -1266,6 +1266,106 @@ end
     infer_types!(d)
     @test d[:type] == [:Form2, :infer]
   end
+
+  function check_canonoverload_op2(control::SummationDecapode, test::SummationDecapode)
+    over_test = resolve_overloads!(infer_types!(deepcopy(test)))
+    over_control = resolve_overloads!(infer_types!(deepcopy(control)))
+    @test get_canon_name(over_test[:op2]) == get_canon_name(over_control[:op2])
+  end
+
+  # Wedge products
+  gen_d = @decapode begin
+    (A, B)::Form0
+    (C, D)::Form1
+    E::Form2
+
+    R00 == wdg(A, B)
+    R01 == wdg(A, C)
+    R10 == wdg(C, A)
+
+    R11 == wdg(C, D)
+    R02 == wdg(A, E)
+    R20 == wdg(E, A)
+  end
+
+  let
+    d = setup_basecase(gen_d)
+    @test d[:type] == [:Form0, :Form0, :Form1, :Form1, :Form2, :Form0, :Form2, :Form1, :Form2, :Form1, :Form2]
+    @test d[:op2] == [:∧₀₀, :∧₀₁, :∧₁₀, :∧₁₁, :∧₀₂, :∧₂₀]
+  end
+
+  let #Unicode, tagged
+    d = @decapode begin
+      (A, B)::Form0
+      (C, D)::Form1
+      E::Form2
+
+      R00 == ∧₀₀(A, B)
+      R01 == ∧₀₁(A, C)
+      R10 == ∧₁₀(C, A)
+
+      R11 == ∧₁₁(C, D)
+      R02 == ∧₀₂(A, E)
+      R20 == ∧₂₀(E, A)
+    end
+    check_canontyping(gen_d, d)
+    check_canonoverload_op2(gen_d, d)
+  end
+
+  let # Unicode and not tagged
+    d = @decapode begin
+      (A, B)::Form0
+      (C, D)::Form1
+      E::Form2
+
+      R00 == ∧(A, B)
+      R01 == ∧(A, C)
+      R10 == ∧(C, A)
+
+      R11 == ∧(C, D)
+      R02 == ∧(A, E)
+      R20 == ∧(E, A)
+    end
+    check_canontyping(gen_d, d)
+    check_canonoverload_op2(gen_d, d)
+  end
+
+  let # Ascii tagged
+    d = @decapode begin
+      (A, B)::Form0
+      (C, D)::Form1
+      E::Form2
+
+      R00 == wdg_00(A, B)
+      R01 == wdg_01(A, C)
+      R10 == wdg_10(C, A)
+
+      R11 == wdg_11(C, D)
+      R02 == wdg_02(A, E)
+      R20 == wdg_20(E, A)
+    end
+    check_canontyping(gen_d, d)
+    check_canonoverload_op2(gen_d, d)
+  end
+
+  let # Mixed
+    d = @decapode begin
+      (A, B)::Form0
+      (C, D)::Form1
+      E::Form2
+
+      R00 == ∧(A, B)
+      R01 == ∧₀₁(A, C)
+      R10 == wdg_10(C, A)
+
+      R11 == ∧₁₁(C, D)
+      R02 == ∧(A, E)
+      R20 == wdg_20(E, A)
+    end
+    check_canontyping(gen_d, d)
+    check_canonoverload_op2(gen_d, d)
+  end
+
 end
 
 @testset "Compilation Transformation" begin
