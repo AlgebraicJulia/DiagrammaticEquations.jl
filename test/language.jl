@@ -1291,7 +1291,7 @@ end
   let
     d = setup_basecase(gen_d)
     @test d[:type] == [:Form0, :Form0, :Form1, :Form1, :Form2, :Form0, :Form2, :Form1, :Form2, :Form1, :Form2]
-    @test d[:op2] == [:∧₀₀, :∧₀₁, :∧₁₀, :∧₁₁, :∧₀₂, :∧₂₀]
+    @test get_canon_name(d[:op2]) == [:wdg_00, :wdg_01, :wdg_10, :wdg_11, :wdg_02, :wdg_20]
   end
 
   let #Unicode, tagged
@@ -1366,6 +1366,118 @@ end
     check_canonoverload_op2(gen_d, d)
   end
 
+  # Wedge products
+  gen_d = @decapode begin
+    A::DualForm0
+    B::DualForm1
+    C::DualForm2
+    D::Form1
+
+    R0 == L(D, A)
+    R1 == L(D, B)
+    R2 == L(D, C)
+
+    R3 == i(D, B)
+    R4 == i(D, C)
+  end
+
+  let
+    d = setup_basecase(gen_d)
+    @test d[:type] == [:DualForm0, :DualForm1, :DualForm2, :Form1, :DualForm0, :DualForm1, :DualForm1, :DualForm0, :DualForm2]
+    @test d[:op2] == [:L₀, :L₁, :L₂, :i₁, :i₂]
+  end
+
+  let # Unicode special, tagged
+    d = @decapode begin
+      A::DualForm0
+      B::DualForm1
+      C::DualForm2
+      D::Form1
+
+      R0 == ℒ₀(D, A)
+      R1 == ℒ₁(D, B)
+      R2 == ℒ₂(D, C)
+
+      R3 == ι₁(D, B)
+      R4 == ι₂(D, C)
+    end
+    check_canontyping(gen_d, d)
+    check_canonoverload_op2(gen_d, d)
+  end
+
+  let # Unicode, not tagged
+    d = @decapode begin
+      A::DualForm0
+      B::DualForm1
+      C::DualForm2
+      D::Form1
+
+      R0 == ℒ(D, A)
+      R1 == ℒ(D, B)
+      R2 == ℒ(D, C)
+
+      R3 == ι(D, B)
+      R4 == ι(D, C)
+    end
+    check_canontyping(gen_d, d)
+    check_canonoverload_op2(gen_d, d)
+  end
+
+  let # Unicode, tagged
+    d = @decapode begin
+      A::DualForm0
+      B::DualForm1
+      C::DualForm2
+      D::Form1
+
+      R0 == L₀(D, A)
+      R1 == L₁(D, B)
+      R2 == L₂(D, C)
+
+      R3 == i₁(D, B)
+      R4 == i₂(D, C)
+    end
+    check_canontyping(gen_d, d)
+    check_canonoverload_op2(gen_d, d)
+  end
+
+  let # Ascii, tagged
+    d = @decapode begin
+      A::DualForm0
+      B::DualForm1
+      C::DualForm2
+      D::Form1
+
+      R0 == L_0(D, A)
+      R1 == L_1(D, B)
+      R2 == L_2(D, C)
+
+      R3 == i_1(D, B)
+      R4 == i_2(D, C)
+    end
+    check_canontyping(gen_d, d)
+    check_canonoverload_op2(gen_d, d)
+  end
+
+  let # Mixed
+    d = @decapode begin
+      A::DualForm0
+      B::DualForm1
+      C::DualForm2
+      D::Form1
+
+      R0 == ℒ(D, A)
+      R1 == L_1(D, B)
+      R2 == L₂(D, C)
+
+      R3 == i_1(D, B)
+      R4 == i₂(D, C)
+    end
+    check_canontyping(gen_d, d)
+    check_canonoverload_op2(gen_d, d)
+  end
+
+   
 end
 
 @testset "Compilation Transformation" begin

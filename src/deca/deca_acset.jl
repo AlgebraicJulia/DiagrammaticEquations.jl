@@ -146,15 +146,23 @@ CANON_NAMES = Dict{Symbol, Symbol}(
   # Lie Derivative
 
   :ℒ₀ => LIE_0,
+  :L₀ => LIE_0,
+  
   :ℒ₁ => LIE_1,
+  :L₁ => LIE_1,
+
   :ℒ₂ => LIE_2,
+  :L₂ => LIE_2,
 
   :ℒ => NOFORM_LIE,
 
   # Inner Product
 
   :ι₁ => INNERPROD_1,
+  :i₁ => INNERPROD_1,
+
   :ι₂ => INNERPROD_2,
+  :i₂ => INNERPROD_2,
 
   :ι => NOFORM_INNERPROD
 )
