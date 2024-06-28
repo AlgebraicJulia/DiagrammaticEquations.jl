@@ -1218,34 +1218,37 @@ end
   let # Typing respects typed hodges
     d = @decapode begin
       A::Form0
-      B0 == hdg_0(A)
+      A2::Form2
+      B0 == hdg_0(A2)
       B1 == hdg_1(A)
       B2 == hdg_2(A)
     end
     infer_types!(d)
-    @test d[:type] == [:Form0, :DualForm2, :infer, :infer]
+    @test d[:type] == [:Form0, :Form2, :infer, :infer, :infer]
   end
 
   let # Typing respects typed inverse hodges
     d = @decapode begin
       A::DualForm2
-      B0 == invhdg_0(A)
+      A2::DualForm0
+      B0 == invhdg_0(A2)
       B1 == invhdg_1(A)
       B2 == invhdg_2(A)
     end
     infer_types!(d)
-    @test d[:type] == [:DualForm2, :Form0, :infer, :infer]
+    @test d[:type] == [:DualForm2, :DualForm0, :infer, :infer, :infer]
   end
 
   let # Typing respects typed laplacians
     d = @decapode begin
       A::Form0
-      B0 == lapl_0(A)
+      A2::Form2
+      B0 == lapl_0(A2)
       B1 == lapl_1(A)
       B2 == lapl_2(A)
     end
     infer_types!(d)
-    @test d[:type] == [:Form0, :Form0, :infer, :infer]
+    @test d[:type] == [:Form0, :Form2, :infer, :infer, :infer]
   end
 
   let # Typing respects typed codifferentials
@@ -1477,7 +1480,38 @@ end
     check_canonoverload_op2(gen_d, d)
   end
 
-   
+  let # Typing respects typed wedge
+    d = @decapode begin
+      (A, B)::Form0
+      C::Form1
+      R00 == wdg_00(A, C)
+      R01 == wdg_01(A, B)
+      R10 == wdg_10(A, B)
+
+      R11 == wdg_11(A, B)
+      R02 == wdg_02(A, B)
+      R20 == wdg_20(A, B)
+    end
+    infer_types!(d)
+    @test d[:type] == [:Form0, :Form0, :Form1, :infer, :infer, :infer, :infer, :infer, :infer]
+  
+  end
+
+  let # Typing respects typed lie and inner
+    d = @decapode begin
+      D::Form1
+
+      R0 == L_0(D, D)
+      R1 == L_1(D, D)
+      R2 == L_2(D, D)
+
+      R3 == i_1(D, D)
+      R4 == i_2(D, D)
+    end
+    infer_types!(d)
+    @test d[:type] == [:Form1, :infer, :infer, :infer, :infer, :infer]
+  end
+
 end
 
 @testset "Compilation Transformation" begin
