@@ -1070,7 +1070,7 @@ end
   let # Check base case explicitly
     d = setup_basecase(gen_d)
     @test d[:type]  == [:Form0, :Form1, :DualForm2, :Form0, :DualForm2, :Form2, :DualForm0, :Form1, :DualForm1, :Form2, :DualForm1, :DualForm0]
-    @test get_canon_name(d[:op1]) == [:hdg_0, :invhdg_0, :d_0, :hdg_1, :invhdg_1, :d_1, :hdg_2, :invhdg_2, :hdg_2, :duald_0, :duald_1]
+    @test get_canon_name(d[:op1]) == [:hdg_0, :invhdg_0, :d_0, :hdg_1, :invhdg_1, :d_1, :hdg_2, :invhdg_2, :hdg_2, :dual_d_0, :dual_d_1]
   end
 
   let # Ascii and tagged
@@ -1079,7 +1079,7 @@ end
       B == d_0(invhdg_0(hdg_0(A)))
       C == d_1(invhdg_1(hdg_1(B)))
       D == invhdg_2(hdg_2(C))
-      E == duald_1(duald_0(hdg_2(D)))
+      E == dual_d_1(dual_d_0(hdg_2(D)))
     end
     check_canontyping(gen_d, d)
     check_canonoverload_op1(gen_d, d)
@@ -1115,7 +1115,7 @@ end
       B == d(⋆(hdg(A)))
       C == d₁(hdg(⋆₁(B)))
       D == invhdg_2(⋆₂(C))
-      E == d̃₁(duald_0(hdg_2(D)))
+      E == d̃₁(dual_d_0(hdg_2(D)))
     end
     check_canontyping(gen_d, d)
     check_canonoverload_op1(gen_d, d)
@@ -1208,8 +1208,8 @@ end
   let # Typing respects typed dual derivatives
     d = @decapode begin
       A::DualForm2
-      B0 == duald_0(A)
-      B2 == duald_1(A)
+      B0 == dual_d_0(A)
+      B2 == dual_d_1(A)
     end
     infer_types!(d)
     @test d[:type] == [:DualForm2, :infer, :infer]
@@ -1494,7 +1494,7 @@ end
     end
     infer_types!(d)
     @test d[:type] == [:Form0, :Form0, :Form1, :infer, :infer, :infer, :infer, :infer, :infer]
-  
+
   end
 
   let # Typing respects typed lie and inner

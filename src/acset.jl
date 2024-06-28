@@ -271,7 +271,7 @@ function contract_operators!(d::SummationDecapode; allowable_ops::Set{Symbol} = 
   chains = find_chains(d, allowable_ops = allowable_ops)
   filter!(x -> length(x) != 1, chains)
   for chain in chains
-    add_part!(d, :Op1, src=d[:src][first(chain)], tgt=d[:tgt][last(chain)], op1=Vector{Symbol}(d[:op1][chain]))
+    add_part!(d, :Op1, src=d[first(chain), :src], tgt=d[last(chain), :tgt], op1=Vector{Symbol}(d[:op1][chain]))
   end
   rem_parts!(d, :Op1, sort!(vcat(chains...)))
   remove_neighborless_vars!(d)
@@ -524,7 +524,7 @@ function resolve_overloads!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(
     src = d[op1_idx, :src]; tgt = d[op1_idx, :tgt]
     src_type = d[src, :type]; tgt_type = d[tgt, :type]
     for rule in op1_rules
-      if deca_canon_op1(d, op1_idx) == rule[:op] && src_type == rule[:src_type] && tgt_type == rule[:tgt_type]
+      if d[op1_idx, :op1] == rule[:op] && src_type == rule[:src_type] && tgt_type == rule[:tgt_type]
         d[op1_idx, :op1] = rule[:resolved_name]
         break
       end
@@ -532,10 +532,10 @@ function resolve_overloads!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(
   end
 
   for op2_idx in parts(d, :Op2)
-    proj1 = d[:proj1][op2_idx]; proj2 = d[:proj2][op2_idx]; res = d[:res][op2_idx]
-    proj1_type = d[:type][proj1]; proj2_type = d[:type][proj2]; res_type = d[:type][res]
+    proj1 = d[op2_idx, :proj1]; proj2 = d[op2_idx, :proj2]; res = d[op2_idx, :res]
+    proj1_type = d[proj1, :type]; proj2_type = d[proj2, :type]; res_type = d[res, :type]
     for rule in op2_rules
-      if deca_canon_op2(d, op2_idx) == rule[:op] && proj1_type == rule[:proj1_type] && proj2_type == rule[:proj2_type] && res_type == rule[:res_type]
+      if d[op2_idx, :op2] == rule[:op] && proj1_type == rule[:proj1_type] && proj2_type == rule[:proj2_type] && res_type == rule[:res_type]
         d[op2_idx, :op2] = rule[:resolved_name]
         break
       end
