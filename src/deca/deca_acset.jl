@@ -183,17 +183,31 @@ op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
     (src_type = :DualForm0, tgt_type = :DualForm1, resolved_name = UNICODE_DUALDERIV_0, op = NOFORM_UNICODE_DUALDERIV),
 
     # Rules for ⋆.
-    (src_type = :Form0, tgt_type = :DualForm1, resolved_name = :⋆₀, op = NOFORM_HODGE),
-    (src_type = :Form1, tgt_type = :DualForm0, resolved_name = :⋆₁, op = NOFORM_HODGE),
-    (src_type = :DualForm1, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = NOFORM_INVHODGE),
-    (src_type = :DualForm0, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = NOFORM_INVHODGE),
-    # Rules for δ.
-    (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = NOFORM_CODIF),
-    # Rules for Δ
-    (src_type = :Form0, tgt_type = :Form0, resolved_name = :Δ₀, op = NOFORM_LAPLACE),
-    (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₁, op = NOFORM_LAPLACE),
+    (src_type = :Form0, tgt_type = :DualForm1, resolved_name = HODGE_0, op = NOFORM_HODGE),
+    (src_type = :Form0, tgt_type = :DualForm1, resolved_name = UNICODE_HODGE_0, op = NOFORM_UNICODE_HODGE),
 
-    (src_type = :Form0, tgt_type = :Form1, resolved_name = AVG_01, op = NOFORM_AVG)]
+    (src_type = :Form1, tgt_type = :DualForm0, resolved_name = HODGE_1, op = NOFORM_HODGE),
+    (src_type = :Form1, tgt_type = :DualForm0, resolved_name = UNICODE_HODGE_1, op = NOFORM_UNICODE_HODGE),
+
+    (src_type = :DualForm1, tgt_type = :Form0, resolved_name = INVHODGE_0, op = NOFORM_INVHODGE),
+    (src_type = :DualForm1, tgt_type = :Form0, resolved_name = UNICODE_INVHODGE_0, op = NOFORM_UNICODE_INVHODGE),
+
+    (src_type = :DualForm0, tgt_type = :Form1, resolved_name = INVHODGE_1, op = NOFORM_INVHODGE),
+    (src_type = :DualForm0, tgt_type = :Form1, resolved_name = UNICODE_INVHODGE_1, op = NOFORM_UNICODE_INVHODGE),
+
+    # Rules for δ.
+    (src_type = :Form1, tgt_type = :Form0, resolved_name = CODIF_1, op = NOFORM_CODIF),
+    (src_type = :Form1, tgt_type = :Form0, resolved_name = UNICODE_CODIF_1, op = NOFORM_UNICODE_CODIF),
+
+    # Rules for Δ
+    (src_type = :Form0, tgt_type = :Form0, resolved_name = LAPLACE_0, op = NOFORM_LAPLACE),
+    (src_type = :Form0, tgt_type = :Form0, resolved_name = UNICODE_LAPLACE_0, op = NOFORM_UNICODE_LAPLACE),
+
+    (src_type = :Form1, tgt_type = :Form1, resolved_name = LAPLACE_1, op = NOFORM_LAPLACE),
+    (src_type = :Form1, tgt_type = :Form1, resolved_name = UNICODE_LAPLACE_1, op = NOFORM_UNICODE_LAPLACE),
+
+    # TODO: Change resolved to AVG_01
+    (src_type = :Form0, tgt_type = :Form1, resolved_name = :avg₀₁, op = NOFORM_AVG)]
 
   # We merge 1D and 2D rules since it seems op2 rules are metric-free. If
   # this assumption is false, this needs to change.
@@ -285,7 +299,7 @@ op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
     # (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₁, op = :lapl),
     # (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₂, op = :lapl)]
 
-    # TODO: Change first resolved to AVG_01
+    # TODO: Change resolved to AVG_01
     (src_type = :Form0, tgt_type = :Form1, resolved_name = :avg₀₁, op = NOFORM_AVG)]
 
   # We merge 1D and 2D rules directly here since it seems op2 rules
