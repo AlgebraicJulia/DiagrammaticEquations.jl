@@ -1,5 +1,9 @@
 using ..DiagrammaticEquations
 
+# HOW TO ADD NEW INFERENCE RULES
+# 1. Add proper types
+# 2. Set up proper consts for operator names
+# 3. Set op_names to contain the generic name as well as the canon name
 # TODO: You could write a method which auto-generates these rules given degree N.
 """
 These are the default rules used to do type inference in the 1D exterior calculus.
@@ -170,6 +174,11 @@ op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
   (proj1_type = :Literal, proj2_type = :DualForm2, res_type = :DualForm2, op_names = [:/, :./, :*, :.*, :^, :.^]),
   (proj1_type = :DualForm2, proj2_type = :Literal, res_type = :DualForm2, op_names = [:/, :./, :*, :.*, :^, :.^])])
 
+  # HOW TO ADD NEW RESOLUTION RULES
+  # 1. Add proper types
+  # 2. Set up resolved name to be canon ascii name
+  # 3. Set up op to be the generic ascii name
+  # 4. For unicode operators, create another rule using the unicode variants of the above instead
   """
   These are the default rules used to do function resolution in the 1D exterior calculus.
   """
