@@ -304,9 +304,6 @@ op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
     (src_type = :Form0, tgt_type = :Form0, resolved_name = :∇²₀, op = :∇²),
     (src_type = :Form1, tgt_type = :Form1, resolved_name = :∇²₁, op = :∇²),
     (src_type = :Form2, tgt_type = :Form2, resolved_name = :∇²₂, op = :∇²),
-    # (src_type = :Form0, tgt_type = :Form0, resolved_name = :Δ₀, op = :lapl),
-    # (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₁, op = :lapl),
-    # (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₂, op = :lapl)]
 
     # TODO: Change resolved to AVG_01
     (src_type = :Form0, tgt_type = :Form1, resolved_name = :avg₀₁, op = NOFORM_AVG)]
