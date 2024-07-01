@@ -351,8 +351,7 @@ function find_chains(d::SummationDecapode;
     [incident(d, Vector{Int64}(filter(i -> !isnothing(i), infer_states(d))), :src),
      incident(d, d[:res], :src),
      incident(d, d[:sum], :src),
-     d[collect(Iterators.flatten(incident(d, collect(black_list), :op1))), :tgt]
-    ]))
+     incident(d, d[collect(Iterators.flatten(incident(d, collect(black_list), :op1))), :tgt], :src)]))
 
   passes_white_list(x) = isempty(white_list) ? true : x ∈ white_list
   passes_black_list(x) = x ∉ black_list
