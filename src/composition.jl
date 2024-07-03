@@ -232,7 +232,7 @@ function construct_relation_diagram(boxes::Vector{Symbol}, junctions::Vector{Vec
   tables = map(boxes, junctions) do b, j
     Expr(:call, b, j...)
   end
-  quote @relation () begin $(tables...) end end |> eval
+  parse_relation_diagram(:(), :($(tables...),))
 end
 
 # TODO: Add a macro which provides names for boxes via the Symbol of the Decapode.
