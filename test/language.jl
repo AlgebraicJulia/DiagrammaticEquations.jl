@@ -1275,95 +1275,57 @@ end
   end
 end
 
-@testset "ASCII & Vector Calculus Operators" begin
-# Test ASCII to Unicode conversion on an Op2.
-t1 = @decapode begin
-  A == wedge(C, D)
-end
-unicode!(t1)
-
-op2s_1 = Set(t1[:op2])
-op2s_expected_1 = Set([:∧])
-@test issetequal(op2s_1, op2s_expected_1)
-
-# Test ASCII to Unicode conversion with multiple occurences of the same operator.
-t2 = @decapode begin
-  A == wedge(C, D)
-  B == wedge(E, F)
-end
-unicode!(t2)
-
-op2s_2 = Set(t2[:op2])
-op2s_expected_2 = Set([:∧])
-@test issetequal(op2s_2, op2s_expected_2)
-
-# Test ASCII to Unicode conversion works with composed operators after expansion.
-t3 = @decapode begin
-  A == ∘(star, lapl, star_inv)(B)
-end
-t3 = expand_operators(t3)
-unicode!(t3)
-
-op1s_3 = Set(t3[:op1])
-op1s_expected_3 = Set([:⋆,:Δ,:⋆⁻¹])
-@test issetequal(op1s_3, op1s_expected_3)
-
-# Test ASCII tangent operator identifies a TVar.
-t4 = @decapode begin
-  A == dt(B)
-end
-@test nparts(t4, :TVar) == 1
-
+@testset "Vector Calculus Operators" begin
 # Test vec_to_dec! on a single operator.
-t5 = @decapode begin
+t1 = @decapode begin
   A == div(B)
 end
-vec_to_dec!(t5)
+vec_to_dec!(t1)
 
-op1s_5 = Set(t5[:op1])
-op1s_expected_5 = Set([[:⋆,:d,:⋆]])
-@test issetequal(op1s_5, op1s_expected_5)
+op1s_1 = Set(t1[:op1])
+op1s_expected_1 = Set([[:⋆,:d,:⋆]])
+@test issetequal(op1s_1, op1s_expected_1)
 
 # Test divergence of gradient is the Laplacian.
-t6 = @decapode begin
+t2 = @decapode begin
   A == ∘(grad, div)(B)
 end
-t6 = expand_operators(t6)
-vec_to_dec!(t6)
-t6 = contract_operators(t6)
-@test only(t6[:op1]) == [:d,:⋆,:d,:⋆]
+t2 = expand_operators(t2)
+vec_to_dec!(t2)
+t2 = contract_operators(t2)
+@test only(t2[:op1]) == [:d,:⋆,:d,:⋆]
 
 # Test curl of curl is a vector Laplacian.
-t7 = @decapode begin
+t3 = @decapode begin
   A == ∘(∇x, ∇x)(B)
 end
-t7 = expand_operators(t7)
-vec_to_dec!(t7)
-t7 = contract_operators(t7)
-@test only(t7[:op1]) == [:d,:⋆,:d,:⋆]
+t3 = expand_operators(t3)
+vec_to_dec!(t3)
+t3 = contract_operators(t3)
+@test only(t3[:op1]) == [:d,:⋆,:d,:⋆]
 
 # Test advection is divergence of wedge product.
-t8 = @decapode begin
+t4 = @decapode begin
   A == adv(B, C)
 end
-vec_to_dec!(t8)
+vec_to_dec!(t4)
 
-@test only(t8[:op1]) == [:⋆,:d,:⋆]
-@test only(t8[:op2]) == :∧
+@test only(t4[:op1]) == [:⋆,:d,:⋆]
+@test only(t4[:op2]) == :∧
 
 # Test multiple advections.
-t9 = @decapode begin
+t5 = @decapode begin
   A == adv(B, C)
   D == adv(E, F)
 end
-vec_to_dec!(t9)
+vec_to_dec!(t5)
 
-t9_expected = @decapode begin
+t5_expected = @decapode begin
   A == ∘(⋆,d,⋆)(B ∧ C)
   D == ∘(⋆,d,⋆)(E ∧ F)
 end
-t9_expected[incident(t9_expected, Symbol("•1"), :name), :name] = Symbol("•_adv_1")
-t9_expected[incident(t9_expected, Symbol("•2"), :name), :name] = Symbol("•_adv_2")
-@test is_isomorphic(t9, t9_expected)
+t5_expected[incident(t5_expected, Symbol("•1"), :name), :name] = Symbol("•_adv_1")
+t5_expected[incident(t5_expected, Symbol("•2"), :name), :name] = Symbol("•_adv_2")
+@test is_isomorphic(t5, t5_expected)
 
 end

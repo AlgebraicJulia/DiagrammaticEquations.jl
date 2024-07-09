@@ -348,12 +348,6 @@ ascii_to_unicode_op1 = Pair{Symbol, Any}[
 ascii_to_unicode_op2 = [
                         (:wedge    => :∧)]
 
-"""    function unicode!(d::SummationDecapode)
-
-Replace ASCII operators with their Unicode equivalents.
-"""
-unicode!(d::SummationDecapode) = replace_names!(d, ascii_to_unicode_op1, ascii_to_unicode_op2)
-
 vec_to_dec_op1 = [
                   (:grad        => :d),
                   (:div         => [:⋆,:d,:⋆]),

@@ -598,3 +598,65 @@ end
   end
 
 end
+
+# Some of these tests were originally in test/language.jl.
+@testset "ASCII Operators" begin
+# Test ASCII to Unicode conversion on an Op2.
+t1 = @decapode begin
+  A == wedge(C, D)
+end
+unicode!(t1)
+
+op2s_1 = Set(t1[:op2])
+op2s_expected_1 = Set([:∧])
+@test issetequal(op2s_1, op2s_expected_1)
+
+# Test ASCII to Unicode conversion with multiple occurences of the same operator.
+t2 = @decapode begin
+  A == wedge(C, D)
+  B == wedge(E, F)
+end
+unicode!(t2)
+
+op2s_2 = Set(t2[:op2])
+op2s_expected_2 = Set([:∧])
+@test issetequal(op2s_2, op2s_expected_2)
+
+# Test ASCII to Unicode conversion works with composed operators after expansion.
+t3 = @decapode begin
+  A == ∘(star, lapl, star)(B)
+end
+t3 = expand_operators(t3)
+unicode!(t3)
+
+op1s_3 = Set(t3[:op1])
+op1s_expected_3 = Set([:⋆,:Δ])
+@test issetequal(op1s_3, op1s_expected_3)
+
+# Test ASCII tangent operator identifies a TVar.
+t4 = @decapode begin
+  A == dt(B)
+end
+@test nparts(t4, :TVar) == 1
+
+# Test ASCII to Unicode conversion on all transformable operators.
+t5 = @decapode begin
+  dt(A) == ∘(d, d_0, d_1, dual_d₀, dual_d₁,
+             hdg, hdg_0, hdg_1, hdg_2,
+             star, star_0, star_1, star_2,
+             invhdg_0, invhdg_1, invhdg_2,
+             inv_star_0, inv_star_1, inv_star_2,
+             lapl, lapl_0, lapl_1, lapl_2,
+             codif, codif_1, codif_2,
+             neg, norm, avg_01)(B)
+  C == wdg(D,E) + wdg_00(D,E) + wdg_01(D,E) + wdg_10(D,E) + wdg_11(D,E) + wdg_02(D,E) + wdg_20(D,E)
+  F == L(H,G) + L_0(H,G) + L_1(H,G) + L_2(H,G) + L₀(H,G) + L₁(H,G) + L₂(H,G)
+  G == i(H,I) + i_1(F,I) + i_2(F,I) + i₁(F,I) + i₂(F,I)
+end
+t5 = unicode!(expand_operators(t5))
+@test issetequal(t5[:op1], [:∂ₜ, :d, :d₀, :d₁, :d̃₀, :d̃₁, :⋆, :⋆₀, :⋆₁, :⋆₂,
+                            :⋆₀⁻¹, :⋆₁⁻¹, :⋆₂⁻¹, :Δ, :Δ₀, :Δ₁, :Δ₂, :δ, :δ₁, :δ₂,
+                            :avg₀₁, :-, :mag])
+@test issetequal(t5[:op2], [:∧, :∧₀₀, :∧₀₁, :∧₁₀, :∧₁₁, :∧₀₂, :∧₂₀,
+                            :ℒ, :ℒ₀, :ℒ₁, :ℒ₂, :ι, :ι₁, :ι₂])
+end # testset
