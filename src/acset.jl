@@ -235,10 +235,7 @@ See also: [`infer_terminals`](@ref).
 """
 function infer_states(d::SummationDecapode)
   parentless = filter(parts(d, :Var)) do v
-    length(incident(d, v, :tgt)) == 0 &&
-    length(incident(d, v, :res)) == 0 &&
-    length(incident(d, v, :sum)) == 0 &&
-    d[v, :type] != :Literal
+    !is_var_target(d, v) && d[v, :type] != :Literal
   end
   parents_of_tvars =
     union(d[incident(d,:∂ₜ, :op1), :src],
@@ -259,10 +256,7 @@ See also: [`infer_states`](@ref).
 """
 function infer_terminals(d::SummationDecapode)
   filter(parts(d, :Var)) do v
-    length(incident(d, v, :src)) == 0 &&
-    length(incident(d, v, :proj1)) == 0 &&
-    length(incident(d, v, :proj2)) == 0 &&
-    length(incident(d, v, :summand)) == 0
+    !is_var_source(d, v)
   end
 end
 

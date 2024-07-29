@@ -21,10 +21,7 @@ end
 
 
 function collected_incident(d::ACSet, search, lookup_array, output_array)
-  length(lookup_array) == length(output_array) || error("Input and output chan
-  nels are different lengths")
-
-  isempty(lookup_array) && error("The lookup array is empty")
+  length(lookup_array) == length(output_array) || error("Input and output channels are different lengths")
 
   query_result = []
 
