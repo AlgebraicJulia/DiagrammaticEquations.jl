@@ -51,6 +51,7 @@ DerivOp = Symbol("∂ₜ")
 append_dot(s::Symbol) = Symbol(string(s)*'\U0307')
 
 include("acset.jl")
+include("query.jl")
 include("language.jl")
 include("composition.jl")
 include("collages.jl")
