@@ -228,13 +228,34 @@ end
     f = [1]
   end
 
-  @test isempty(collected_incident(singlesrctgt_example, 1, []))
-  @test isempty(collected_incident(singlesrctgt_example, 1, [], []))
-  @test isempty(collected_incident(singlesrctgt_example, [], [], []))
-  @test isempty(collected_incident(singlesrctgt_example, [], [:f], [:f]))
+  @test_throws "empty lookup" collected_incident(singlesrctgt_example, 1, [])
+  @test_throws "empty lookup" isempty(collected_incident(singlesrctgt_example, 1, [], []))
+  @test_throws "empty search" isempty(collected_incident(singlesrctgt_example, [], [], []))
+  @test_throws "empty search" collected_incident(singlesrctgt_example, [], [:f], [:f])
 
   @test_throws "different lengths" collected_incident(singlesrctgt_example, 1, [], [:f])
   @test_throws "different lengths" collected_incident(singlesrctgt_example, 1, [:f], [:f, :f])
   @test_throws "different lengths" collected_incident(singlesrctgt_example, 1, [:f], [])
+end
 
+@testset "Proper result typing" begin
+  singlesrctgt_example = @acset TestBasicQueryACSet begin
+    src = 1
+    tgt = 1
+    f = [1]
+  end
+
+  @test collected_incident(singlesrctgt_example, 1, [:f]) isa Vector{Int}
+  @test collected_incident(singlesrctgt_example, 1, [:f], [:f]) isa Vector{Int}
+
+  stargraph_example = @acset TestDecGraphQueryACSet{Symbol} begin
+    V = 4
+    E = 3
+    src = [2,3,4]
+    tgt = [1,1,1]
+    dec = [:a, :b, :c]
+  end
+  @test collected_incident(stargraph_example, 1, [:tgt], [:dec]) isa Vector{Symbol}
+  @test collected_incident(stargraph_example, 1, [:tgt]) isa Vector{Int}
+  @test collected_incident(stargraph_example, 1, [:tgt, :tgt], [:src, :dec]) isa Vector{Any}
 end
