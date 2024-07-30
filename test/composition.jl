@@ -25,7 +25,7 @@ trivial_comp_from_vector = oapply(trivial_relation, [otrivial])
 trivial_comp_from_single = oapply(trivial_relation, otrivial)
 
 # Test the oapply is correct.
-@test apex(trivial_comp_from_vector)    == Trivial
+@test apex(trivial_comp_from_vector) == Trivial
 @test apex(trivial_comp_from_single) == Trivial
 # Test none of the decapodes were mutated
 @test isequal(otrivial, deep_copies)
