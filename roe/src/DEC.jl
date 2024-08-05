@@ -5,23 +5,23 @@ using Reexport
 using MLStyle
 using Reexport
 using StructEquality
-import Metatheory
-using Metatheory: EGraph, EGraphs, Id, astsize
-using Metatheory: VECEXPR_FLAG_ISCALL, VECEXPR_FLAG_ISTREE, VECEXPR_META_LENGTH
-import Metatheory: extract!
+# import Metatheory
+# using Metatheory: EGraph, EGraphs, Id, astsize
+# using Metatheory: VECEXPR_FLAG_ISCALL, VECEXPR_FLAG_ISTREE, VECEXPR_META_LENGTH
+# import Metatheory: extract!
 
 import Base: +, -, *
 
 include("util/module.jl") # Pretty-printing
 include("roe.jl") # Checking signature for DEC operations
-include("SSAs.jl") # manipulating SSAs 
-include("vfield.jl") # producing a vector field function
+# include("SSAs.jl") # manipulating SSAs
+# include("vfield.jl") # producing a vector field function
 
 # currently this only holds the DEC
 include("theories/module.jl")
 
-@reexport using .Util
-@reexport using .SSAs
+# @reexport using .Util
+# @reexport using .SSAs
 @reexport using .Theories
 
 # function vfield(model, operator_lookup::Dict{TA, Any})

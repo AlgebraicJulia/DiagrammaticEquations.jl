@@ -6,9 +6,10 @@ import Base: +, -, *
 
 # Define the sorts in your theory.
 # For the DEC, we work with Scalars and Forms, graded objects which can also be primal or dual.
-@data Sort <: AbstractSort begin
+@data Sort begin
   Scalar()
   Form(dim::Int, isdual::Bool)
+  # Vector Field
   VF(isdual::Bool)
 end
 export Scalar, Form
@@ -38,28 +39,28 @@ function Base.show(io::IO, ω::Form)
 end
 
 ## Predicates
-function isForm(g, ec::EClass)
-  any(ec.nodes) do n
-    h = v_head(n)
-    if has_constant(g, h)
-      c = get_constant(g, h)
-      return c isa Form
-    end
-    false
-  end
-end
+# function isForm(g, ec::EClass)
+#   any(ec.nodes) do n
+#     h = v_head(n)
+#     if has_constant(g, h)
+#       c = get_constant(g, h)
+#       return c isa Form
+#     end
+#     false
+#   end
+# end
 
 
-function isForm(g, ec::EClass)
-  any(ec.nodes) do n
-    h = v_head(n)
-    if has_constant(g, h)
-      c = get_constant(g, h)
-      return c isa Form
-    end
-    false
-  end
-end
+# function isForm(g, ec::EClass)
+#   any(ec.nodes) do n
+#     h = v_head(n)
+#     if has_constant(g, h)
+#       c = get_constant(g, h)
+#       return c isa Form
+#     end
+#     false
+#   end
+# end
 
 ## OPERATIONS
 
@@ -126,6 +127,7 @@ function d(s::Sort)
   end
 end
 
+@nospecialize
 function ★(s::Sort)
   @match s begin
     Scalar() => throw(SortError("Cannot take Hodge star of a scalar"))
@@ -133,6 +135,7 @@ function ★(s::Sort)
   end
 end
 
+@nospecialize
 function ι(s1::Sort, s2::Sort)
   @match (s1, s2) begin
     (VF(true), Form(i, true)) => PrimalForm() # wrong
