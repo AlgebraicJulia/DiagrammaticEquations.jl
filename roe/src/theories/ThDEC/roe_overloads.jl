@@ -7,7 +7,7 @@ import Base: +, -, *
 
 ## UNARY OPERATIONS
 
-unop_dec = [∂ₜ, d, ★, -, ♯, ♭]
+unop_dec = [:∂ₜ, :d, :★, :-, :♯, :♭]
 for unop in unop_dec
   @eval begin
     @nospecialize
@@ -29,7 +29,7 @@ export ♭♯
 
 ## BINARY OPERATIONS
 
-binop_dec = [+, -, *, ∧]
+binop_dec = [:+, :-, :*, :∧] 
 for binop in binop_dec
   @eval begin
     @nospecialize

@@ -101,13 +101,13 @@ end
 function ∧(s1::Sort, s2::Sort)
   @match (s1, s2) begin
     (Form(i, isdual), Scalar()) || (Scalar(), Form(i, isdual)) => Form(i, isdual)
-    (Form(i1, isdual1), Form(i2, isdual2)) =>
+    (Form(i1, isdual), Form(i2, isdual)) =>
       if i1 + i2 <= 2
-        Form(i1 + i2, isdual1)
+        Form(i1 + i2, isdual)
       else
         throw(SortError("Can only take a wedge product when the dimensions of the forms add to less than 2: tried to wedge product $i1 and $i2"))
       end
-    _ => throw(SortError("Can only take a wedge product of two forms"))
+    _ => throw(SortError("Can only take a wedge product of two forms of the same duality"))
   end
 end
 
