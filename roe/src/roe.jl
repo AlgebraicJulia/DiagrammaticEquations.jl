@@ -18,12 +18,12 @@ export AbstractSort
 Struct containing a Function and the vector of Sorts it requires.
 """
 @struct_hash_equal struct TypedApplication{Sort<:AbstractSort}
-  head::Function
-  sorts::Vector{Sort}
+    head::Function
+    sorts::Vector{Sort}
 
-  function TypedApplication(head::Function, sorts::Vector{Sort}) where Sort
-    new{Sort}(head, sorts)
-  end
+    function TypedApplication(head::Function, sorts::Vector{Sort}) where {Sort}
+        new{Sort}(head, sorts)
+    end
 end
 export TypedApplication
 
@@ -33,11 +33,11 @@ export TA
 Base.show(io::IO, ta::TA) = print(io, Expr(:call, nameof(ta.head), ta.sorts...))
 
 struct SortError <: Exception
-  message::String
+    message::String
 end
 export SortError
 
-Base.get(lookup::Dict{TA, Any}, key::TA) = lookup[key]
+Base.get(lookup::Dict{TA,Any}, key::TA) = lookup[key]
 export get
 
 ###
@@ -48,15 +48,20 @@ struct Dtry{T} end
 struct AnyVar{s} <: Number end
 export AnyVar
 
+struct Equation{E}
+    lhs::E
+    rhs::E
+end
+
 """    Roe
 """
-struct Roe{Sort}
-  vars::ComponentArray{SymbolicUtils.BasicSymbolic{AnyVar{Sort}}}
-  eqs::Vector{Tuple{Sort, Sort}}
-  # 
-  function Roe(Sort::DataType)
-    new{Sort}(ComponentArray{SymbolicUtils.BasicSymbolic{AnyVar{Sort}}}(), [])
-  end
+struct Roe{E}
+    vars::Dtry{E}
+    eqs::Vector{Equation{E}}
+    #
+    function Roe{E}(Sort::DataType)
+        new{Sort}(Dtry{E}(), Equation{E}[])
+    end
 end
 export Roe
 
@@ -66,34 +71,26 @@ export vars, eqs
 
 """    @vars
 Example: @vars roe u::Form(0)
+
+```julia
+@vars roe u::Form(0)
+
+->
+
+u = fresh!(roe, :u, Form(0))
+```
 """
 macro vars(roe, vars...)
-  eval(vars_impl(roe, vars, __module__))
+    vars = parse_var.(vars)
+    stmts = map(vars) do (n, t)
+        :($n = fresh!($roe, $(QuoteNode(n)), $t))
+    end
+    Expr(:block, stmts...)
 end
 export @vars
 
-export BasicSymbolic
-
-# roe = Roe(DEC.ThDEC.Sort)
-# @vars roe u::PrimalForm(0) v::PrimalForm(1) 
-
-function vars_impl(roe, vars, __module__)
-  roe = getfield(__module__, roe) 
-  parsed_vars = parse_vars(vars)
-  # Expr(:macrocall, Expr(:(::), :foo, :Scalar), Expr(:(::), :bar, Expr(:call, [:Form, 1])))
-  kws = Expr(:macrocall, :@syms, map((n, t) -> Expr(:(::), n, t), parsed_vars))
-  kws = map(parsed_vars) do (n, t)
-    [n, 
-      :(@syms $n::BasicSymbolic{AnyVar{$t}})]
-  end
-  return Expr(:call, :ComponentArray, Expr(:parameters, kws...,) $(vars(roe))) 
+parse_var = @λ begin
+    s::Symbol => (s, Number)
+    Expr(:(::), name, type) => (name, type)
+    err => error("$err is not a valid expression for a symbolic variable")
 end
-
-parse_vars = @λ begin
-  t :: Tuple => parse_vars.(t)
-  s :: Symbol => (s, Number)
-  Expr(:(::), name, type) => (name, type)
-  err => error("$err is not a valid expression for a symbolic variable")
-end
-
-
