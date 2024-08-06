@@ -23,6 +23,7 @@ end
 # Δ is a composite of Hodge star and d
 Δ(v::Var{PrimalForm(0)}) = ★(d(★(d(v))))
 export Δ
+# TODO this could be a rewriting rule instead?
 
 ♭♯(v::Var{DualVF()}) = ♯(♭(v))
 export ♭♯

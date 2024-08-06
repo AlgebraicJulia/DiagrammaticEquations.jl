@@ -93,7 +93,7 @@ function klausmeier(roe::Roe)
 end
 ```
 
-Namespacing is acheived by moving the roe into a namespace before passing it into submodels. So, for instance, to make a model with two klausmeier submodels that share the same `m`, we could do:
+Namespacing is achieved by moving the roe into a namespace before passing it into submodels. So, for instance, to make a model with two Klausmeier submodels that share the same `m`, we could do:
 
 ```julia
 function double_klausmeier(roe::Roe)
