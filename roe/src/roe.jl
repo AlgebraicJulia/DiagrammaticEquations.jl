@@ -1,4 +1,5 @@
 using ..Util.HashColor
+using ..Util.Dtrys
 
 using StructEquality
 using ComponentArrays
@@ -45,28 +46,58 @@ export get
 struct Dtry{T} end
 
 # DECVar{s}
-struct AnyVar{s} <: Number end
-export AnyVar
+struct OfSort{s} <: Number end
+export OfSort
 
 struct Equation{E}
     lhs::E
     rhs::E
 end
 
+push!([Int[]], String[]) # error
+push!(Vector[Int[]], String[]) # fine
+
 """    Roe
 """
-struct Roe{E}
-    vars::Dtry{E}
-    eqs::Vector{Equation{E}}
-    #
-    function Roe{E}(Sort::DataType)
-        new{Sort}(Dtry{E}(), Equation{E}[])
-    end
+struct Roe
+    namespace::DtryVar
+    vars::Dtry{Symbolic}
+    eqs::Vector{Equation{Symbolic}}
 end
 export Roe
 
-vars(roe::Roe) = roe.vars
-eqs(roe::Roe) = roe.eqs
+function Roe()
+    Roe(Dtrys.■, Dtry{Symbolic}(), Equation{Symbolic}[])
+end
+
+function Base.getindex(roe::Roe, name::Symbol)::Union{Symbolic,Roe}
+    path = namespace(roe)[name]
+    if haskey(vars(roe), path)
+        vars(roe)[path]
+    else
+        Roe(path, vars(roe), eqs(roe))
+    end
+end
+
+function Base.getproperty(roe::Roe, name::Symbol)
+    getindex(roe, name)
+end
+
+function Base.setindex!(roe::Roe, v::Symbolic, name::Symbol)
+end
+
+function Base.setproperty!(roe::Roe, v::Symbolic, name::Symbol)
+end
+
+function fresh!(roe::Roe, name::Symbol, sort)
+    v = Sym{OfSort{sort}}(name)
+    roe[name] = v
+    v
+end
+
+namespace(roe::Roe) = getfield(roe, :namespace)
+vars(roe::Roe) = getfield(roe, :vars)
+eqs(roe::Roe) = getfield(roe, :eqs)
 export vars, eqs
 
 """    @vars
