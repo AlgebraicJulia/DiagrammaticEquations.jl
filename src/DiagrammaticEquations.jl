@@ -61,6 +61,8 @@ include("colanguage.jl")
 include("openoperators.jl")
 include("deca/Deca.jl")
 include("learn/Learn.jl")
+include("ThDEC.jl")
+include("decasymbolic.jl")
 
 using .Deca
 
