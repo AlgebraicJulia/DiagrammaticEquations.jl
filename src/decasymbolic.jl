@@ -12,43 +12,47 @@ abstract type DECType <: Number end
 """
 i: dimension: 0,1,2, etc.
 d: duality: true = dual, false = primal
+s: name of the space (a symbol)
+n: dimension of the space
 """
-struct FormT{i,d} <: DECType
+struct FormT{i,d,s,n} <: DECType
 end
+export FormT
 
-struct VFieldT{d} <: DECType
+struct VFieldT{d,s,n} <: DECType
 end
+export VFieldT
 
 dim(::Type{<:FormT{d}}) where {d} = d
 isdual(::Type{FormT{i,d}}) where {i,d} = d
 
 # convenience functions
-const PrimalFormT{i} = FormT{i,false}
+const PrimalFormT{i,s,n} = FormT{i,false,s,n}
 export PrimalFormT
 
-const DualFormT{i} = FormT{i,true}
+const DualFormT{i,s,n} = FormT{i,true,s,n}
 export DualFormT
 
-const PrimalVFT = VFieldT{false}
+const PrimalVFT{s,n} = VFieldT{false,s,n}
 export PrimalVFT
 
-const DualVFT = VFieldT{true}
+const DualVFT{s,n} = VFieldT{true,s,n}
 export DualVFT
 
-function Sort(::Type{FormT{i,d}}) where {i,d}
-    Form(i, d)
+function Sort(::Type{FormT{i,d,s,n}}) where {i,d,s,n}
+    Form(i, d, Space(s, n))
 end
 
 function Number(f::Form)
-    FormT{dim(f),isdual(f)}
+    FormT{dim(f),isdual(f), nameof(space(f)), dim(space(f))}
 end
 
-function Sort(::Type{VFieldT{d}}) where {d}
-    VField(d)
+function Sort(::Type{VFieldT{d,s,n}}) where {d,s,n}
+    VField(d, Space(s, n))
 end
 
 function Number(v::VField)
-    VFieldT{isdual(v)}
+    VFieldT{isdual(v), nameof(space(v)), dim(space(v))}
 end
 
 function Sort(::Type{<:Real})

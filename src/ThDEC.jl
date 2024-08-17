@@ -1,5 +1,6 @@
 module ThDEC
 using MLStyle
+using StructEquality
 
 import Base: +, -, *
 
@@ -11,9 +12,10 @@ end
     name::Symbol
     dim::Int
 end
+export Space
 
 dim(s::Space) = s.dim
-nameof(s::Space) = s.name
+Base.nameof(s::Space) = s.name
 
 struct SpaceLookup
     default::Space
@@ -30,19 +32,19 @@ export Sort, Scalar, Form, VField
 function fromexpr(lookup::SpaceLookup, e, ::Type{Sort})
     (name, spacename) = @match e begin
         name::Symbol => (name, nothing)
-        :(Form0{$})
+        :($name{$spacename}) => (name, spacename)
     end
     space = @match spacename begin
         ::Nothing => lookup.default
         name::Symbol => lookup.named[name]
     end
     @match name begin
-        :Form0 => Form(0, false, space),
-        :Form1 => Form(1, false, space),
-        :Form2 => Form(2, false, space),
-        :DualForm0 => Form(0, true, space),
-        :DualForm1 => Form(1, true, space),
-        :DualForm2 => Form(2, true, space),
+        :Form0 => Form(0, false, space)
+        :Form1 => Form(1, false, space)
+        :Form2 => Form(2, false, space)
+        :DualForm0 => Form(0, true, space)
+        :DualForm1 => Form(1, true, space)
+        :DualForm2 => Form(2, true, space)
         :Constant => Scalar()
     end
 end
@@ -62,6 +64,7 @@ const VF = VField
 dim(ω::Form) = ω.dim
 isdual(ω::Form) = ω.isdual
 space(ω::Form) = ω.space
+export space
 
 isdual(v::VField) = v.isdual
 space(v::VField) = v.space
@@ -83,7 +86,7 @@ export DualVF
 show_duality(ω::Form) = isdual(ω) ? "dual" : "primal"
 
 function Base.show(io::IO, ω::Form)
-    print(io, isdual(ω) ? "DualForm($(dim(ω)))" : "PrimalForm($(dim(ω)))")
+    print(io, isdual(ω) ? "DualForm($(dim(ω))) on $(space(ω))" : "PrimalForm($(dim(ω))) on $(space(ω))")
 end
 
 # TODO: VField
@@ -93,7 +96,7 @@ function +(s1::Sort, s2::Sort)
         (Scalar(), Scalar()) => Scalar()
         (Scalar(), Form(i, isdual, space)) ||
             (Form(i, isdual, space), Scalar()) => Form(i, isdual, space)
-        (Form(i1, isdual1, space2), Form(i2, isdual2, space2)) =>
+        (Form(i1, isdual1, space1), Form(i2, isdual2, space2)) =>
             if (i1 == i2) && (isdual1 == isdual2) && (space1 == space2)
                 Form(i1, isdual1)
             else
@@ -139,14 +142,14 @@ function ∧(s1::Sort, s2::Sort)
     @match (s1, s2) begin
         (Form(i, isdual, space), Scalar()) || (Scalar(), Form(i, isdual, space)) =>
             Form(i, isdual, space)
-        (Form(i1, isdual, space), Form(i2, isdual, space)) => begin
+        (Form(i1, isdual1, space1), Form(i2, isdual2, space2)) => begin
+            (isdual1 == isdual2) && (space1 == space2) || throw(SortError("Can only take a wedge product of two forms of the same duality on the same space"))
             if i1 + i2 <= dim(space)
                 Form(i1 + i2, isdual, space)
             else
-                throw(SortError("Can only take a wedge product when the dimensions of the forms add to less than 2: tried to wedge product $i1 and $i2"))
+                throw(SortError("Can only take a wedge product when the dimensions of the forms add to less than n, where n = $(dim(space)) is the dimension of the ambient space: tried to wedge product $i1 and $i2"))
             end
         end
-        _ => throw(SortError("Can only take a wedge product of two forms of the same duality on the same space"))
     end
 end
 
@@ -190,8 +193,8 @@ end
 @nospecialize
 function ι(s1::Sort, s2::Sort)
     @match (s1, s2) begin
-        (VF(true), Form(i, true)) => PrimalForm() # wrong
-        (VF(true), Form(i, false)) => DualForm()
+        (VF(true, space), Form(i, true, space)) => PrimalForm() # wrong
+        (VF(true, space), Form(i, false, space)) => DualForm()
         _ => throw(SortError("Can only define the discrete interior product on:
                 PrimalVF, DualForm(i)
                 DualVF(), PrimalForm(i)
@@ -203,7 +206,7 @@ end
 function ♯(s::Sort)
     @match s begin
         Scalar() => PrimalVF()
-        Form(1, isdual) => VF(isdual)
+        Form(1, isdual, space) => VF(isdual, space)
         _ => throw(SortError("Can only take ♯ to 1-forms"))
     end
 end
@@ -211,7 +214,7 @@ end
 
 function ♭(s::Sort)
     @match s begin
-        VF(true) => PrimalForm(1)
+        VF(true, space) => PrimalForm(1, false, space)
         _ => throw(SortError("Can only apply ♭ to dual vector fields"))
     end
 end
