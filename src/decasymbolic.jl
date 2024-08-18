@@ -1,23 +1,29 @@
-module SymbolicUtilInterop
+module SymbolicUtilsInterop
 
 using ..ThDEC
 using MLStyle
 import ..ThDEC: Sort, dim, isdual
 using ..decapodes
 using SymbolicUtils
+
 using SymbolicUtils: Symbolic, BasicSymbolic
 
+# ##########################
+# DECType
+#
+# Type necessary for symbolic utils
+# ##########################
+
+# define DECType as a Number. Necessary for SymbolicUtils
 abstract type DECType <: Number end
 
 """
 i: dimension: 0,1,2, etc.
 d: duality: true = dual, false = primal
 """
-struct FormT{i,d} <: DECType
-end
+struct FormT{i,d} <: DECType end
 
-struct VFieldT{d} <: DECType
-end
+struct VFieldT{d} <: DECType end
 
 dim(::Type{<:FormT{d}}) where {d} = d
 isdual(::Type{FormT{i,d}}) where {i,d} = d
@@ -35,38 +41,30 @@ export PrimalVFT
 const DualVFT = VFieldT{true}
 export DualVFT
 
-function Sort(::Type{FormT{i,d}}) where {i,d}
-    Form(i, d)
-end
+# convert Real to DecType 
+Sort(::Type{<:Real}) = Scalar()
 
-function Number(f::Form)
-    FormT{dim(f),isdual(f)}
-end
+# convert Real to ThDEC
+Sort(::Real) = Scalar()
 
-function Sort(::Type{VFieldT{d}}) where {d}
-    VField(d)
-end
+# convert DECType to ThDEC
+Sort(::Type{FormT{i,d}}) where {i,d} = Form(i, d)
 
-function Number(v::VField)
-    VFieldT{isdual(v)}
-end
+# convert DECType to ThDEC
+Sort(::Type{VFieldT{d}}) where {d} = VField(d)
 
-function Sort(::Type{<:Real})
-    Scalar()
-end
+Sort(::BasicSymbolic{T}) where {T} = Sort(T)
 
-function Number(s::Scalar)
-    Real
-end
+# convert Form to DECType
+Number(f::Form) = FormT{dim(f), isdual(f)}
 
-function Sort(::BasicSymbolic{T}) where {T}
-    Sort(T)
-end
+# convert VField to DECType
+Number(v::VField) = VFieldT{isdual(v)}
 
-function Sort(::Real)
-    Scalar()
-end
+# convert number to real
+Number(s::Scalar) = Real
 
+# for every unary operator in our theory, take a BasicSymbolic type, convert its type parameter to a Sort in our theory, and return a term
 unop_dec = [:∂ₜ, :d, :★, :♯, :♭, :-]
 for unop in unop_dec
     @eval begin
@@ -74,7 +72,10 @@ for unop in unop_dec
         function ThDEC.$unop(
             v::BasicSymbolic{T}
         ) where {T<:DECType}
+            # convert the DECType to ThDEC to type check
             s = ThDEC.$unop(Sort(T))
+            # the resulting type is converted back to DECType
+            # the resulting term has the operation has its head and `v` as its args.
             SymbolicUtils.Term{Number(s)}(ThDEC.$unop, [v])
         end
     end
@@ -91,6 +92,7 @@ for binop in binop_dec
             s = ThDEC.$binop(Sort(T1), Sort(T2))
             SymbolicUtils.Term{Number(s)}(ThDEC.$binop, [v, w])
         end
+        export $binop
 
         @nospecialize
         function ThDEC.$binop(
@@ -100,6 +102,7 @@ for binop in binop_dec
             s = ThDEC.$binop(Sort(T1), Sort(T2))
             SymbolicUtils.Term{Number(s)}(ThDEC.$binop, [v, w])
         end
+        export $binop
 
         @nospecialize
         function ThDEC.$binop(
@@ -109,19 +112,25 @@ for binop in binop_dec
             s = ThDEC.$binop(Sort(T1), Sort(T2))
             SymbolicUtils.Term{Number(s)}(ThDEC.$binop, [v, w])
         end
+        export $binop
     end
 end
 
-struct Equation{E}
+# name collision with decapodes.Equation
+struct DecaEquation{E}
     lhs::E
     rhs::E
 end
+export DecaEquation
 
+# a struct carry the symbolic variables and their equations
 struct DecaSymbolic
     vars::Vector{Symbolic}
-    equations::Vector{Equation{Symbolic}}
+    equations::Vector{DecaEquation{Symbolic}}
 end
+export DecaSymbolic
 
+# BasicSymbolic -> DecaExpr
 function decapodes.Term(t::SymbolicUtils.BasicSymbolic)
     if SymbolicUtils.issym(t)
         decapodes.Var(nameof(t))
@@ -146,13 +155,13 @@ function decapodes.Term(t::SymbolicUtils.BasicSymbolic)
     end
 end
 
-function decapodes.Term(x::Real)
-    decapodes.Lit(Symbol(x))
-end
+decapodes.Term(x::Real) = decapodes.Lit(Symbol(x))
 
 function decapodes.DecaExpr(d::DecaSymbolic)
     context = map(d.vars) do var
-        decapodes.Judgement(nameof(var), nameof(Sort(var)), :I)
+        # TODO changed :I to :X to make tests pass, but discussion
+        # needed on handling spaces
+        decapodes.Judgement(nameof(var), nameof(Sort(var)), :X)
     end
     equations = map(d.equations) do eq
         decapodes.Eq(decapodes.Term(eq.lhs), decapodes.Term(eq.rhs))
@@ -160,11 +169,25 @@ function decapodes.DecaExpr(d::DecaSymbolic)
     decapodes.DecaExpr(context, equations)
 end
 
+"""
+Retrieve the SymbolicUtils expression of a DecaExpr term `t` from a context of variables in ThDEC
+
+Example:
+```
+  a = @syms a::Real
+  context = Dict(:a => Scalar(), :u => PrimalForm(0))
+  SymbolicUtils.BasicSymbolic(context, Term(a))
+```
+"""
 function SymbolicUtils.BasicSymbolic(context::Dict{Symbol,Sort}, t::decapodes.Term)
     @match t begin
         Var(name) => SymbolicUtils.Sym{Number(context[name])}(name)
-        Lit(v) => Meta.parse(string(v)) # YOLO
+        Lit(v) => Meta.parse(string(v)) # TODO no YOLO
+        # see heat_eq test: eqs had AppCirc1, but this returns
+        # App1(f, App1(...)
         AppCirc1(fs, arg) => foldr(
+            # panics with constants like :k
+            # see test/language.jl
             (f, x) -> ThDEC.OPERATOR_LOOKUP[f](x),
             fs;
             init=BasicSymbolic(context, arg)
@@ -178,15 +201,17 @@ function SymbolicUtils.BasicSymbolic(context::Dict{Symbol,Sort}, t::decapodes.Te
 end
 
 function DecaSymbolic(d::decapodes.DecaExpr)
+    # associates each var to its sort...
     context = map(d.context) do j
         j.var => ThDEC.SORT_LOOKUP[j.dim]
     end
+    # ... which we then produce a vector of symbolic vars
     vars = map(context) do (v, s)
         SymbolicUtils.Sym{Number(s)}(v)
     end
     context = Dict{Symbol,Sort}(context)
     eqs = map(d.equations) do eq
-        Equation{Symbolic}(BasicSymbolic(context, eq.lhs), BasicSymbolic(context, eq.rhs))
+        DecaEquation{Symbolic}(BasicSymbolic.(Ref(context), [eq.lhs, eq.rhs])...)
     end
     DecaSymbolic(vars, eqs)
 end

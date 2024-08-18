@@ -1,4 +1,5 @@
 module ThDEC
+
 using MLStyle
 
 import Base: +, -, *
@@ -142,6 +143,7 @@ function ★(s::Sort)
     @match s begin
         Scalar() => throw(SortError("Cannot take Hodge star of a scalar"))
         Form(i, isdual) => Form(2 - i, !isdual)
+        VF(isdual) => throw(SortError("Cannot take the Hodge star of a vector field"))
     end
 end
 
@@ -172,11 +174,22 @@ function ♯(s::Sort)
 end
 # musical isos may be defined for any combination of (primal/dual) form -> (primal/dual) vf.
 
+# TODO
+function Base.nameof(::typeof(♯), s)
+    Symbol("♯s")
+end
+
+
 function ♭(s::Sort)
     @match s begin
         VF(true) => PrimalForm(1)
         _ => throw(SortError("Can only apply ♭ to dual vector fields"))
     end
+end
+
+# TODO
+function Base.nameof(::typeof(♭), s)
+    Symbol("♭s")
 end
 
 # OTHER
