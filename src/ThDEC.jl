@@ -22,6 +22,7 @@ struct SpaceLookup
     default::Space
     named::Dict{Symbol,Space}
 end
+export SpaceLookup
 
 @data Sort begin
     Scalar()
@@ -50,14 +51,16 @@ function fromexpr(lookup::SpaceLookup, e, ::Type{Sort})
     end
 end
 
-function Base.nameof(s::Scalar)
-    :Constant
-end
+Base.nameof(s::Scalar) = :Constant
 
-function Base.nameof(f::Form)
+function Base.nameof(f::Form; with_dim_parameter=false)
     dual = isdual(f) ? "Dual" : ""
     formname = Symbol("$(dual)Form$(dim(f))")
-    Expr(:curly, formname, dim(space(f)))
+    if with_dim_parameter
+        return Expr(:curly, formname, dim(space(f)))
+    else
+        return formname
+    end
 end
 
 const VF = VField
@@ -71,16 +74,16 @@ isdual(v::VField) = v.isdual
 space(v::VField) = v.space
 
 # convenience functions
-PrimalForm(i::Int) = Form(i, false)
+PrimalForm(i::Int, space::Space) = Form(i, false, space)
 export PrimalForm
 
-DualForm(i::Int) = Form(i, true)
+DualForm(i::Int, space::Space) = Form(i, true, space)
 export DualForm
 
-PrimalVF() = VF(false)
+PrimalVF(space::Space) = VF(false, space)
 export PrimalVF
 
-DualVF() = VF(true)
+DualVF(space::Space) = VF(true, space)
 export DualVF
 
 # show methods
@@ -145,10 +148,10 @@ function ∧(s1::Sort, s2::Sort)
             Form(i, isdual, space)
         (Form(i1, isdual1, space1), Form(i2, isdual2, space2)) => begin
             (isdual1 == isdual2) && (space1 == space2) || throw(SortError("Can only take a wedge product of two forms of the same duality on the same space"))
-            if i1 + i2 <= dim(space)
-                Form(i1 + i2, isdual, space)
+            if i1 + i2 <= dim(space1)
+                Form(i1 + i2, isdual1, space1)
             else
-                throw(SortError("Can only take a wedge product when the dimensions of the forms add to less than n, where n = $(dim(space)) is the dimension of the ambient space: tried to wedge product $i1 and $i2"))
+                throw(SortError("Can only take a wedge product when the dimensions of the forms add to less than n, where n = $(dim(space1)) is the dimension of the ambient space: tried to wedge product $i1 and $i2"))
             end
         end
     end
@@ -182,7 +185,7 @@ end
 function ★(s::Sort)
     @match s begin
         Scalar() => throw(SortError("Cannot take Hodge star of a scalar"))
-        VF(isdual) => throw(SortError("Cannot take the Hodge star of a vector field"))
+        VF(isdual, space) => throw(SortError("Cannot take the Hodge star of a vector field"))
         Form(i, isdual, space) => Form(dim(space) - i, !isdual, space)
     end
 end
@@ -195,8 +198,8 @@ end
 @nospecialize
 function ι(s1::Sort, s2::Sort)
     @match (s1, s2) begin
-        (VF(true, space), Form(i, true, space)) => PrimalForm() # wrong
-        (VF(true, space), Form(i, false, space)) => DualForm()
+        (VF(true, space), Form(i, true, space)) => Form(i, false, space) # wrong
+        (VF(true, space), Form(i, false, space)) => DualForm(i, true, space)
         _ => throw(SortError("Can only define the discrete interior product on:
                 PrimalVF, DualForm(i)
                 DualVF(), PrimalForm(i)
@@ -222,7 +225,7 @@ end
 
 function ♭(s::Sort)
     @match s begin
-        VF(true, space) => PrimalForm(1, false, space)
+        VF(true, space) => Form(1, false, space)
         _ => throw(SortError("Can only apply ♭ to dual vector fields"))
     end
 end

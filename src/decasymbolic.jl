@@ -29,8 +29,8 @@ export FormT
 struct VFieldT{d,s,n} <: DECType end
 export VFieldT
 
-dim(::Type{<:FormT{d}}) where {d} = d
-isdual(::Type{FormT{i,d}}) where {i,d} = d
+dim(::Type{<:FormT{i,d,s,n}}) where {i,d,s,n} = d
+isdual(::Type{FormT{i,d,s,n}}) where {i,d,s,n} = d
 
 # convenience functions
 const PrimalFormT{i,s,n} = FormT{i,false,s,n}
@@ -45,14 +45,14 @@ export PrimalVFT
 const DualVFT{s,n} = VFieldT{true,s,n}
 export DualVFT
 
-# ##
-# 
-# ##
+"""
+converts ThDEC Sorts into DECType
+"""
+function Sort end
 
 Sort(::Type{<:Real}) = Scalar()
 Sort(::Real) = Scalar()
 
-# convert Real to DecType 
 function Sort(::Type{FormT{i,d,s,n}}) where {i,d,s,n}
     Form(i, d, Space(s, n))
 end
@@ -63,7 +63,9 @@ end
 
 Sort(::BasicSymbolic{T}) where {T} = Sort(T)
 
-# convert number to real
+"""
+converts ThDEC Sorts into DecaSymbolic types
+"""
 Number(s::Scalar) = Real
 
 Number(f::Form) = FormT{dim(f),isdual(f), nameof(space(f)), dim(space(f))}
@@ -165,8 +167,6 @@ decapodes.Term(x::Real) = decapodes.Lit(Symbol(x))
 
 function decapodes.DecaExpr(d::DecaSymbolic)
     context = map(d.vars) do var
-        # TODO changed :I to :X to make tests pass, but discussion
-        # needed on handling spaces
         decapodes.Judgement(nameof(var), nameof(Sort(var)), :X)
     end
     equations = map(d.equations) do eq
@@ -206,10 +206,10 @@ function SymbolicUtils.BasicSymbolic(context::Dict{Symbol,Sort}, t::decapodes.Te
     end
 end
 
-function DecaSymbolic(d::decapodes.DecaExpr)
+function DecaSymbolic(lookup::SpaceLookup, d::decapodes.DecaExpr)
     # associates each var to its sort...
     context = map(d.context) do j
-        j.var => ThDEC.SORT_LOOKUP[j.dim]
+        j.var => ThDEC.fromexpr(lookup, j.dim, Sort)
     end
     # ... which we then produce a vector of symbolic vars
     vars = map(context) do (v, s)
