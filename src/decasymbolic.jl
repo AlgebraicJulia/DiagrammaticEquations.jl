@@ -20,49 +20,55 @@ abstract type DECType <: Number end
 """
 i: dimension: 0,1,2, etc.
 d: duality: true = dual, false = primal
+s: name of the space (a symbol)
+n: dimension of the space
 """
-struct FormT{i,d} <: DECType end
+struct FormT{i,d,s,n} <: DECType end
+export FormT
 
-struct VFieldT{d} <: DECType end
+struct VFieldT{d,s,n} <: DECType end
+export VFieldT
 
 dim(::Type{<:FormT{d}}) where {d} = d
 isdual(::Type{FormT{i,d}}) where {i,d} = d
 
 # convenience functions
-const PrimalFormT{i} = FormT{i,false}
+const PrimalFormT{i,s,n} = FormT{i,false,s,n}
 export PrimalFormT
 
-const DualFormT{i} = FormT{i,true}
+const DualFormT{i,s,n} = FormT{i,true,s,n}
 export DualFormT
 
-const PrimalVFT = VFieldT{false}
+const PrimalVFT{s,n} = VFieldT{false,s,n}
 export PrimalVFT
 
-const DualVFT = VFieldT{true}
+const DualVFT{s,n} = VFieldT{true,s,n}
 export DualVFT
 
-# convert Real to DecType 
-Sort(::Type{<:Real}) = Scalar()
+# ##
+# 
+# ##
 
-# convert Real to ThDEC
+Sort(::Type{<:Real}) = Scalar()
 Sort(::Real) = Scalar()
 
-# convert DECType to ThDEC
-Sort(::Type{FormT{i,d}}) where {i,d} = Form(i, d)
+# convert Real to DecType 
+function Sort(::Type{FormT{i,d,s,n}}) where {i,d,s,n}
+    Form(i, d, Space(s, n))
+end
 
-# convert DECType to ThDEC
-Sort(::Type{VFieldT{d}}) where {d} = VField(d)
+function Sort(::Type{VFieldT{d,s,n}}) where {d,s,n}
+    VField(d, Space(s, n))
+end
 
 Sort(::BasicSymbolic{T}) where {T} = Sort(T)
 
-# convert Form to DECType
-Number(f::Form) = FormT{dim(f), isdual(f)}
-
-# convert VField to DECType
-Number(v::VField) = VFieldT{isdual(v)}
-
 # convert number to real
 Number(s::Scalar) = Real
+
+Number(f::Form) = FormT{dim(f),isdual(f), nameof(space(f)), dim(space(f))}
+
+Number(v::VField) = VFieldT{isdual(v), nameof(space(v)), dim(space(v))}
 
 # for every unary operator in our theory, take a BasicSymbolic type, convert its type parameter to a Sort in our theory, and return a term
 unop_dec = [:∂ₜ, :d, :★, :♯, :♭, :-]
