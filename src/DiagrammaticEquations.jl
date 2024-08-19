@@ -3,10 +3,32 @@
 module DiagrammaticEquations
 
 export
-DerivOp, append_dot, normalize_unicode, 
-
-## intertypes
-SchDecapode, SchNamedDecapode, AbstractDecapode, AbstractNamedDecapode, NamedDecapode, DecaExpr, Plus, AppCirc1, Var, Tan, App1, App2, Eq
+DerivOp, append_dot, normalize_unicode, infer_states, infer_types!,
+# Deca
+op1_res_rules_1D, op2_res_rules_1D, op1_res_rules_2D, op2_res_rules_2D,
+op1_inf_rules_1D, op2_inf_rules_1D, op1_inf_rules_2D, op2_inf_rules_2D,
+recursive_delete_parents, spacename, varname, unicode!, vec_to_dec!,
+## collages
+Collage, collate,
+## composition
+oapply, unique_by, unique_by!, OpenSummationDecapodeOb, OpenSummationDecapode, Open, default_composition_diagram,
+## acset
+SchDecapode, SchNamedDecapode, AbstractDecapode, AbstractNamedDecapode, NamedDecapode, SummationDecapode,
+contract_operators!, contract_operators, add_constant!, add_parameter, fill_names!, dot_rename!, is_expanded, expand_operators, infer_state_names, infer_terminal_names, recognize_types,
+resolve_overloads!, replace_names!,
+apply_inference_rule_op1!, apply_inference_rule_op2!,
+transfer_parents!, transfer_children!,
+unique_lits!,
+## language
+@decapode, Term, parse_decapode, term, Eq, DecaExpr,
+# ~~~~~
+Plus, AppCirc1, Var, Tan, App1, App2,
+## visualization
+to_graphviz_property_graph, typename, draw_composition,
+## rewrite
+average_rewrite,
+## openoperators
+transfer_parents!, transfer_children!, replace_op1!, replace_op2!, replace_all_op1s!, replace_all_op2s!
 
 using Catlab
 using Catlab.Theories
@@ -47,6 +69,5 @@ include("decasymbolic.jl")
 @reexport using .ThDEC
 @reexport using .SymbolicUtilsInterop
 @reexport using .Deca
-
 
 end
