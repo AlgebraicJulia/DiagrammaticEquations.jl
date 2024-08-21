@@ -102,7 +102,7 @@ function +(s1::Sort, s2::Sort)
             (Form(i, isdual, space), Scalar()) => Form(i, isdual, space)
         (Form(i1, isdual1, space1), Form(i2, isdual2, space2)) =>
             if (i1 == i2) && (isdual1 == isdual2) && (space1 == space2)
-                Form(i1, isdual1)
+                Form(i1, isdual1, space1)
             else
                 throw(SortError(
                     """
@@ -128,7 +128,7 @@ function *(s1::Sort, s2::Sort)
     @match (s1, s2) begin
         (Scalar(), Scalar()) => Scalar()
         (Scalar(), Form(i, isdual, space)) ||
-            (Form(i, isdual, space), Scalar()) => Form(i, isdual)
+            (Form(i, isdual, space), Scalar()) => Form(i, isdual, space)
         (Form(_, _, _), Form(_, _, _)) =>
             throw(SortError("Cannot scalar multiply a form with a form. Maybe try `∧`??"))
     end
@@ -252,6 +252,10 @@ function Δ(s::Sort)
     end
 end
 
+function Base.nameof(::typeof(Δ), s)
+    Symbol("Δ")
+end
+
 const OPERATOR_LOOKUP = Dict(
     :⋆₀ => ★,
     :⋆₁ => ★,
@@ -296,6 +300,7 @@ const OPERATOR_LOOKUP = Dict(
 
     # Dual-Dual Lie Derivatives
     # :ℒ₁ => ℒ,
+    # :L => ℒ,
 
     # Dual Laplacians
     # :Δᵈ₀ => Δ,

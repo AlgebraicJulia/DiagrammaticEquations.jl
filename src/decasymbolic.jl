@@ -90,6 +90,8 @@ for unop in unop_dec
 end
 
 binop_dec = [:+, :-, :*, :∧]
+export +,-,*,∧
+
 for binop in binop_dec
     @eval begin
         @nospecialize
@@ -100,7 +102,6 @@ for binop in binop_dec
             s = ThDEC.$binop(Sort(T1), Sort(T2))
             SymbolicUtils.Term{Number(s)}(ThDEC.$binop, [v, w])
         end
-        export $binop
 
         @nospecialize
         function ThDEC.$binop(
@@ -110,7 +111,6 @@ for binop in binop_dec
             s = ThDEC.$binop(Sort(T1), Sort(T2))
             SymbolicUtils.Term{Number(s)}(ThDEC.$binop, [v, w])
         end
-        export $binop
 
         @nospecialize
         function ThDEC.$binop(
@@ -120,7 +120,6 @@ for binop in binop_dec
             s = ThDEC.$binop(Sort(T1), Sort(T2))
             SymbolicUtils.Term{Number(s)}(ThDEC.$binop, [v, w])
         end
-        export $binop
     end
 end
 
@@ -130,6 +129,11 @@ struct DecaEquation{E}
     rhs::E
 end
 export DecaEquation
+Base.show(io::IO, e::DecaEquation) = begin
+    print(io, e.lhs)
+    print(io, " == ")
+    print(io, e.rhs)
+end
 
 # a struct carry the symbolic variables and their equations
 struct DecaSymbolic
@@ -137,6 +141,16 @@ struct DecaSymbolic
     equations::Vector{DecaEquation{Symbolic}}
 end
 export DecaSymbolic
+
+Base.show(io::IO, d::DecaSymbolic) = begin
+    println(io, "DecaSymbolic(")
+    println(io, "  Variables: [$(join(d.vars, ", "))]")
+    println(io, "  Equations: [")
+    eqns = map(d.equations) do op
+      "    $(op)"
+    end
+    println(io, "$(join(eqns,",\n"))])")
+  end
 
 # BasicSymbolic -> DecaExpr
 function decapodes.Term(t::SymbolicUtils.BasicSymbolic)
