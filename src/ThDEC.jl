@@ -24,6 +24,8 @@ struct SpaceLookup
 end
 export SpaceLookup
 
+SpaceLookup(default::Space) = SpaceLookup(default, Dict{Symbol, Space}(nameof(default) => default))
+
 @data Sort begin
     Scalar()
     Form(dim::Int, isdual::Bool, space::Space)
@@ -154,6 +156,7 @@ function ∧(s1::Sort, s2::Sort)
                 throw(SortError("Can only take a wedge product when the dimensions of the forms add to less than n, where n = $(dim(space1)) is the dimension of the ambient space: tried to wedge product $i1 and $i2"))
             end
         end
+        (VF(isdual, _), _) || (_, VF(isdual, _)) => throw(SortError("Can only take a wedge product of forms. Flatten (♭) your vector field before applying")) 
     end
 end
 
@@ -219,7 +222,7 @@ end
 
 # TODO
 function Base.nameof(::typeof(♯), s)
-    Symbol("♯s")
+    Symbol("♯$s")
 end
 
 
@@ -232,7 +235,7 @@ end
 
 # TODO
 function Base.nameof(::typeof(♭), s)
-    Symbol("♭s")
+    Symbol("♭$s")
 end
 
 # OTHER
@@ -247,14 +250,14 @@ end
 # Δ = ★d⋆d, but we check signature here to throw a more helpful error
 function Δ(s::Sort)
     @match s begin
+        Scalar() => Scalar()
         Form(0, isdual, space) => Form(0, isdual, space)
+        Form(1, isdual, space) => Form(1, isdual, space)
         _ => throw(SortError("Δ is not defined for $s"))
     end
 end
 
-function Base.nameof(::typeof(Δ), s)
-    Symbol("Δ")
-end
+Base.nameof(::typeof(Δ), s) = Symbol("Δ")
 
 const OPERATOR_LOOKUP = Dict(
     :⋆₀ => ★,

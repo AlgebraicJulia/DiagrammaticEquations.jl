@@ -1,5 +1,7 @@
 module SymbolicUtilsInterop
 
+using ..DiagrammaticEquations: AbstractDecapode
+import ..DiagrammaticEquations: eval_eq!, SummationDecapode
 using ..ThDEC
 using MLStyle
 import ..ThDEC: Sort, dim, isdual
@@ -63,6 +65,17 @@ end
 
 Sort(::BasicSymbolic{T}) where {T} = Sort(T)
 
+# converts a sort to its Julia symbol
+function to_symb(sort::Sort)
+    @match sort begin
+        Scalar() => :Constant
+        Form(i, isdual, X) => 
+            Symbol("$(isdual ? "Dual" : "")Form$i")
+        VField(isdual, X) =>
+            Symbol("$(isdual ? "Dual" : "")VF")
+    end
+end
+
 """
 converts ThDEC Sorts into DecaSymbolic types
 """
@@ -80,17 +93,14 @@ for unop in unop_dec
         function ThDEC.$unop(
             v::BasicSymbolic{T}
         ) where {T<:DECType}
-            # convert the DECType to ThDEC to type check
             s = ThDEC.$unop(Sort(T))
-            # the resulting type is converted back to DECType
-            # the resulting term has the operation has its head and `v` as its args.
             SymbolicUtils.Term{Number(s)}(ThDEC.$unop, [v])
         end
     end
 end
 
-binop_dec = [:+, :-, :*, :∧]
-export +,-,*,∧
+binop_dec = [:+, :-, :*, :∧, :^]
+export +,-,*,∧,^
 
 for binop in binop_dec
     @eval begin
@@ -129,6 +139,7 @@ struct DecaEquation{E}
     rhs::E
 end
 export DecaEquation
+
 Base.show(io::IO, e::DecaEquation) = begin
     print(io, e.lhs)
     print(io, " == ")
@@ -202,7 +213,7 @@ Example:
 function SymbolicUtils.BasicSymbolic(context::Dict{Symbol,Sort}, t::decapodes.Term)
     @match t begin
         Var(name) => SymbolicUtils.Sym{Number(context[name])}(name)
-        Lit(v) => Meta.parse(string(v)) # TODO no YOLO
+        Lit(v) => Meta.parse(string(v))
         # see heat_eq test: eqs had AppCirc1, but this returns
         # App1(f, App1(...)
         AppCirc1(fs, arg) => foldr(
@@ -235,5 +246,36 @@ function DecaSymbolic(lookup::SpaceLookup, d::decapodes.DecaExpr)
     end
     DecaSymbolic(vars, eqs)
 end
+
+function eval_eq!(eq::DecaEquation, d::AbstractDecapode, syms::Dict{Symbol, Int}, deletions::Vector{Int})
+    eval_eq!(Equation(Term(eq.lhs), Term(eq.rhs)), d, syms, deletions)
+end
+
+"""    function SummationDecapode(e::DecaSymbolic) """
+function SummationDecapode(e::DecaSymbolic)
+    d = SummationDecapode{Any, Any, Symbol}()
+    symbol_table = Dict{Symbol, Int}()
+
+    foreach(e.vars) do var
+        # convert Sort(var)::PrimalForm0 --> :Form0
+        var_id = add_part!(d, :Var, name=var.name, type=to_symb(Sort(var)))
+        symbol_table[var.name] = var_id
+    end
+
+    deletions = Vector{Int}()
+    foreach(e.equations) do eq
+        eval_eq!(eq, d, symbol_table, deletions)
+    end
+    rem_parts!(d, :Var, sort(deletions))
+
+    recognize_types(d)
+
+    fill_names!(d)
+    d[:name] = normalize_unicode.(d[:name])
+    make_sum_mult_unique!(d)
+    return d
+end
+
+
 
 end
