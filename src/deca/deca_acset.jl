@@ -90,7 +90,11 @@ op2_inf_rules_1D = [
   (proj1_type = :Constant, proj2_type = :DualForm0, res_type = :DualForm0, op_names = [:/, :./, :*, :.*, :^, :.^]),
   (proj1_type = :Constant, proj2_type = :DualForm1, res_type = :DualForm1, op_names = [:/, :./, :*, :.*, :^, :.^]),
   (proj1_type = :DualForm0, proj2_type = :Constant, res_type = :DualForm0, op_names = [:/, :./, :*, :.*, :^, :.^]),
-  (proj1_type = :DualForm1, proj2_type = :Constant, res_type = :DualForm1, op_names = [:/, :./, :*, :.*, :^, :.^])]
+  (proj1_type = :DualForm1, proj2_type = :Constant, res_type = :DualForm1, op_names = [:/, :./, :*, :.*, :^, :.^]),
+
+  # These rules contain infer:
+  (proj1_type = :Form0, proj2_type = :infer, res_type = :Form0, op_names = [:^]),
+  (proj1_type = :DualForm0, proj2_type = :infer, res_type = :DualForm0, op_names = [:^])]
 
 """
 These are the default rules used to do type inference in the 2D exterior calculus.
