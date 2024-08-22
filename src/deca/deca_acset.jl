@@ -253,6 +253,11 @@ op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
     (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :δ),
     (src_type = :Form2, tgt_type = :Form1, resolved_name = :δ₂, op = :codif),
     (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :codif),
+    # Rules for ♯.
+    (src_type = :Form1, tgt_type = :PVF, resolved_name = :♯ᵖᵖ, op = :♯),
+    (src_type = :DualForm1, tgt_type = :DVF, resolved_name = :♯ᵈᵈ, op = :♯),
+    # Rules for ♭.
+    (src_type = :DVF, tgt_type = :Form1, resolved_name = :♭ᵈᵖ, op = :♭),
     # Rules for ∇².
     # TODO: Call this :nabla2 in ASCII?
     (src_type = :Form0, tgt_type = :Form0, resolved_name = :∇²₀, op = :∇²),
