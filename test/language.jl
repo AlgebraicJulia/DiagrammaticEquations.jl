@@ -350,13 +350,14 @@ end
   @test issetequal([:V,:X,:k], infer_state_names(oscillator))
 end
 
-import DiagrammaticEquations: ALL_TYPES, FORM_TYPES, PRIMALFORM_TYPES, DUALFORM_TYPES,
-  NONFORM_TYPES, USER_TYPES, NUMBER_TYPES, INFER_TYPES, NONINFERABLE_TYPES
+import DiagrammaticEquations: ALL_TYPES, FORM_TYPES, PRIMALFORM_TYPES,
+  DUALFORM_TYPES, VECTORFIELD_TYPES, NON_EC_TYPES, USER_TYPES, NUMBER_TYPES,
+  INFER_TYPES, NONINFERABLE_TYPES
 
 @testset "Type Retrival" begin
 
   type_groups = [ALL_TYPES, FORM_TYPES, PRIMALFORM_TYPES, DUALFORM_TYPES,
-    NONFORM_TYPES, USER_TYPES, NUMBER_TYPES, INFER_TYPES, NONINFERABLE_TYPES]
+    NON_EC_TYPES, USER_TYPES, NUMBER_TYPES, INFER_TYPES, NONINFERABLE_TYPES]
 
 
   # No repeated types
@@ -368,12 +369,12 @@ import DiagrammaticEquations: ALL_TYPES, FORM_TYPES, PRIMALFORM_TYPES, DUALFORM_
   no_overlaps(types_1, types_2) = isempty(intersect(types_1, types_2))
 
   # Collections of these types should be the same
-  @test equal_types(ALL_TYPES, vcat(FORM_TYPES, NONFORM_TYPES))
-  @test equal_types(FORM_TYPES, vcat(PRIMALFORM_TYPES, DUALFORM_TYPES))
-  @test equal_types(NONINFERABLE_TYPES, vcat(USER_TYPES, NUMBER_TYPES))
+  @test equal_types(ALL_TYPES, FORM_TYPES ∪ VECTORFIELD_TYPES ∪ NON_EC_TYPES)
+  @test equal_types(FORM_TYPES, PRIMALFORM_TYPES ∪ DUALFORM_TYPES)
+  @test equal_types(NONINFERABLE_TYPES, USER_TYPES ∪ NUMBER_TYPES)
 
   # Proper seperation of types
-  @test no_overlaps(FORM_TYPES, NONFORM_TYPES)
+  @test no_overlaps(FORM_TYPES ∪ VECTORFIELD_TYPES, NON_EC_TYPES)
   @test no_overlaps(PRIMALFORM_TYPES, DUALFORM_TYPES)
   @test no_overlaps(NONINFERABLE_TYPES, FORM_TYPES)
   @test INFER_TYPES == [:infer]
@@ -394,9 +395,9 @@ end
 import DiagrammaticEquations: safe_modifytype
 
 @testset "Safe Type Modification" begin
-  all_types = [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2, :Literal, :Constant, :Parameter, :infer]
+  all_types = [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2, :Literal, :Constant, :Parameter, :PVF, :DVF, :infer]
   bad_sources = [:Literal, :Constant, :Parameter]
-  good_sources = [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2, :infer]
+  good_sources = [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2, :PVF, :DVF, :infer]
 
   for tgt in all_types
     for src in bad_sources
@@ -419,13 +420,13 @@ import DiagrammaticEquations: safe_modifytype
   end
 end
 
-import DiagrammaticEquations: filterfor_forms
+import DiagrammaticEquations: filterfor_ec_types
 
 @testset "Form Type Retrieval" begin
-  all_types = [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2, :Literal, :Constant, :Parameter, :infer]
-  @test filterfor_forms(all_types) == [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2]
-  @test isempty(filterfor_forms(Symbol[]))
-  @test isempty(filterfor_forms([:Literal, :Constant, :Parameter, :infer]))
+  all_types = [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2, :Literal, :Constant, :Parameter, :PVF, :DVF, :infer]
+  @test filterfor_ec_types(all_types) == [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2, :PVF, :DVF]
+  @test isempty(filterfor_ec_types(Symbol[]))
+  @test isempty(filterfor_ec_types([:Literal, :Constant, :Parameter, :infer]))
 end
 
 @testset "Type Inference" begin
@@ -825,6 +826,38 @@ end
     @test_throws "Type mismatch in summation" infer_types!(d)
   end
 
+  # Test #25: Infer between flattened and sharpened vector fields.
+  let
+    d = @decapode begin
+      A::Form1
+      B::DualForm1
+      C::PVF
+      D::DVF
+
+      A == ♭(E)
+      B == ♭(F)
+      C == ♯(G)
+      D == ♯(H)
+
+      I::Form1
+      J::DualForm1
+      K::PVF
+      L::DVF
+
+      M == ♯(I)
+      N == ♯(J)
+      O == ♭(K)
+      P == ♭(L)
+    end
+    infer_types!(d)
+
+    # TODO: Update this as more sharps and flats are released.
+    names_types_expected = Set([(:A, :Form1), (:B, :DualForm1), (:C, :PVF), (:D, :DVF),
+                               (:E, :DVF), (:F, :infer), (:G, :Form1), (:H, :DualForm1),
+                               (:I, :Form1), (:J, :DualForm1), (:K, :PVF), (:L, :DVF),
+                               (:M, :PVF), (:N, :DVF), (:O, :infer), (:P, :Form1)])
+    @test test_nametype_equality(d, names_types_expected)
+  end
 end
 
 @testset "Overloading Resolution" begin
@@ -1042,6 +1075,42 @@ end
   op2s_hx = HeatXfer[:op2]
   op2s_expected_hx = [:*, :/, :/, :L₀, :/, :L₁, :*, :/, :*, :i₁, :/, :*, :*, :L₀]
   @test op2s_hx == op2s_expected_hx
+
+  # Infer types and resolve overloads for the Halfar equation.
+  let
+    d = @decapode begin
+      h::Form0
+      Γ::Form1
+      n::Constant
+
+      ∂ₜ(h) == ∘(⋆, d, ⋆)(Γ  * d(h) ∧ (mag(♯(d(h)))^(n-1)) ∧ (h^(n+2)))
+    end
+    d = expand_operators(d)
+    infer_types!(d)
+    resolve_overloads!(d)
+    @test d == @acset SummationDecapode{Any, Any, Symbol} begin
+      Var = 19
+      TVar = 1
+      Op1 = 8
+      Op2 = 6
+      Σ = 1
+      Summand = 2
+      src = [1, 1, 1, 13, 12, 6, 18, 19]
+      tgt = [4, 9, 13, 12, 11, 18, 19, 4]
+      proj1 = [2, 3, 11, 8, 1, 7]
+      proj2 = [9, 15, 14, 10, 5, 16]
+      res = [8, 14, 10, 7, 16, 6]
+      incl = [4]
+      summand = [3, 17]
+      summation = [1, 1]
+      sum = [5]
+      op1 = [:∂ₜ, :d₀, :d₀, :♯, :mag, :⋆₁, :dual_d₁, :⋆₀⁻¹]
+      op2 = [:*, :-, :^, :∧₁₀, :^, :∧₁₀]
+      type = [:Form0, :Form1, :Constant, :Form0, :infer, :Form1, :Form1, :Form1, :Form1, :Form0, :Form0, :PVF, :Form1, :infer, :Literal, :Form0, :Literal, :DualForm1, :DualForm2]
+      name = [:h, :Γ, :n, :ḣ, :sum_1, Symbol("•2"), Symbol("•3"), Symbol("•4"), Symbol("•5"), Symbol("•6"), Symbol("•7"), Symbol("•8"), Symbol("•9"), Symbol("•10"), Symbol("1"), Symbol("•11"), Symbol("2"), Symbol("•_6_1"), Symbol("•_6_2")]
+    end
+  end
+
 end
 
 @testset "Compilation Transformation" begin

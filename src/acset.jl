@@ -158,13 +158,16 @@ end
 # A collection of DecaType getters
 # TODO: This should be replaced by using a type hierarchy
 const ALL_TYPES = [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2,
-  :Literal, :Parameter, :Constant, :infer]
+                   :PVF, :DVF,
+                   :Literal, :Parameter, :Constant, :infer]
 
 const FORM_TYPES = [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2]
 const PRIMALFORM_TYPES = [:Form0, :Form1, :Form2]
 const DUALFORM_TYPES = [:DualForm0, :DualForm1, :DualForm2]
 
-const NONFORM_TYPES = [:Constant, :Parameter, :Literal, :infer]
+const VECTORFIELD_TYPES = [:PVF, :DVF]
+
+const NON_EC_TYPES = [:Constant, :Parameter, :Literal, :infer]
 const USER_TYPES = [:Constant, :Parameter]
 const NUMBER_TYPES = [:Literal]
 const INFER_TYPES = [:infer]
@@ -427,12 +430,12 @@ function safe_modifytype!(d::SummationDecapode, var_idx::Int, new_type::Symbol)
 end
 
 """
-    filterfor_forms(types::AbstractVector{Symbol})
+    filterfor_ec_types(types::AbstractVector{Symbol})
 
-Return any form type symbols.
+Return any form or vector-field type symbols.
 """
-function filterfor_forms(types::AbstractVector{Symbol})
-  conditions = x -> !(x in NONFORM_TYPES)
+function filterfor_ec_types(types::AbstractVector{Symbol})
+  conditions = x -> !(x in NON_EC_TYPES)
   filter(conditions, types)
 end
 
@@ -447,16 +450,16 @@ function infer_sum_types!(d::SummationDecapode, Σ_idx::Int)
   types = d[idxs, :type]
   all(t != :infer for t in types) && return applied # We need not infer
 
-  forms = unique(filterfor_forms(types))
+  ec_types = unique(filterfor_ec_types(types))
 
-  form = @match length(forms) begin
+  ec_type = @match length(ec_types) begin
     0 => return applied # We can not infer
-    1 => only(forms)
-    _ => error("Type mismatch in summation $Σ_idx, all the following forms appear: $forms")
+    1 => only(ec_types)
+    _ => error("Type mismatch in summation $Σ_idx, all the following forms appear: $ec_types")
   end
 
   for idx in idxs
-    applied |= safe_modifytype!(d, idx, form)
+    applied |= safe_modifytype!(d, idx, ec_type)
   end
 
   return applied
@@ -489,11 +492,24 @@ function apply_inference_rule_op2!(d::SummationDecapode, op2_id, rule)
   score_res = (rule.res_type == type_res)
   check_op = (d[op2_id, :op2] in rule.op_names)
 
-  if(check_op && (score_proj1 + score_proj2 + score_res == 2))
+  if check_op && (score_proj1 + score_proj2 + score_res == 2)
     mod_proj1 = safe_modifytype!(d, d[op2_id, :proj1], rule.proj1_type)
     mod_proj2 = safe_modifytype!(d, d[op2_id, :proj2], rule.proj2_type)
     mod_res =   safe_modifytype!(d, d[op2_id, :res], rule.res_type)
     return mod_proj1 || mod_proj2 || mod_res
+  # Special logic for exponentiation:
+  elseif d[op2_id, :op2] == :^ &&
+      (type_proj1 == :Form0 && (type_proj2 == :infer || type_res == :infer)) ||
+      (type_res == :Form0 && (type_proj1 == :infer || type_proj2 == :infer))
+    mod_proj1 = safe_modifytype!(d, d[op2_id, :proj1], :Form0)
+    mod_res = safe_modifytype!(d, d[op2_id, :res], :Form0)
+    return mod_proj1 || mod_res
+  elseif d[op2_id, :op2] == :^ &&
+      (type_proj1 == :DualForm0 && (type_proj2 == :infer || type_res == :infer)) ||
+      (type_res == :DualForm0 && (type_proj1 == :infer || type_proj2 == :infer))
+    mod_proj1 = safe_modifytype!(d, d[op2_id, :proj1], :DualForm0)
+    mod_res = safe_modifytype!(d, d[op2_id, :res], :DualForm0)
+    return mod_proj1 || mod_res
   end
 
   return false
