@@ -32,10 +32,17 @@ op1_inf_rules_1D = [
   
   # Rules for the averaging operator
   (src_type = :Form0, tgt_type = :Form1, op_names = [:avg₀₁, :avg_01]),
+
+  # Rules for ♯.
+  (src_type = :Form1, tgt_type = :PVF, op_names = [:♯, :♯ᵖᵖ]),
+  (src_type = :DualForm1, tgt_type = :DVF, op_names = [:♯, :♯ᵈᵈ]),
+
+  # Rules for ♭.
+  (src_type = :DVF, tgt_type = :Form1, op_names = [:♭, :♭ᵈᵖ]),
   
   # Rules for magnitude/ norm
-  (src_type = :Form0, tgt_type = :Form0, op_names = [:mag, :norm]),
-  (src_type = :Form1, tgt_type = :Form1, op_names = [:mag, :norm])]
+  (src_type = :PVF, tgt_type = :Form0, op_names = [:mag, :norm]),
+  (src_type = :DVF, tgt_type = :DualForm0, op_names = [:mag, :norm])]
 
 op2_inf_rules_1D = [
   # Rules for ∧₀₀, ∧₁₀, ∧₀₁
@@ -133,13 +140,16 @@ op1_inf_rules_2D = [
   (src_type = :DualForm1, tgt_type = :DualForm1, op_names = [:neg, :(-)]),
   (src_type = :DualForm2, tgt_type = :DualForm2, op_names = [:neg, :(-)]),
 
+  # Rules for ♯.
+  (src_type = :Form1, tgt_type = :PVF, op_names = [:♯, :♯ᵖᵖ]),
+  (src_type = :DualForm1, tgt_type = :DVF, op_names = [:♯, :♯ᵈᵈ]),
+
+  # Rules for ♭.
+  (src_type = :DVF, tgt_type = :Form1, op_names = [:♭, :♭ᵈᵖ]),
+
   # Rules for magnitude/ norm
-  (src_type = :Form0, tgt_type = :Form0, op_names = [:norm, :mag]),
-  (src_type = :Form1, tgt_type = :Form1, op_names = [:norm, :mag]),
-  (src_type = :Form2, tgt_type = :Form2, op_names = [:norm, :mag]),
-  (src_type = :DualForm0, tgt_type = :DualForm0, op_names = [:norm, :mag]),
-  (src_type = :DualForm1, tgt_type = :DualForm1, op_names = [:norm, :mag]),
-  (src_type = :DualForm2, tgt_type = :DualForm2, op_names = [:norm, :mag])]
+  (src_type = :PVF, tgt_type = :Form0, op_names = [:norm, :mag]),
+  (src_type = :DVF, tgt_type = :DualForm0, op_names = [:norm, :mag])]
     
 op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
   # Rules for ∧₁₁, ∧₂₀, ∧₀₂
