@@ -39,3 +39,6 @@ end
 end
 
 include("aqua.jl")
+@testset "Symbolic Rewriting" begin
+  include("graph_traversal.jl")
+end
