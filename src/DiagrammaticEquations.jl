@@ -62,6 +62,8 @@ include("rewrite.jl")
 include("pretty.jl")
 include("colanguage.jl")
 include("openoperators.jl")
+include("graph_traversal.jl")
+include("acset2symbolic.jl")
 include("deca/Deca.jl")
 include("learn/Learn.jl")
 

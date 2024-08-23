@@ -39,3 +39,7 @@ end
 @testset "Open Operators" begin
   include("openoperators.jl")
 end
+
+@testset "Symbolic Rewriting" begin
+  include("graph_traversal.jl")
+end
