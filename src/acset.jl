@@ -155,17 +155,46 @@ function make_sum_mult_unique!(d::AbstractNamedDecapode)
   end
 end
 
+# A collection of DecaType getters
+# TODO: This should be replaced by using a type hierarchy
+const ALL_TYPES = [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2,
+  :Literal, :Parameter, :Constant, :infer]
+
+const FORM_TYPES = [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2]
+const PRIMALFORM_TYPES = [:Form0, :Form1, :Form2]
+const DUALFORM_TYPES = [:DualForm0, :DualForm1, :DualForm2]
+
+const NONFORM_TYPES = [:Constant, :Parameter, :Literal, :infer]
+const USER_TYPES = [:Constant, :Parameter]
+const NUMBER_TYPES = [:Literal]
+const INFER_TYPES = [:infer]
+
+# Types that can not ever be inferred
+const NONINFERABLE_TYPES = [:Constant, :Parameter, :Literal]
+
+function get_unsupportedtypes(types)
+  setdiff(types, ALL_TYPES)
+end
+
 # Note: This hard-bakes in Form0 through Form2, and higher Forms are not
 # allowed.
 function recognize_types(d::AbstractNamedDecapode)
   types = d[:type]
-  unrecognized_types = setdiff(d[:type], [:Form0, :Form1, :Form2, :DualForm0,
-                          :DualForm1, :DualForm2, :Literal, :Parameter,
-                          :Constant, :infer])
+  unrecognized_types = get_unsupportedtypes(types)
   isempty(unrecognized_types) ||
   error("Types $unrecognized_types are not recognized. CHECK: $types")
 end
 
+"""    is_expanded(d::AbstractNamedDecapode)
+
+Check that no unary operator is a composition of unary operators.
+"""
+is_expanded(d::AbstractNamedDecapode) = !any(x -> x isa AbstractVector, d[:op1])
+
+"""    function expand_operators(d::AbstractNamedDecapode)
+
+If any unary operator is a composition, expand it out using intermediate variables.
+"""
 function expand_operators(d::AbstractNamedDecapode)
   #e = SummationDecapode{Symbol, Symbol, Symbol}()
   e = SummationDecapode{Any, Any, Symbol}()
@@ -202,10 +231,10 @@ end
 """    function infer_states(d::SummationDecapode)
 
 Find variables which have a time derivative or are not the source of a computation.
-See also: [`infer_state_names`](@ref).
+See also: [`infer_terminals`](@ref).
 """
 function infer_states(d::SummationDecapode)
-  childless = filter(parts(d, :Var)) do v
+  parentless = filter(parts(d, :Var)) do v
     length(incident(d, v, :tgt)) == 0 &&
     length(incident(d, v, :res)) == 0 &&
     length(incident(d, v, :sum)) == 0 &&
@@ -214,7 +243,7 @@ function infer_states(d::SummationDecapode)
   parents_of_tvars =
     union(d[incident(d,:∂ₜ, :op1), :src],
           d[incident(d,:dt, :op1), :src])
-  union(childless, parents_of_tvars)
+  union(parentless, parents_of_tvars)
 end
 
 """    function infer_state_names(d)
@@ -223,6 +252,26 @@ Find names of variables which have a time derivative or are not the source of a 
 See also: [`infer_states`](@ref).
 """
 infer_state_names(d) = d[infer_states(d), :name]
+
+"""    function infer_terminals(d::SummationDecapode)
+Find variables which have no children.
+See also: [`infer_states`](@ref).
+"""
+function infer_terminals(d::SummationDecapode)
+  filter(parts(d, :Var)) do v
+    length(incident(d, v, :src)) == 0 &&
+    length(incident(d, v, :proj1)) == 0 &&
+    length(incident(d, v, :proj2)) == 0 &&
+    length(incident(d, v, :summand)) == 0
+  end
+end
+
+"""    function infer_terminal_names(d)
+
+Find names of variables which have no children.
+See also: [`infer_terminals`](@ref).
+"""
+infer_terminal_names(d) = d[infer_terminals(d), :name]
 
 """    function expand_operators(d::SummationDecapode)
 
@@ -236,20 +285,26 @@ function expand_operators(d::SummationDecapode)
   return e
 end
 
-"""    function contract_operators(d::SummationDecapode; allowable_ops::Set{Symbol} = Set{Symbol}())
+"""    function contract_operators(d::SummationDecapode; white_list::Set{Symbol} = Set{Symbol}(), black_list::Set{Symbol} = Set{Symbol}())
 
 Find chains of Op1s in the given Decapode, and replace them with
 a single Op1 with a vector of function names. After this process,
-all Vars that are not a part of any computation are removed.
+all Vars that are not a part of any computation are removed. If a
+white list is provided, only chain those operators. If a black list
+is provided, do not chain those operators.
 """
-function contract_operators(d::SummationDecapode; allowable_ops::Set{Symbol} = Set{Symbol}())
+function contract_operators(d::SummationDecapode;
+  white_list::Set{Symbol} = Set{Symbol}(),
+  black_list::Set{Symbol} = Set{Symbol}())
   e = expand_operators(d)
-  contract_operators!(e, allowable_ops = allowable_ops)
+  contract_operators!(e, white_list=white_list, black_list=black_list)
   #return e
 end
 
-function contract_operators!(d::SummationDecapode; allowable_ops::Set{Symbol} = Set{Symbol}())
-  chains = find_chains(d, allowable_ops = allowable_ops)
+function contract_operators!(d::SummationDecapode;
+    white_list::Set{Symbol} = Set{Symbol}(),
+    black_list::Set{Symbol} = Set{Symbol}())
+  chains = find_chains(d, white_list=white_list, black_list=black_list)
   filter!(x -> length(x) != 1, chains)
   for chain in chains
     add_part!(d, :Op1, src=d[:src][first(chain)], tgt=d[:tgt][last(chain)], op1=Vector{Symbol}(d[:op1][chain]))
@@ -278,27 +333,31 @@ function remove_neighborless_vars!(d::SummationDecapode)
   d
 end
 
-"""
- function find_chains(d::SummationDecapode; allowable_ops::Set{Symbol} = Set{Symbol}())
+"""    function find_chains(d::SummationDecapode; white_list::Set{Symbol} = Set{Symbol}(), black_list::Set{Symbol} = Set{Symbol}())
 
 Find chains of Op1s in the given Decapode. A chain ends when the
 target of the last Op1 is part of an Op2 or sum, or is a target
-of multiple Op1s. Only operators with names included in the 
-allowable_ops set are allowed to be contracted. If the set is
-empty then all operators are allowed.
+of multiple Op1s. If a white list is provided, only chain those
+operators. If a black list is provided, do not chain those operators.
 """
-function find_chains(d::SummationDecapode; allowable_ops::Set{Symbol} = Set{Symbol}())
+function find_chains(d::SummationDecapode;
+    white_list::Set{Symbol} = Set{Symbol}(),
+    black_list::Set{Symbol} = Set{Symbol}())
   chains = []
   visited = falses(nparts(d, :Op1))
   # TODO: Re-write this without two reduce-vcats.
-  chain_starts = unique(reduce(vcat, reduce(vcat,
-                        [incident(d, Vector{Int64}(filter(i -> !isnothing(i), infer_states(d))), :src),
-                         incident(d, d[:res], :src),
-                         incident(d, d[:sum], :src)])))
+  rvrv(x) = reduce(vcat, reduce(vcat, x))
+  chain_starts = unique(rvrv(
+    [incident(d, Vector{Int64}(filter(i -> !isnothing(i), infer_states(d))), :src),
+     incident(d, d[:res], :src),
+     incident(d, d[:sum], :src),
+     incident(d, d[collect(Iterators.flatten(incident(d, collect(black_list), :op1))), :tgt], :src)]))
 
-  if(!isempty(allowable_ops))
-    filter!(x -> d[x, :op1] ∈ allowable_ops, chain_starts)  
-  end
+  passes_white_list(x) = isempty(white_list) ? true : x ∈ white_list
+  passes_black_list(x) = x ∉ black_list
+
+  filter!(x -> passes_white_list(d[x, :op1]), chain_starts)
+  filter!(x -> passes_black_list(d[x, :op1]), chain_starts)
   
   s = Stack{Int64}()
   foreach(x -> push!(s, x), chain_starts)
@@ -319,11 +378,14 @@ function find_chains(d::SummationDecapode; allowable_ops::Set{Symbol} = Set{Symb
           is_tgt_of_many_ops(d, tgt) ||
           !isempty(incident(d, tgt, :sum)) ||
           !isempty(incident(d, tgt, :summand)) ||
-          (!isempty(allowable_ops) && d[only(next_op1s), :op1] ∉ allowable_ops))
+          !passes_white_list(d[only(next_op1s), :op1]) ||
+          !passes_black_list(d[only(next_op1s), :op1]))
         # Terminate chain.
         append!(chains, [curr_chain])
-        for next_op1 in next_op1s
-          visited[next_op1] || (!isempty(allowable_ops) && d[only(next_op1s), :op1] ∉ allowable_ops) || push!(s, next_op1)
+        for op1 in next_op1s
+          if !visited[op1] && passes_white_list(d[op1, :op1]) && passes_black_list(d[op1, :op1])
+            push!(s, op1)
+          end
         end
         break
       end
@@ -333,6 +395,7 @@ function find_chains(d::SummationDecapode; allowable_ops::Set{Symbol} = Set{Symb
   end
   return chains
 end
+
 function add_constant!(d::AbstractNamedDecapode, k::Symbol)
     return add_part!(d, :Var, type=:Constant, name=k)
 end
@@ -342,35 +405,60 @@ function add_parameter(d::AbstractNamedDecapode, k::Symbol)
 end
 
 
-function infer_summands_and_summations!(d::SummationDecapode)
-  # Note that we are not doing any type checking here!
-  # i.e. We are not checking for this: [Form0, Form1, Form0].
-  applied = false
-  for Σ_idx in parts(d, :Σ)
-    summands = d[:summand][incident(d, Σ_idx, :summation)]
-    sum = d[:sum][Σ_idx]
-    idxs = [summands; sum]
-    types = d[:type][idxs]
-    all(t != :infer for t in types) && continue # We need not infer
-    all(t == :infer for t in types) && continue # We can  not infer
+"""
+    safe_modifytype(org_type::Symbol, new_type::Symbol)
 
-    known_types = types[findall(!=(:infer), types)]
-    if :Literal ∈ known_types
-      # If anything is a Literal, then anything not inferred is a Constant.
-      inferred_type = :Constant
-    elseif !isnothing(findfirst(!=(:Constant), known_types))
-      # If anything is a Form, then any term in this sum is the same kind of Form.
-      # Note that we are not explicitly changing Constants to Forms here,
-      # although we should consider doing so.
-      inferred_type = known_types[findfirst(!=(:Constant), known_types)]
-    else
-      # All terms are now a mix of Constant or infer. Set them all to Constant.
-      inferred_type = :Constant
-    end
-    to_infer_idxs = filter(i -> d[:type][i] == :infer, idxs)
-    d[to_infer_idxs, :type] = inferred_type
-    applied = true
+This function accepts an original type and a new type and determines if the original type
+  can be safely overwritten by the new type.
+"""
+function safe_modifytype(org_type::Symbol, new_type::Symbol)
+  modify = (org_type in INFER_TYPES && !(new_type in NONINFERABLE_TYPES))
+  return (modify, modify ? new_type : org_type)
+end
+
+"""
+    safe_modifytype!(d::SummationDecapode, var_idx::Int, new_type::Symbol)
+
+This function calls `safe_modifytype` to safely modify a Decapode's variable type.
+"""
+function safe_modifytype!(d::SummationDecapode, var_idx::Int, new_type::Symbol)
+  modify, d[var_idx, :type] = safe_modifytype(d[var_idx, :type], new_type)
+  return modify
+end
+
+"""
+    filterfor_forms(types::AbstractVector{Symbol})
+
+Return any form type symbols.
+"""
+function filterfor_forms(types::AbstractVector{Symbol})
+  conditions = x -> !(x in NONFORM_TYPES)
+  filter(conditions, types)
+end
+
+function infer_sum_types!(d::SummationDecapode, Σ_idx::Int)
+  # Note that we are not doing any type checking here for users!
+  # i.e. We are not checking the underlying types of Constant or Parameter
+  applied = false
+
+  summands = d[incident(d, Σ_idx, :summation), :summand]
+  sum = d[Σ_idx, :sum]
+  idxs = [summands; sum]
+  types = d[idxs, :type]
+  all(t != :infer for t in types) && return applied # We need not infer
+
+  forms = unique(filterfor_forms(types))
+
+  form = @match length(forms) begin
+    0 => return applied # We can not infer
+    1 => only(forms)
+    _ => error("Type mismatch in summation $Σ_idx, all the following forms appear: $forms")
   end
+
+  for idx in idxs
+    applied |= safe_modifytype!(d, idx, form)
+  end
+
   return applied
 end
 
@@ -378,18 +466,14 @@ function apply_inference_rule_op1!(d::SummationDecapode, op1_id, rule)
   type_src = d[d[op1_id, :src], :type]
   type_tgt = d[d[op1_id, :tgt], :type]
 
-  if(type_src != :infer && type_tgt != :infer)
-    return false
-  end
-
   score_src = (rule.src_type == type_src)
   score_tgt = (rule.tgt_type == type_tgt)
   check_op = (d[op1_id, :op1] in rule.op_names)
 
   if(check_op && (score_src + score_tgt == 1))
-    d[d[op1_id, :src], :type] = rule.src_type
-    d[d[op1_id, :tgt], :type] = rule.tgt_type
-    return true
+    mod_src = safe_modifytype!(d, d[op1_id, :src], rule.src_type)
+    mod_tgt = safe_modifytype!(d, d[op1_id, :tgt], rule.tgt_type)
+    return mod_src || mod_tgt
   end
 
   return false
@@ -400,20 +484,16 @@ function apply_inference_rule_op2!(d::SummationDecapode, op2_id, rule)
   type_proj2 = d[d[op2_id, :proj2], :type]
   type_res = d[d[op2_id, :res], :type]
 
-  if(type_proj1 != :infer && type_proj2 != :infer && type_res != :infer)
-    return false
-  end
-
   score_proj1 = (rule.proj1_type == type_proj1)
   score_proj2 = (rule.proj2_type == type_proj2)
   score_res = (rule.res_type == type_res)
   check_op = (d[op2_id, :op2] in rule.op_names)
 
   if(check_op && (score_proj1 + score_proj2 + score_res == 2))
-    d[d[op2_id, :proj1], :type] = rule.proj1_type
-    d[d[op2_id, :proj2], :type] = rule.proj2_type
-    d[d[op2_id, :res], :type] = rule.res_type
-    return true
+    mod_proj1 = safe_modifytype!(d, d[op2_id, :proj1], rule.proj1_type)
+    mod_proj2 = safe_modifytype!(d, d[op2_id, :proj2], rule.proj2_type)
+    mod_res =   safe_modifytype!(d, d[op2_id, :res], rule.res_type)
+    return mod_proj1 || mod_proj2 || mod_res
   end
 
   return false
@@ -437,14 +517,14 @@ function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_t
   types_known_op1[incident(d, :infer, [:src, :type])] .= false
   types_known_op1[incident(d, :infer, [:tgt, :type])] .= false
 
-  types_known_op2 = zeros(Bool, nparts(d, :Op2))
+  types_known_op2 = ones(Bool, nparts(d, :Op2))
   types_known_op2[incident(d, :infer, [:proj1, :type])] .= false
   types_known_op2[incident(d, :infer, [:proj2, :type])] .= false
   types_known_op2[incident(d, :infer, [:res, :type])] .= false
 
   while true
     applied = false
-    
+
     for rule in op1_rules
       for op1_idx in parts(d, :Op1)
         types_known_op1[op1_idx] && continue
@@ -452,7 +532,7 @@ function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_t
         this_applied = apply_inference_rule_op1!(d, op1_idx, rule)
 
         types_known_op1[op1_idx] = this_applied
-        applied = applied || this_applied
+        applied |= this_applied
       end
     end
 
@@ -463,19 +543,22 @@ function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_t
         this_applied = apply_inference_rule_op2!(d, op2_idx, rule)
 
         types_known_op2[op2_idx] = this_applied
-        applied = applied || this_applied
+        applied |= this_applied
       end
     end
 
-    applied = applied || infer_summands_and_summations!(d)
+    for Σ_idx in parts(d, :Σ)
+      applied |= infer_sum_types!(d, Σ_idx)
+    end
+
     applied || break # Break if no rules were applied.
-  end 
+  end
 
   d
 end
 
 
-  
+
 """    function resolve_overloads!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :resolved_name, :op), NTuple{4, Symbol}}})
 
 Resolve function overloads based on types of src and tgt.
@@ -548,4 +631,3 @@ function unique_lits!(d::SummationDecapode)
   rem_parts!(d, :Var, sort!(reduce(vcat, to_remove)))
   d
 end
-

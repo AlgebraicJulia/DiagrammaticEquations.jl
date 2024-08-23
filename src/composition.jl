@@ -1,26 +1,8 @@
-## TODO: Decapodey
-
 import Catlab.CategoricalAlgebra: apex, feet, legs
 import Catlab.WiringDiagrams: oapply
 
-OpenSummationDecapodeOb, OpenSummationDecapode = OpenACSetTypes(SummationDecapode, :Var)
-
-#FIXME: why can't we just add a constructor for OpenSummationDecapode
-"""    Open(d::SummationDecapode{T,U,V}, names::AbstractVector{Symbol}) where {T,U,V}
-
-creates an OpenSummationDecapode based on named variables rather than variable indices. 
-See AlgebraicPetri.jl's Open for the analogous verion for LabelledReactionNetworks.
-"""
-function Open(d::SummationDecapode{T,U,V}, names::AbstractVector{Symbol}) where {T,U,V}
-  legs = map(names) do name
-    FinFunction(incident(d, name, :name), nparts(d, :Var))
-  end
-  OpenSummationDecapode{T,U,V}(d, legs...)
-end
-
-apex(Decapode::OpenSummationDecapode) = apex(Decapode.cospan)
-legs(Decapode::OpenSummationDecapode) = legs(Decapode.cospan)
-feet(Decapode::OpenSummationDecapode) = Decapode.feet
+# ACSet manipulation helper functions
+# -----------------------------------
 
 """    function unique_by!(acset, column_names::Vector{Symbol})
 
@@ -66,6 +48,28 @@ function unique_by(acset, table::Symbol, columns::Vector{Symbol})
   acset_copy = copy(acset)
   unique_by!(acset_copy, table, columns)
 end
+
+# Operadic composition
+# --------------------
+
+OpenSummationDecapodeOb, OpenSummationDecapode = OpenACSetTypes(SummationDecapode, :Var)
+
+#FIXME: why can't we just add a constructor for OpenSummationDecapode
+"""    Open(d::SummationDecapode{T,U,V}, names::AbstractVector{Symbol}) where {T,U,V}
+
+creates an OpenSummationDecapode based on named variables rather than variable indices. 
+See AlgebraicPetri.jl's Open for the analogous verion for LabelledReactionNetworks.
+"""
+function Open(d::SummationDecapode{T,U,V}, names::AbstractVector{Symbol}) where {T,U,V}
+  legs = map(names) do name
+    FinFunction(incident(d, name, :name), nparts(d, :Var))
+  end
+  OpenSummationDecapode{T,U,V}(d, legs...)
+end
+
+apex(Decapode::OpenSummationDecapode) = apex(Decapode.cospan)
+legs(Decapode::OpenSummationDecapode) = legs(Decapode.cospan)
+feet(Decapode::OpenSummationDecapode) = Decapode.feet
 
 """    function type_check_Decapodes_composition(relation::RelationDiagram, decs::Vector{OpenSummationDecapode})
 
@@ -212,3 +216,52 @@ oapply(r::RelationDiagram, podes::Vector{D}) where {D<:OpenSummationDecapode} =
 # oapply(r, OpenPode(Heat, [:H]))
 
 oapply(r::RelationDiagram, pode::OpenSummationDecapode) = oapply(r, [pode])
+
+# Default composition
+# -------------------
+
+# This helper function finds elements which appear in an array more than once.
+function find_duplicates(vs::Vector{T}) where T
+  once, twice = Set{T}(), Set{T}()
+  foreach(v -> v ∈ once ? push!(twice,v) : push!(once,v), vs)
+  twice
+end
+
+# TODO: Upstream this to Catlab?
+function construct_relation_diagram(boxes::Vector{Symbol}, junctions::Vector{Vector{Symbol}})
+  tables = map(boxes, junctions) do b, j
+    Expr(:call, b, j...)
+  end
+  parse_relation_diagram(:(), :($(tables...),))
+end
+
+# TODO: Add a macro which provides names for boxes via the Symbol of the Decapode.
+"""    function default_composition_diagram(podes::Vector{D}, names::Vector{Symbol}) where {D<:SummationDecapode}
+
+Given a list of Decapodes and their names, return a composition diagram which assumes that variables sharing the same name ought to be composed.
+
+No Literals are exposed. Use [`unique_lits!`](@ref) after composing.
+
+Throw an error if any individual Decapode already contains a repeated name (except for Literals).
+
+If `only_states_terminals` is `true`, only expose state and terminal variables. Defaults to `false`.
+
+Note that composing immediately with [`oapply`](@ref) will fail if types do not match (e.g. (:infer, :Form0) or (:Form0, :Form1)).
+"""
+function default_composition_diagram(podes::Vector{D}, names::Vector{Symbol}, only_states_terminals=false) where {D<:SummationDecapode}
+  length(podes) == length(names) || error("$(length(podes)) models given, but $(length(names)) names provided.")
+  non_lit_names = map(podes) do pode
+    pode[findall(!=(:Literal), pode[:type]), :name]
+  end
+  for (nln, name) in zip(non_lit_names, names)
+    allunique(nln) || error("Decapode $name contains repeated variable names: $(find_duplicates(nln)).")
+  end
+  if only_states_terminals
+    foreach(non_lit_names, podes) do nln, pode
+      outers = infer_state_names(pode) ∪ infer_terminal_names(pode)
+      filter!(x -> x ∈ outers, nln)
+    end
+  end
+  construct_relation_diagram(names, non_lit_names)
+end
+

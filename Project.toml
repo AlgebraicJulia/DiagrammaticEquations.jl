@@ -2,7 +2,7 @@ name = "DiagrammaticEquations"
 uuid = "6f00c28b-6bed-4403-80fa-30e0dc12f317"
 license = "MIT"
 authors = ["James Fairbanks", "Andrew Baas", "Evan Patterson", "Luke Morris", "George Rauta"]
-version = "0.1.4"
+version = "0.1.7"
 
 [deps]
 ACSets = "227ef7b5-1206-438b-ac65-934d6da304b8"
