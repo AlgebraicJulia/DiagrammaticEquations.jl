@@ -2,15 +2,12 @@ using Test
 using DiagrammaticEquations
 using DiagrammaticEquations.Deca
 using Catlab
-using Catlab.WiringDiagrams
-using Catlab.Programs
-using Catlab.CategoricalAlgebra
 
 # import DiagrammaticEquations: OpenSummationDecapode, Open, oapply, oapply_rename
 
 # @testset "Composition" begin
 # Simplest possible decapode relation.
-Trivial = @decapode begin 
+Trivial = @decapode begin
   H::Form0{X}
 end
 
