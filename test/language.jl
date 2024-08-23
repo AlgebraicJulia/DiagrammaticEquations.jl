@@ -1002,20 +1002,8 @@ end
                   Open(NavierStokes, [:M, :ρ, :p, :T])])
   HeatXfer = apex(heatXfer_cospan)
 
-  bespoke_op1_inf_rules = [
-  # Rules for avg.
-  (src_type = :Form0, tgt_type = :Form1, op_names = [:avg]),
   # Rules for R₀.
-  (src_type = :Form0, tgt_type = :Form0, op_names = [:R₀])]
-
-  #= bespoke_op2_inf_rules = [
-  (proj1_type = :Parameter, proj2_type = :Form0, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
-  (proj1_type = :Parameter, proj2_type = :Form1, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
-  (proj1_type = :Parameter, proj2_type = :Form2, res_type = :Form2, op_names = [:/, :./, :*, :.*]),
-
-  (proj1_type = :Form0, proj2_type = :Parameter, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
-  (proj1_type = :Form1, proj2_type = :Parameter, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
-  (proj1_type = :Form2, proj2_type = :Parameter, res_type = :Form2, op_names = [:/, :./, :*, :.*])] =#
+  bespoke_op1_inf_rules = [(src_type = :Form0, tgt_type = :Form0, op_names = [:R₀])]
 
   infer_types!(HeatXfer, vcat(bespoke_op1_inf_rules, op1_inf_rules_2D),
     op2_inf_rules_2D)
@@ -1025,6 +1013,8 @@ end
   names_types_expected_hx = [
     (:T, :Form0), (:continuity_Ṫ₁, :Form0), (:continuity_diffusion_ϕ, :DualForm1), (:continuity_diffusion_k, :Parameter), (Symbol("continuity_diffusion_•1"), :DualForm2), (Symbol("continuity_diffusion_•2"), :Form1), (Symbol("continuity_diffusion_•3"), :Form1), (:M, :Form1), (:continuity_advection_V, :Form1), (:ρ, :Form0), (:P, :Form0), (:continuity_Ṫₐ, :Form0), (Symbol("continuity_advection_•1"), :Form0), (Symbol("continuity_advection_•2"), :Form1), (Symbol("continuity_advection_•3"), :DualForm2), (Symbol("continuity_advection_•4"), :Form0), (Symbol("continuity_advection_•5"), :DualForm2), (:continuity_Ṫ, :Form0), (:navierstokes_Ṁ, :Form1), (:navierstokes_G, :Form1), (:navierstokes_V, :Form1), (:navierstokes_ṗ, :Form0), (:navierstokes_two, :Parameter), (:navierstokes_three, :Parameter), (:navierstokes_kᵥ, :Parameter), (Symbol("navierstokes_•1"), :DualForm2), (Symbol("navierstokes_•2"), :Form1), (Symbol("navierstokes_•3"), :Form1), (Symbol("navierstokes_•4"), :DualForm1), (Symbol("navierstokes_•5"), :DualForm1), (Symbol("navierstokes_•6"), :DualForm1), (Symbol("navierstokes_•7"), :Form1), (Symbol("navierstokes_•8"), :Form1), (Symbol("navierstokes_•9"), :Form1), (Symbol("navierstokes_•10"), :Form1), (Symbol("navierstokes_•11"), :Form1), (:navierstokes_sum_1, :Form1), (Symbol("navierstokes_•12"), :Form0), (Symbol("navierstokes_•13"), :Form1), (Symbol("navierstokes_•14"), :Form1), (Symbol("navierstokes_•15"), :Form0), (Symbol("navierstokes_•16"), :DualForm0), (Symbol("navierstokes_•17"), :DualForm1), (Symbol("navierstokes_•18"), :Form1), (Symbol("navierstokes_•19"), :Form1), (Symbol("navierstokes_•20"), :Form1), (:navierstokes_sum_2, :Form0), (Symbol("navierstokes_•21"), :Form1), (Symbol("navierstokes_•22"), :Form1), (Symbol("navierstokes_•23"), :DualForm2)]
 
+  # TODO: Fix this test/decapode, pretty sure there is mixing of primal/dual forms
+  # This is likely since this decapode existed before we made Lie/inner primal-dual only
   @test issetequal(names_types_hx, names_types_expected_hx)
 
   bespoke_op2_res_rules = [
@@ -1037,11 +1027,11 @@ end
     vcat(bespoke_op2_res_rules, op2_res_rules_2D))
 
   op1s_hx = HeatXfer[:op1]
-  op1s_expected_hx = [:d₀, :⋆₁, :dual_d₁, :⋆₀⁻¹, :avg, :R₀, :⋆₀, :⋆₀⁻¹, :neg, :∂ₜ, :avg, :⋆₁, :neg, :avg, :Δ₁, :δ₁, :d₀, :⋆₁, :d₀, :avg, :d₀, :neg, :avg, :∂ₜ, :⋆₀, :⋆₀⁻¹, :neg, :∂ₜ]
-  @test op1s_hx == op1s_expected_hx
+  op1s_expected_hx = [:d₀, :⋆₁, :dual_d₁, :⋆₀⁻¹, :avg₀₁, :R₀, :⋆₀, :⋆₀⁻¹, :neg, :∂ₜ, :avg₀₁, :⋆₁, :neg, :avg₀₁, :Δ₁, :δ₁, :d₀, :⋆₁, :d₀, :avg₀₁, :d₀, :neg, :avg₀₁, :∂ₜ, :⋆₀, :⋆₀⁻¹, :neg, :∂ₜ]
+  @test op1s_hx == op1s_expected_hx # Correct but probably by chance, see above
   op2s_hx = HeatXfer[:op2]
   op2s_expected_hx = [:*, :/, :/, :L₀, :/, :L₁, :*, :/, :*, :i₁, :/, :*, :*, :L₀]
-  @test op2s_hx == op2s_expected_hx
+  @test op2s_hx == op2s_expected_hx # Correct but probably by chance, see above
 end
 
 @testset "Compilation Transformation" begin
@@ -1294,95 +1284,57 @@ end
   @test issetequal(t15_contracted[:op1], [:g, :f, :e, :d, [:c, :b, :a]])
 end
 
-@testset "ASCII & Vector Calculus Operators" begin
-# Test ASCII to Unicode conversion on an Op2.
-t1 = @decapode begin
-  A == wedge(C, D)
-end
-unicode!(t1)
-
-op2s_1 = Set(t1[:op2])
-op2s_expected_1 = Set([:∧])
-@test issetequal(op2s_1, op2s_expected_1)
-
-# Test ASCII to Unicode conversion with multiple occurences of the same operator.
-t2 = @decapode begin
-  A == wedge(C, D)
-  B == wedge(E, F)
-end
-unicode!(t2)
-
-op2s_2 = Set(t2[:op2])
-op2s_expected_2 = Set([:∧])
-@test issetequal(op2s_2, op2s_expected_2)
-
-# Test ASCII to Unicode conversion works with composed operators after expansion.
-t3 = @decapode begin
-  A == ∘(star, lapl, star_inv)(B)
-end
-t3 = expand_operators(t3)
-unicode!(t3)
-
-op1s_3 = Set(t3[:op1])
-op1s_expected_3 = Set([:⋆,:Δ,:⋆⁻¹])
-@test issetequal(op1s_3, op1s_expected_3)
-
-# Test ASCII tangent operator identifies a TVar.
-t4 = @decapode begin
-  A == dt(B)
-end
-@test nparts(t4, :TVar) == 1
-
+@testset "Vector Calculus Operators" begin
 # Test vec_to_dec! on a single operator.
-t5 = @decapode begin
+t1 = @decapode begin
   A == div(B)
 end
-vec_to_dec!(t5)
+vec_to_dec!(t1)
 
-op1s_5 = Set(t5[:op1])
-op1s_expected_5 = Set([[:⋆,:d,:⋆]])
-@test issetequal(op1s_5, op1s_expected_5)
+op1s_1 = Set(t1[:op1])
+op1s_expected_1 = Set([[:⋆,:d,:⋆]])
+@test issetequal(op1s_1, op1s_expected_1)
 
 # Test divergence of gradient is the Laplacian.
-t6 = @decapode begin
+t2 = @decapode begin
   A == ∘(grad, div)(B)
 end
-t6 = expand_operators(t6)
-vec_to_dec!(t6)
-t6 = contract_operators(t6)
-@test only(t6[:op1]) == [:d,:⋆,:d,:⋆]
+t2 = expand_operators(t2)
+vec_to_dec!(t2)
+t2 = contract_operators(t2)
+@test only(t2[:op1]) == [:d,:⋆,:d,:⋆]
 
 # Test curl of curl is a vector Laplacian.
-t7 = @decapode begin
+t3 = @decapode begin
   A == ∘(∇x, ∇x)(B)
 end
-t7 = expand_operators(t7)
-vec_to_dec!(t7)
-t7 = contract_operators(t7)
-@test only(t7[:op1]) == [:d,:⋆,:d,:⋆]
+t3 = expand_operators(t3)
+vec_to_dec!(t3)
+t3 = contract_operators(t3)
+@test only(t3[:op1]) == [:d,:⋆,:d,:⋆]
 
 # Test advection is divergence of wedge product.
-t8 = @decapode begin
+t4 = @decapode begin
   A == adv(B, C)
 end
-vec_to_dec!(t8)
+vec_to_dec!(t4)
 
-@test only(t8[:op1]) == [:⋆,:d,:⋆]
-@test only(t8[:op2]) == :∧
+@test only(t4[:op1]) == [:⋆,:d,:⋆]
+@test only(t4[:op2]) == :∧
 
 # Test multiple advections.
-t9 = @decapode begin
+t5 = @decapode begin
   A == adv(B, C)
   D == adv(E, F)
 end
-vec_to_dec!(t9)
+vec_to_dec!(t5)
 
-t9_expected = @decapode begin
+t5_expected = @decapode begin
   A == ∘(⋆,d,⋆)(B ∧ C)
   D == ∘(⋆,d,⋆)(E ∧ F)
 end
-t9_expected[incident(t9_expected, Symbol("•1"), :name), :name] = Symbol("•_adv_1")
-t9_expected[incident(t9_expected, Symbol("•2"), :name), :name] = Symbol("•_adv_2")
-@test is_isomorphic(t9, t9_expected)
+t5_expected[incident(t5_expected, Symbol("•1"), :name), :name] = Symbol("•_adv_1")
+t5_expected[incident(t5_expected, Symbol("•2"), :name), :name] = Symbol("•_adv_2")
+@test is_isomorphic(t5, t5_expected)
 
 end

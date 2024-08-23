@@ -14,6 +14,7 @@ end
 
 @testset "Language" begin
   include("language.jl")
+  include("op_naming.jl")
 end
 
 @testset "Visualization" begin

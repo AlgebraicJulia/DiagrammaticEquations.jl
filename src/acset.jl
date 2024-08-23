@@ -307,7 +307,7 @@ function contract_operators!(d::SummationDecapode;
   chains = find_chains(d, white_list=white_list, black_list=black_list)
   filter!(x -> length(x) != 1, chains)
   for chain in chains
-    add_part!(d, :Op1, src=d[:src][first(chain)], tgt=d[:tgt][last(chain)], op1=Vector{Symbol}(d[:op1][chain]))
+    add_part!(d, :Op1, src=d[first(chain), :src], tgt=d[last(chain), :tgt], op1=Vector{Symbol}(d[:op1][chain]))
   end
   rem_parts!(d, :Op1, sort!(vcat(chains...)))
   remove_neighborless_vars!(d)
@@ -468,7 +468,7 @@ function apply_inference_rule_op1!(d::SummationDecapode, op1_id, rule)
 
   score_src = (rule.src_type == type_src)
   score_tgt = (rule.tgt_type == type_tgt)
-  check_op = (d[op1_id, :op1] in rule.op_names)
+  check_op = (deca_canon_op1(d, op1_id) in rule.op_names)
 
   if(check_op && (score_src + score_tgt == 1))
     mod_src = safe_modifytype!(d, d[op1_id, :src], rule.src_type)
@@ -487,7 +487,7 @@ function apply_inference_rule_op2!(d::SummationDecapode, op2_id, rule)
   score_proj1 = (rule.proj1_type == type_proj1)
   score_proj2 = (rule.proj2_type == type_proj2)
   score_res = (rule.res_type == type_res)
-  check_op = (d[op2_id, :op2] in rule.op_names)
+  check_op = (deca_canon_op2(d, op2_id) in rule.op_names)
 
   if(check_op && (score_proj1 + score_proj2 + score_res == 2))
     mod_proj1 = safe_modifytype!(d, d[op2_id, :proj1], rule.proj1_type)
@@ -565,10 +565,10 @@ Resolve function overloads based on types of src and tgt.
 """
 function resolve_overloads!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :resolved_name, :op), NTuple{4, Symbol}}}, op2_rules::Vector{NamedTuple{(:proj1_type, :proj2_type, :res_type, :resolved_name, :op), NTuple{5, Symbol}}})
   for op1_idx in parts(d, :Op1)
-    src = d[:src][op1_idx]; tgt = d[:tgt][op1_idx]; op1 = d[:op1][op1_idx]
-    src_type = d[:type][src]; tgt_type = d[:type][tgt]
+    src = d[op1_idx, :src]; tgt = d[op1_idx, :tgt]
+    src_type = d[src, :type]; tgt_type = d[tgt, :type]
     for rule in op1_rules
-      if op1 == rule[:op] && src_type == rule[:src_type] && tgt_type == rule[:tgt_type]
+      if d[op1_idx, :op1] == rule[:op] && src_type == rule[:src_type] && tgt_type == rule[:tgt_type]
         d[op1_idx, :op1] = rule[:resolved_name]
         break
       end
@@ -576,10 +576,10 @@ function resolve_overloads!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(
   end
 
   for op2_idx in parts(d, :Op2)
-    proj1 = d[:proj1][op2_idx]; proj2 = d[:proj2][op2_idx]; res = d[:res][op2_idx]; op2 = d[:op2][op2_idx]
-    proj1_type = d[:type][proj1]; proj2_type = d[:type][proj2]; res_type = d[:type][res]
+    proj1 = d[op2_idx, :proj1]; proj2 = d[op2_idx, :proj2]; res = d[op2_idx, :res]
+    proj1_type = d[proj1, :type]; proj2_type = d[proj2, :type]; res_type = d[res, :type]
     for rule in op2_rules
-      if op2 == rule[:op] && proj1_type == rule[:proj1_type] && proj2_type == rule[:proj2_type] && res_type == rule[:res_type]
+      if d[op2_idx, :op2] == rule[:op] && proj1_type == rule[:proj1_type] && proj2_type == rule[:proj2_type] && res_type == rule[:res_type]
         d[op2_idx, :op2] = rule[:resolved_name]
         break
       end
