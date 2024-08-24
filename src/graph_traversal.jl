@@ -1,6 +1,5 @@
 using DiagrammaticEquations
 using ACSets
-using DataStructures
 
 export TraversalNode, topological_sort_edges, number_of_ops, retrieve_name
 
