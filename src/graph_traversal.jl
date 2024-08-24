@@ -22,7 +22,7 @@ TraversalNode(i, d::SummationDecapode, ::Val{:Σ}) =
 retrieve_name(d::SummationDecapode, tsr::TraversalNode) = tsr.name
 
 # Induce a topological ordering of operations from a topological ordering of variables.
-# Taking Vᵢ(cod(e)ᵢ) like so is a structure preserving map.
+# Taking Vᵢ(dom(e)ᵢ) like so is a structure preserving map.
 edge2cost(tsv, tsr::TraversalNode) = maximum(tsv[tsr.dom])
 
 number_of_ops(d::SummationDecapode) = nparts(d, :Op1) + nparts(d, :Op2) + nparts(d, :Σ)
