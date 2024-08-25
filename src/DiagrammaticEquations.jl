@@ -5,7 +5,7 @@ module DiagrammaticEquations
 using Catlab
 
 export
-DerivOp, append_dot, normalize_unicode, infer_states, infer_types!,
+DerivOp, append_dot, normalize_unicode, infer_states, infer_terminals, infer_types!,
 # Deca
 op1_res_rules_1D, op2_res_rules_1D, op1_res_rules_2D, op2_res_rules_2D,
 op1_inf_rules_1D, op2_inf_rules_1D, op1_inf_rules_2D, op2_inf_rules_2D,

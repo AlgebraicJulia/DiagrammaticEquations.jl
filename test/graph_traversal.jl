@@ -64,4 +64,10 @@ end
   end
   result = topological_sort_edges(op_combo)
   @test is_correct_length(op_combo, result)
+
+  sum_with_single_dependency = @decapode begin
+    F == A + f(A) + h(g(A))
+  end
+  result = topological_sort_edges(sum_with_single_dependency)
+  @test is_correct_length(sum_with_single_dependency, result)
 end

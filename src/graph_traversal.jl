@@ -29,7 +29,6 @@ number_of_ops(d::SummationDecapode) = nparts(d, :Op1) + nparts(d, :Op2) + nparts
 
 start_nodes(d::SummationDecapode) = vcat(infer_states(d), incident(d, :Literal, :type))
 
-
 # TODO: This could be Catlab'd. Hypergraph category? Migration to a DWD?
 """    function hyper_edge_list(d::SummationDecapode)
 
@@ -55,11 +54,13 @@ Taking the maximum of the non-infinite short paths from state variables induces 
 https://en.wikipedia.org/wiki/Floyd–Warshall_algorithm
 """
 function floyd_warshall(d::SummationDecapode)
+  # Define weights.
+  w(e) = (length(e.dom) == 1 && e.name ∈ [:∂ₜ,:dt]) ? -Inf : -1
   # Init dists
   V = nparts(d, :Var)
   dist = fill(Inf, (V, V))
   foreach(hyper_edge_list(d)) do e
-    dist[(e.dom), e.cod] .= 1
+    dist[(e.dom), e.cod] .= w(e)
   end
   for v in 1:V
     dist[v,v] = 0
@@ -86,7 +87,7 @@ The vector returned by this function maps each vertex to the order that it would
 function topological_sort_verts(d::SummationDecapode)
   m = floyd_warshall(d)
   map(parts(d,:Var)) do v
-    maximum(filter(!isinf, m[start_nodes(d),v]))
+    minimum(filter(!isinf, m[v,infer_terminals(d)]))
   end
 end
 
