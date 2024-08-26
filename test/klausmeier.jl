@@ -35,8 +35,8 @@ Phytodynamics = parse_decapode(quote
   (n,w)::Form0
   m::Constant
 
-  ∂ₜ(n) == w - m*n + Δ(n)
+  ∂ₜ(n) == w - m*n #+ Δ(n)
   # ∂ₜ(n) == w * n*n - m*n + Δ(n)
 end)
 
-DecaSymbolic(lookup, Phytodynamics)
+ps = DecaSymbolic(lookup, Phytodynamics)

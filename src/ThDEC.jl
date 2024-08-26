@@ -26,7 +26,7 @@ export SpaceLookup
 
 SpaceLookup(default::Space) = SpaceLookup(default, Dict{Symbol, Space}(nameof(default) => default))
 
-@data Sort begin
+@data Sort <: Number begin
     Scalar()
     Form(dim::Int, isdual::Bool, space::Space)
     VField(isdual::Bool, space::Space)

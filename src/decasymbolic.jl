@@ -87,13 +87,17 @@ Number(v::VField) = VFieldT{isdual(v), nameof(space(v)), dim(space(v))}
 
 # for every unary operator in our theory, take a BasicSymbolic type, convert its type parameter to a Sort in our theory, and return a term
 unop_dec = [:∂ₜ, :d, :★, :♯, :♭, :-]
+# $unop(x) = FnType(unop, args)
 for unop in unop_dec
     @eval begin
         @nospecialize
         function ThDEC.$unop(
             v::BasicSymbolic{T}
         ) where {T<:DECType}
+            # convert the DECType to ThDEC to type check
             s = ThDEC.$unop(Sort(T))
+            # the resulting type is converted back to DECType
+            # the resulting term has the operation has its head and `v` as its args.
             SymbolicUtils.Term{Number(s)}(ThDEC.$unop, [v])
         end
     end
