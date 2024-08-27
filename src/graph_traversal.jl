@@ -55,7 +55,7 @@ https://en.wikipedia.org/wiki/Floyd–Warshall_algorithm
 """
 function floyd_warshall(d::SummationDecapode)
   # Define weights.
-  w(e) = (length(e.dom) == 1 && e.name ∈ [:∂ₜ,:dt]) ? -Inf : -1
+  w(e) = -1
   # Init dists
   V = nparts(d, :Var)
   dist = fill(Inf, (V, V))
