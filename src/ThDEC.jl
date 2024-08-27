@@ -5,6 +5,31 @@ using StructEquality
 
 import Base: +, -, *
 
+"""
+Given a tuple of symbols ("aliases") and their canonical name (or "rep"), produces
+for each alias typechecking and nameof methods which call those for their rep.
+Example:
+@alias d₀, d₁, += d
+"""
+macro alias(body)
+    (rep, aliases) = @match body begin
+        Expr(:tuple, rep, Expr(:tuple, aliases...)) => (rep, aliases)
+        _ => nothing
+    end
+    result = quote end
+    foreach(aliases) do alias
+        push!(result.args,
+            quote
+                function $(esc(alias))(s...)
+                    $(esc(rep))(s...) 
+                end
+                export $(esc(alias))
+                Base.nameof(::typeof($alias), s) = nameof($rep, s)
+            end)
+    end
+    result
+end
+
 struct SortError <: Exception
     message::String
 end
@@ -24,7 +49,9 @@ struct SpaceLookup
 end
 export SpaceLookup
 
-SpaceLookup(default::Space) = SpaceLookup(default, Dict{Symbol, Space}(nameof(default) => default))
+function SpaceLookup(default::Space)
+    SpaceLookup(default, Dict{Symbol, Space}(nameof(default) => default))
+end
 
 @data Sort begin
     Scalar()
@@ -138,9 +165,7 @@ end
 
 const SUBSCRIPT_DIGIT_0 = '₀'
 
-function as_sub(n::Int)
-    join(map(d -> SUBSCRIPT_DIGIT_0 + d, digits(n)))
-end
+as_sub(n::Int) = join(map(d -> SUBSCRIPT_DIGIT_0 + d, digits(n)))
 
 # TODO: VField
 @nospecialize
@@ -180,20 +205,23 @@ function d(s::Sort)
     end
 end
 
-function Base.nameof(::typeof(d), s)
-    Symbol("d$(as_sub(dim(s)))")
-end
+@alias d, (d₀, d₁)
+
+Base.nameof(::typeof(d), s) = Symbol("d$(as_sub(dim(s)))")
 
 @nospecialize
-function ★(s::Sort)
+function ⋆(s::Sort)
     @match s begin
         Scalar() => throw(SortError("Cannot take Hodge star of a scalar"))
         VF(isdual, space) => throw(SortError("Cannot take the Hodge star of a vector field"))
         Form(i, isdual, space) => Form(dim(space) - i, !isdual, space)
     end
 end
+export ⋆
 
-function Base.nameof(::typeof(★), s)
+@alias ⋆, (⋆₀, ⋆₁, ⋆₂, ⋆₀⁻¹, ⋆₁⁻¹, ⋆₂⁻¹)
+
+function Base.nameof(::typeof(⋆), s)
     inv = isdual(s) ? "⁻¹" : ""
     Symbol("★$(as_sub(isdual(s) ? dim(space(s)) - dim(s) : dim(s)))$(inv)")
 end
@@ -220,11 +248,7 @@ function ♯(s::Sort)
 end
 # musical isos may be defined for any combination of (primal/dual) form -> (primal/dual) vf.
 
-# TODO
-function Base.nameof(::typeof(♯), s)
-    Symbol("♯$s")
-end
-
+Base.nameof(::typeof(♯), s) = Symbol("♯$s")
 
 function ♭(s::Sort)
     @match s begin
@@ -233,10 +257,7 @@ function ♭(s::Sort)
     end
 end
 
-# TODO
-function Base.nameof(::typeof(♭), s)
-    Symbol("♭$s")
-end
+Base.nameof(::typeof(♭), s) = Symbol("♭$s")
 
 # OTHER
 
@@ -258,77 +279,5 @@ function Δ(s::Sort)
 end
 
 Base.nameof(::typeof(Δ), s) = Symbol("Δ")
-
-const OPERATOR_LOOKUP = Dict(
-    :⋆₀ => ★,
-    :⋆₁ => ★,
-    :⋆₂ => ★,
-
-    # Inverse Hodge Stars
-    :⋆₀⁻¹ => ★,
-    :⋆₁⁻¹ => ★,
-    :⋆₂⁻¹ => ★,
-
-    # Differentials
-    :d₀ => d,
-    :d₁ => d,
-
-    # Dual Differentials
-    :dual_d₀ => d,
-    :d̃₀ => d,
-    :dual_d₁ => d,
-    :d̃₁ => d,
-
-    # Wedge Products
-    :∧₀₁ => ∧,
-    :∧₁₀ => ∧,
-    :∧₀₂ => ∧,
-    :∧₂₀ => ∧,
-    :∧₁₁ => ∧,
-
-    # Primal-Dual Wedge Products
-    :∧ᵖᵈ₁₁ => ∧,
-    :∧ᵖᵈ₀₁ => ∧,
-    :∧ᵈᵖ₁₁ => ∧,
-    :∧ᵈᵖ₁₀ => ∧,
-
-    # Dual-Dual Wedge Products
-    :∧ᵈᵈ₁₁ => ∧,
-    :∧ᵈᵈ₁₀ => ∧,
-    :∧ᵈᵈ₀₁ => ∧,
-
-    # Dual-Dual Interior Products
-    :ι₁₁ => ι,
-    :ι₁₂ => ι,
-
-    # Dual-Dual Lie Derivatives
-    # :ℒ₁ => ℒ,
-    # :L => ℒ,
-
-    # Dual Laplacians
-    # :Δᵈ₀ => Δ,
-    # :Δᵈ₁ => Δ,
-
-    # Musical Isomorphisms
-    :♯ => ♯,
-    :♯ᵈ => ♯, :♭ => ♭,
-
-    # Averaging Operator
-    # :avg₀₁ => avg,
-
-    # Negatives
-    :neg => -,
-
-    # Basics
-
-    :- => -,
-    :+ => +,
-    :* => *,
-    :/ => /,
-    :.- => .-,
-    :.+ => .+,
-    :.* => .*,
-    :./ => ./,
-)
 
 end

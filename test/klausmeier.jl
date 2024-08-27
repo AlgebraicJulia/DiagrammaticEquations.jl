@@ -1,5 +1,11 @@
 using DiagrammaticEquations
 using DiagrammaticEquations.SymbolicUtilsInterop
+
+using Test
+using MLStyle
+using SymbolicUtils
+using SymbolicUtils: BasicSymbolic
+
 # See Klausmeier Equation 2.a
 Hydrodynamics = @decapode begin
   (n,w)::DualForm0
@@ -23,20 +29,32 @@ Hydrodynamics = parse_decapode(quote
   (a,ν)::Constant
 
   ∂ₜ(w) == a - w - w  + ν * L(dX, w)
-  # ∂ₜ(w) == a - w - w * (n ∧ n) + ν * L(dX, w)
 end)
 
-X = Space(:X, 1)
-lookup = SpaceLookup(X, Dict(:X => X))
+X = Space(:X, 2)
+lookup = SpaceLookup(X)
 # DecaSymbolic(lookup, Hydrodynamics)
 
 # See Klausmeier Equation 2.b
 Phytodynamics = parse_decapode(quote
   (n,w)::Form0
   m::Constant
-
   ∂ₜ(n) == w - m*n + Δ(n)
-  # ∂ₜ(n) == w * n*n - m*n + Δ(n)
 end)
+
+import .ThDEC: d, ⋆, SortError
+
+@register Δ(s::Sort) begin
+    @match s begin
+        ::Scalar => throw(SortError("Scalar"))
+        ::VField => throw(SortError("Nay!"))
+        ::Form => ⋆(d(⋆(d(s))))
+    end
+end
+
+ω, = @syms ω::PrimalFormT{1, :X, 2}
+
+@test Δ(PrimalForm(1, X)) == PrimalForm(1, X)
+@test Δ(ω) |> typeof == BasicSymbolic{PrimalFormT{1, :X, 2}}
 
 DecaSymbolic(lookup, Phytodynamics)

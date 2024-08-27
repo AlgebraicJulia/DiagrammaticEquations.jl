@@ -3,12 +3,12 @@ module SymbolicUtilsInterop
 using ..DiagrammaticEquations: AbstractDecapode
 import ..DiagrammaticEquations: eval_eq!, SummationDecapode
 using ..ThDEC
-using MLStyle
 import ..ThDEC: Sort, dim, isdual
 using ..decapodes
-using SymbolicUtils
 
-using SymbolicUtils: Symbolic, BasicSymbolic
+using MLStyle
+using SymbolicUtils
+using SymbolicUtils: Symbolic, BasicSymbolic, FnType, Sym
 
 # ##########################
 # DECType
@@ -65,17 +65,6 @@ end
 
 Sort(::BasicSymbolic{T}) where {T} = Sort(T)
 
-# converts a sort to its Julia symbol
-function to_symb(sort::Sort)
-    @match sort begin
-        Scalar() => :Constant
-        Form(i, isdual, X) => 
-            Symbol("$(isdual ? "Dual" : "")Form$i")
-        VField(isdual, X) =>
-            Symbol("$(isdual ? "Dual" : "")VF")
-    end
-end
-
 """
 converts ThDEC Sorts into DecaSymbolic types
 """
@@ -85,8 +74,13 @@ Number(f::Form) = FormT{dim(f),isdual(f), nameof(space(f)), dim(space(f))}
 
 Number(v::VField) = VFieldT{isdual(v), nameof(space(v)), dim(space(v))}
 
+# HERE WE DEFINE THE SYMBOLICUTILS
+
 # for every unary operator in our theory, take a BasicSymbolic type, convert its type parameter to a Sort in our theory, and return a term
-unop_dec = [:∂ₜ, :d, :★, :♯, :♭, :-]
+unop_dec = [:∂ₜ, :d, :d₀, :d₁
+            , :⋆, :⋆₀, :⋆₁, :⋆₂, :⋆₀⁻¹, :⋆₁⁻¹, :⋆₂⁻¹
+            , :♯, :♭, :-]
+
 for unop in unop_dec
     @eval begin
         @nospecialize
@@ -98,6 +92,8 @@ for unop in unop_dec
         end
     end
 end
+
+# BasicSymbolic{FnType{Tuple{PrimalFormT{0}}}, PrimalFormT{0}}
 
 binop_dec = [:+, :-, :*, :∧, :^]
 export +,-,*,∧,^
@@ -211,6 +207,8 @@ Example:
 ```
 """
 function SymbolicUtils.BasicSymbolic(context::Dict{Symbol,Sort}, t::decapodes.Term)
+    # user must import symbols into scope
+    ! = (f -> getfield(Main, f))
     @match t begin
         Var(name) => SymbolicUtils.Sym{Number(context[name])}(name)
         Lit(v) => Meta.parse(string(v))
@@ -219,12 +217,13 @@ function SymbolicUtils.BasicSymbolic(context::Dict{Symbol,Sort}, t::decapodes.Te
         AppCirc1(fs, arg) => foldr(
             # panics with constants like :k
             # see test/language.jl
-            (f, x) -> ThDEC.OPERATOR_LOOKUP[f](x),
+            (f, x) -> (!(f))(x),
             fs;
             init=BasicSymbolic(context, arg)
         )
-        App1(f, x) => ThDEC.OPERATOR_LOOKUP[f](BasicSymbolic(context, x))
-        App2(f, x, y) => ThDEC.OPERATOR_LOOKUP[f](BasicSymbolic(context, x), BasicSymbolic(context, y))
+        # getfield(Main, 
+        App1(f, x) => (!(f))(BasicSymbolic(context, x))
+        App2(f, x, y) => (!(f))(BasicSymbolic(context, x), BasicSymbolic(context, y))
         Plus(xs) => +(BasicSymbolic.(Ref(context), xs)...)
         Mult(xs) => *(BasicSymbolic.(Ref(context), xs)...)
         Tan(x) => ThDEC.∂ₜ(BasicSymbolic(context, x))
@@ -258,7 +257,7 @@ function SummationDecapode(e::DecaSymbolic)
 
     foreach(e.vars) do var
         # convert Sort(var)::PrimalForm0 --> :Form0
-        var_id = add_part!(d, :Var, name=var.name, type=to_symb(Sort(var)))
+        var_id = add_part!(d, :Var, name=var.name, type=nameof(Sort(var)))
         symbol_table[var.name] = var_id
     end
 
@@ -276,6 +275,66 @@ function SummationDecapode(e::DecaSymbolic)
     return d
 end
 
+"""
+Registers a new function
 
+```
+@register Δ(s::Sort) begin
+    @match s begin
+        ::Scalar => error("Invalid")
+        ::VField => error("Invalid")
+        ::Form => ⋆(d(⋆(d(s))))
+    end
+end
+```
+
+will create an additional method for Δ for operating on BasicSymbolic 
+"""
+macro register(head, body)
+    # parse head
+    parsehead = @λ begin
+        Expr(:call, f, types...) => (f, parsehead.(types))
+        Expr(:(::), var, type) => (var, type)
+        s => s
+    end
+    (f, args) = parsehead(head)
+    matchargs = [:($(x[1])::$(x[2])) for x in args]
+
+    result = quote end
+    push!(result.args,
+          esc(quote
+              function $f($(matchargs...))
+                  $body
+              end
+          end))
+
+    # e.g., given [(:x, :Scalar), (:ω, :Form)]...
+    vs = enumerate(unique(getindex.(args, 2)))
+    theargs =
+    Dict{Symbol,Symbol}(
+        [v => Symbol("T$k") for (k,v) in vs]
+    )
+    # ...[(Scalar=>:T1, :Form=>:T2)]
+
+    # reassociate vars with their BasicSymbolic Generic Types
+    binding = map(args) do (var, type)
+        (var, :(BasicSymbolic{$(theargs[type])}))
+    end
+    newargs = [:($(x[1])::$(x[2])) for x in binding]
+    constraints = [:($T<:DECType) for T in values(theargs)]
+    innerargs = [:(Sort($T)) for T in values(theargs)]
+
+    push!(result.args,
+          quote
+              @nospecialize
+              function $(esc(f))($(newargs...)) where $(constraints...)
+                  s = $(esc(f))($(innerargs...))
+                  SymbolicUtils.Term{Number(s)}($(esc(f)), [$(getindex.(binding, 1)...)])
+              end
+          end)
+
+    return result
+end
+export @register
 
 end
