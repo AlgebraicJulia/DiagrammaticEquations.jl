@@ -3,8 +3,17 @@ using ACSets
 using MLStyle
 using Test
 
-function is_correct_length(d::SummationDecapode, result)
-  return length(result) == number_of_ops(d)
+function is_topo_sort_ordered(result::AbstractVector{TableData})
+  seen_edges = Dict{Symbol, Int}(:Op1 => 0, :Op2 => 0, :Σ => 0)
+  for entry in result
+    table = entry.table_name
+    prev_seen = seen_edges[table]
+    if !(prev_seen < entry.table_index)
+      return false
+    end
+    seen_edges[table] = entry.table_index
+  end
+  return true
 end
 
 @testset "Topological Sort on Edges" begin
@@ -13,61 +22,58 @@ end
   end
   @test isempty(topological_sort_edges(no_edge))
 
-  one_op1_deca = @decapode begin
+  one_op1 = @decapode begin
     F == f(S)
   end
-  result = topological_sort_edges(one_op1_deca)
-  @test is_correct_length(one_op1_deca, result)
-  @test retrieve_name(one_op1_deca, only(result)) == :f
+  result = topological_sort_edges(one_op1)
+  @test retrieve_name(one_op1, only(result)) == :f
+  @test is_topo_sort_ordered(result)
 
-  multi_op1_deca = @decapode begin
+  multi_op1 = @decapode begin
     F == c(b(a(S)))
   end
-  result = topological_sort_edges(multi_op1_deca)
-  @test is_correct_length(multi_op1_deca, result)
+  result = topological_sort_edges(multi_op1)
   for (edge, test_name) in zip(result, [:a, :b, :c])
-    @test retrieve_name(multi_op1_deca, edge) == test_name
+    @test retrieve_name(multi_op1, edge) == test_name
   end
+  @test is_topo_sort_ordered(result)
 
-  # XXX Do cycle-detection with FW by using ∞ on the diagonal.
-  #=
   cyclic = @decapode begin
     B == g(A)
     A == f(B)
   end
   @test_throws AssertionError topological_sort_edges(cyclic)
-  =#
 
   just_op2 = @decapode begin
     C == A * B
   end
   result = topological_sort_edges(just_op2)
-  @test is_correct_length(just_op2, result)
   @test retrieve_name(just_op2, only(result)) == :*
+  @test is_topo_sort_ordered(result)
 
   just_simple_sum = @decapode begin
     C == A + B
   end
   result = topological_sort_edges(just_simple_sum)
-  @test is_correct_length(just_simple_sum, result)
   @test retrieve_name(just_simple_sum, only(result)) == :+
+  @test is_topo_sort_ordered(result)
 
   just_multi_sum = @decapode begin
     F == A + B + C + D + E
   end
   result = topological_sort_edges(just_multi_sum)
-  @test is_correct_length(just_multi_sum, result)
   @test retrieve_name(just_multi_sum, only(result)) == :+
+  @test is_topo_sort_ordered(result)
 
   op_combo = @decapode begin
     F == h(d(A) + f(g(B) * C) + D)
   end
   result = topological_sort_edges(op_combo)
-  @test is_correct_length(op_combo, result)
+  @test is_topo_sort_ordered(result)
 
   sum_with_single_dependency = @decapode begin
     F == A + f(A) + h(g(A))
   end
   result = topological_sort_edges(sum_with_single_dependency)
-  @test is_correct_length(sum_with_single_dependency, result)
+  @test is_topo_sort_ordered(result)
 end

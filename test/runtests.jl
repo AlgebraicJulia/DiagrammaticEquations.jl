@@ -41,5 +41,5 @@ end
 end
 
 @testset "Symbolic Rewriting" begin
-  include("graph_traversal.jl")
+  include("graph_interface.jl")
 end
