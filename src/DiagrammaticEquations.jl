@@ -5,7 +5,7 @@ module DiagrammaticEquations
 using Catlab
 
 export
-DerivOp, append_dot, normalize_unicode, infer_states, infer_types!,
+DerivOp, append_dot, normalize_unicode, infer_states, infer_terminals, infer_types!,
 # Deca
 op1_res_rules_1D, op2_res_rules_1D, op1_res_rules_2D, op2_res_rules_2D,
 op1_inf_rules_1D, op2_inf_rules_1D, op1_inf_rules_2D, op2_inf_rules_2D,
@@ -62,7 +62,7 @@ include("rewrite.jl")
 include("pretty.jl")
 include("colanguage.jl")
 include("openoperators.jl")
-include("graph_traversal.jl")
+include("graph_interface.jl")
 include("acset2symbolic.jl")
 include("deca/Deca.jl")
 include("learn/Learn.jl")
