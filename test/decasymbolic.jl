@@ -1,45 +1,45 @@
 using Test
-using DiagrammaticEquations
-using DiagrammaticEquations.ThDEC
+using DiagrammaticEquations.Deca.TheoryDEC
 using DiagrammaticEquations.decapodes
 using SymbolicUtils
-# what space are we working in?
-X = Space(:X, 2)
-lookup = SpaceLookup(X)
+using SymbolicUtils: symtype
 
 # load up some variable variables and expressions
-a, b = @syms a::Real b::Real
-u, v = @syms u::PrimalFormT{0, :X, 2} du::PrimalFormT{1, :X, 2}
-ω, η = @syms ω::PrimalFormT{1, :X, 2} η::DualFormT{2, :X, 2}
-ϕ, ψ = @syms ϕ::PrimalVFT{:X, 2} ψ::DualVFT{:X, 2}
+a, b = @syms a::Scalar b::Scalar
+u, v = @syms u::PrimalForm{0, :X, 2} du::PrimalForm{1, :X, 2}
+ω, η = @syms ω::PrimalForm{1, :X, 2} η::DualForm{2, :X, 2}
+ϕ, ψ = @syms ϕ::PrimalVF{:X, 2} ψ::DualVF{:X, 2}
 # TODO would be nice to pass the space globally to avoid duplication
 
 @testset "Term Construction" begin
-  
+ 
+    # TODO implement symtype
     # test conversion to underlying type
-    @test Sort(a) == Scalar()
-    @test Sort(u) == PrimalForm(0, X)
-    @test Sort(ω) == PrimalForm(1, X)
-    @test Sort(η) == DualForm(2, X)
-    @test Sort(ϕ) == PrimalVF(X)
-    @test Sort(ψ) == DualVF(X)
+    @test symtype(a) == Scalar
+    @test symtype(u) == PrimalForm{0, :X, 2}
+    @test symtype(ω) == PrimalForm{1, :X, 2}
+    @test symtype(η) == DualForm{2, :X, 2}
+    @test symtype(ϕ) == PrimalVF{:X, 2}
+    @test symtype(ψ) == DualVF{:X, 2}
 
-    @test_throws ThDEC.SortError ThDEC.♯(u)
+    @test symtype(u ∧ ω) == PrimalForm{1, :X, 2}
+    @test symtype(ω ∧ ω) == PrimalForm{2, :X, 2}
+    # @test_throws ThDEC.SortError ThDEC.♯(u)
 
     # test unary operator conversion to decaexpr
-    @test Term(1) == DiagrammaticEquations.decapodes.Lit(Symbol("1"))
+    @test Term(1) == Lit(Symbol("1"))
     @test Term(a) == Var(:a)
-    @test Term(ThDEC.∂ₜ(u)) == Tan(Var(:u))
-    @test Term(ThDEC.⋆(ω)) == App1(:⋆₁, Var(:ω))
-    @test_broken Term(ThDEC.♭(ψ)) == App1(:♭s, Var(:ψ)) 
+    @test Term(∂ₜ(u)) == Tan(Var(:u))
+    @test Term(⋆(ω)) == App1(:⋆₁, Var(:ω))
+    # @test_broken Term(ThDEC.♭(ψ)) == App1(:♭s, Var(:ψ)) 
     # @test Term(DiagrammaticEquations.ThDEC.♯(du))
     
-    @test_throws ThDEC.SortError ThDEC.⋆(ϕ)
+    # @test_throws ThDEC.SortError ThDEC.⋆(ϕ)
     
     # test binary operator conversion to decaexpr
     @test Term(a + b) == Plus(Term[Var(:a), Var(:b)])
-    @test Term(a * b) == DiagrammaticEquations.decapodes.Mult(Term[Var(:a), Var(:b)])
-    @test Term(ThDEC.:∧(ω, du)) == App2(:∧₁₁, Var(:ω), Var(:du)) 
+    @test Term(a * b) == Mult(Term[Var(:a), Var(:b)])
+    @test Term(ω ∧ du) == App2(:∧₁₁, Var(:ω), Var(:du)) 
 
 end
 

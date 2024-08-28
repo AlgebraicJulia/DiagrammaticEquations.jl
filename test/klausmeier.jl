@@ -1,10 +1,10 @@
 using DiagrammaticEquations
 using DiagrammaticEquations.SymbolicUtilsInterop
-
+#
 using Test
 using MLStyle
 using SymbolicUtils
-using SymbolicUtils: BasicSymbolic
+using SymbolicUtils: BasicSymbolic, symtype
 
 # See Klausmeier Equation 2.a
 Hydrodynamics = @decapode begin
@@ -42,6 +42,8 @@ Phytodynamics = parse_decapode(quote
   ∂ₜ(n) == w - m*n + Δ(n)
 end)
 
+@test_broken DecaSymbolic(lookup, Phytodynamics)
+
 import .ThDEC: d, ⋆, SortError
 
 @register Δ(s::Sort) begin
@@ -55,6 +57,11 @@ end
 ω, = @syms ω::PrimalFormT{1, :X, 2}
 
 @test Δ(PrimalForm(1, X)) == PrimalForm(1, X)
-@test Δ(ω) |> typeof == BasicSymbolic{PrimalFormT{1, :X, 2}}
+@test symtype(Δ(ω)) == PrimalFormT{1, :X, 2}
 
-DecaSymbolic(lookup, Phytodynamics)
+# TODO propagating module information is suited for a macro
+symbmodel = DecaSymbolic(lookup, Phytodynamics, Main)
+
+DecaExpr(symbmodel)
+
+
