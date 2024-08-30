@@ -7,7 +7,7 @@ using ..Deca
 
 using MLStyle
 using SymbolicUtils
-using SymbolicUtils: Symbolic, BasicSymbolic, FnType, Sym
+using SymbolicUtils: Symbolic, BasicSymbolic, FnType, Sym, symtype
 
 # name collision with decapodes.Equation
 struct SymbolicEquation{E}
@@ -107,14 +107,15 @@ end
 
 function SymbolicContext(d::decapodes.DecaExpr, __module__=@__MODULE__)
     # associates each var to its sort...
+    @info d.context
     context = map(d.context) do j
-        @info j.var
-        j.var => j.var
+        j.var => symtype(ThDEC, j.dim, j.space)
     end
     # ... which we then produce a vector of symbolic vars
     vars = map(context) do (v, s)
         SymbolicUtils.Sym{s}(v)
     end
+    @info context
     context = Dict{Symbol,Quantity}(context)
     eqs = map(d.equations) do eq
         SymbolicEquation{Symbolic}(BasicSymbolic.(Ref(context), [eq.lhs, eq.rhs], Ref(__module__))...)

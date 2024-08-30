@@ -14,7 +14,7 @@ include("deca_acset.jl")
 include("deca_visualization.jl")
 include("ThDEC.jl")
 
-@reexport using .TheoryDEC
+@reexport using .ThDEC
 
 """    function recursive_delete_parents!(d::SummationDecapode, to_delete::Vector{Int64})
 

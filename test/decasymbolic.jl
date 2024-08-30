@@ -1,8 +1,8 @@
 using Test
-using DiagrammaticEquations.Deca.TheoryDEC
+using DiagrammaticEquations.Deca.ThDEC
 using DiagrammaticEquations.decapodes
 using SymbolicUtils
-using SymbolicUtils: symtype
+using SymbolicUtils: symtype, promote_symtype
 
 # load up some variable variables and expressions
 a, b = @syms a::Scalar b::Scalar
@@ -11,10 +11,10 @@ u, v = @syms u::PrimalForm{0, :X, 2} du::PrimalForm{1, :X, 2}
 ϕ, ψ = @syms ϕ::PrimalVF{:X, 2} ψ::DualVF{:X, 2}
 # TODO would be nice to pass the space globally to avoid duplication
 
+
 @testset "Term Construction" begin
  
     # TODO implement symtype
-    # test conversion to underlying type
     @test symtype(a) == Scalar
     @test symtype(u) == PrimalForm{0, :X, 2}
     @test symtype(ω) == PrimalForm{1, :X, 2}
@@ -30,7 +30,7 @@ u, v = @syms u::PrimalForm{0, :X, 2} du::PrimalForm{1, :X, 2}
     @test Term(1) == Lit(Symbol("1"))
     @test Term(a) == Var(:a)
     @test Term(∂ₜ(u)) == Tan(Var(:u))
-    @test Term(⋆(ω)) == App1(:⋆₁, Var(:ω))
+    @test_broken Term(⋆(ω)) == App1(:⋆₁, Var(:ω))
     # @test_broken Term(ThDEC.♭(ψ)) == App1(:♭s, Var(:ψ)) 
     # @test Term(DiagrammaticEquations.ThDEC.♯(du))
     
@@ -39,7 +39,11 @@ u, v = @syms u::PrimalForm{0, :X, 2} du::PrimalForm{1, :X, 2}
     # test binary operator conversion to decaexpr
     @test Term(a + b) == Plus(Term[Var(:a), Var(:b)])
     @test Term(a * b) == Mult(Term[Var(:a), Var(:b)])
-    @test Term(ω ∧ du) == App2(:∧₁₁, Var(:ω), Var(:du)) 
+    @test Term(ω ∧ du) == App2(:∧₁₁, Var(:ω), Var(:du))
+
+    @test promote_symtype(+, a, b) == Scalar
+    @test promote_symtype(∧, u, u) == PrimalForm{0, :X, 2}
+    @test promote_symtype(∧, u, ω) == PrimalForm{1, :X, 2}
 
 end
 

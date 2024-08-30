@@ -1,15 +1,17 @@
 using MLStyle
 using SymbolicUtils
-using SymbolicUtils: Symbolic, BasicSymbolic, FnType, Sym
+using SymbolicUtils: Symbolic, BasicSymbolic, FnType, Sym, symtype
 
+""" ThDEC in DiagrammaticEquations must be subtyped by Number to integrate with SymbolicUtils. An intermediary type, Quantity, makes it clearer that terms in the theory are "symbolic quantities" which behave like numbers
+"""
 abstract type Quantity <: Number end
 export Quantity
 
 """
-Registers a new function
+Creates an operator `foo` with arguments which are types in a given Theory. This entails creating (1) a function which performs type construction and (2) a function which consumes BasicSymbolic variables and returns Terms.
 
 ```
-@register foo(S1, S2, ...)::ThDEC begin
+@operator foo(S1, S2, ...)::Theory begin
     (body of function)
 end     
 ```
@@ -28,7 +30,7 @@ end
 ```
 
 ```
-@register Δ(s::ThDEC) begin
+@operator Δ(s::ThDEC) begin
     @match s begin
         ::Scalar => error("Invalid")
         ::VField => error("Invalid")
@@ -43,7 +45,7 @@ end
 
 will create an additional method for Δ for operating on BasicSymbolic 
 """
-macro register(head, body)
+macro operator(head, body)
 
     # parse body
     ph = @λ begin
@@ -81,24 +83,33 @@ macro register(head, body)
     end
 
     # binding type bindings to the basicsymbolics
-    basicsym_args = [:($var::$basicsym_generic) for (var, basicsym_generic) in basicsym_bindings]
+    bs_arg_exprs = [:($var::$basicsym_generic) for (var, basicsym_generic) in basicsym_bindings]
 
     # build constraints
-    constraints_expr = [:($T<:$Theory) for T in getindex.(generic_vars, 2)]
+    constraint_exprs = [:($T<:$Theory) for T in getindex.(generic_vars, 2)]
  
     push!(result.args,
           esc(quote
               @nospecialize
-              function $f($(basicsym_args...)) where {$(constraints_expr...)}
+              function $f($(bs_arg_exprs...)) where {$(constraint_exprs...)}
                   s = $f($(getindex.(generic_vars, 2)...))
                   SymbolicUtils.Term{s}($f ,[$(getindex.(basicsym_bindings, 1)...)])
               end
               export $f
-          end))
+        end))
+
+    push!(result.args,
+          esc(quote
+            # we want to feed symtype the generics
+            function SymbolicUtils.promote_symtype(::typeof($f), 
+                    $(bs_arg_exprs...)) where {$(constraint_exprs...)}
+                $f($(getindex.(generic_vars, 2)...))
+            end
+        end))
 
     return result
 end
-export @register
+export @operator
 
 function alias(x)
     error("$x has no aliases")
@@ -129,33 +140,3 @@ macro alias(body)
     result
 end
 export alias
-
-macro see(body)
-    ph = @λ begin
-        Expr(:(=), Expr(:where, Expr(:call, foo, typebindings), params...), 
-                    Expr(:block, body...)) => (foo, ph(typebindings), params, body)
-        Expr(:(::), vars...) => ph.(vars)
-        Expr(:curly, :Type, Expr(:<:, Expr(:curly, type, params...))) => (type, params)
-        s => s
-    end
-    ph(body)
-    quote
-        $foo(arg, s1::B1, s2::B1) where {S1,S2,B1<:BasicSymbolic{S1},B2<:BasicSymbolic{S2}}
-
-    end
-end
-
-@see dim(::Type{<:Form{i,d,s,n}}) where {i,d,s,n} = i
-
-function Base.nameof(::typeof(∧), s1::B1, s2::B2) where {S1,S2,B1<:BasicSymbolic{S1}, B2<:BasicSymbolic{S2}}
-    Symbol("∧$(as_sub(dim(symtype(s1))))$(as_sub(dim(symtype(s2))))")
-end
-
-
-Expr(:=,
-     Expr(:where
-          [Expr(:call
-                foo,
-                Expr(:(::), e...)),
-           params...]),
-     Expr(:block, body...))

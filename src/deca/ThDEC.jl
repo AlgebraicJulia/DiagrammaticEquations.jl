@@ -1,6 +1,6 @@
-module TheoryDEC
+module ThDEC
 
-using ..DiagrammaticEquations: @register, @alias, Quantity
+using ..DiagrammaticEquations: @operator, @alias, Quantity
 
 using MLStyle
 using StructEquality
@@ -11,14 +11,14 @@ import Base: +, -, *
 import Catlab: Δ, ∧
 
 # ##########################
-# ThDEC
+# DECQuantity
 #
 # Type necessary for symbolic utils
 # ##########################
 
-abstract type ThDEC <: Quantity end
+abstract type DECQuantity <: Quantity end
 
-struct Scalar <: ThDEC end
+struct Scalar <: DECQuantity end
 export Scalar
 
 struct FormParams
@@ -28,10 +28,10 @@ struct FormParams
     spacedim::Int
 end
 
-dim(fp::FormParams) = getproperty(fp, :dim)
-duality(fp::FormParams) = getproperty(fp, :duality)
-space(fp::FormParams) = getproperty(fp, :space)
-spacedim(fp::FormParams) = getproperty(fp, :spacedim)
+dim(fp::FormParams) = fp.dim
+duality(fp::FormParams) = fp.duality
+space(fp::FormParams) = fp.space
+spacedim(fp::FormParams) = fp.spacedim
 
 """
 i: dimension: 0,1,2, etc.
@@ -39,7 +39,7 @@ d: duality: true = dual, false = primal
 s: name of the space (a symbol)
 n: dimension of the space
 """
-struct Form{i,d,s,n} <: ThDEC end
+struct Form{i,d,s,n} <: DECQuantity end
 export Form
 
 # parameter accessors
@@ -53,14 +53,13 @@ export dim, isdual, space, spacedim
 # convert form to form params
 FormParams(::Type{<:Form{i,d,s,n}}) where {i,s,d,n} = FormParams(i,d,s,n)
 
-struct VField{d,s,n} <: ThDEC end
+struct VField{d,s,n} <: DECQuantity end
 export VField
 
 # parameter accessors
 isdual(::Type{<:VField{d,s,n}}) where {d,s,n} = d
 space(::Type{VField{d,s,n}}) where {d,s,n} = s
 spacedim(::Type{VField{d,s,n}}) where {d,s,n} = n
-
 
 # convenience functions
 const PrimalForm{i,s,n} = Form{i,false,s,n}
@@ -112,11 +111,11 @@ end
 # for every unary operator in our theory, take a BasicSymbolic type, convert its type parameter to a Sort in our theory, and return a term
 unops = [:♯, :♭]
 
-@register -(S)::ThDEC begin S end
+@operator -(S)::DECQuantity begin S end
 
-@register ∂ₜ(S)::ThDEC begin S end
+@operator ∂ₜ(S)::DECQuantity begin S end
 
-@register d(S)::ThDEC begin
+@operator d(S)::DECQuantity begin
     @match S begin
         ActFormParams([i,d,s,n]) => Form{i+1,d,s,n}
         _ => throw(SortError("Cannot apply the exterior derivative to $S"))
@@ -125,7 +124,7 @@ end
 
 @alias (d₀, d₁) => d
 
-@register ⋆(S)::ThDEC begin
+@operator ⋆(S)::DECQuantity begin
     @match S begin
         ActFormParams([i,d,s,n]) => Form{n-i,d,s,n}
         _ => throw(SortError("Cannot take the hodge star of $S"))
@@ -134,14 +133,14 @@ end
 
 @alias (⋆₀, ⋆₁, ⋆₂, ⋆₀⁻¹, ⋆₁⁻¹, ⋆₂⁻¹) => ⋆
 
-@register Δ(S)::ThDEC begin
+@operator Δ(S)::DECQuantity begin
     @match S begin
         ActForm(x) => ⋆(d(⋆(d(x))))
         _ => throw(SortError("Cannot take the Laplacian of $S"))
     end
 end
 
-@register +(S1, S2)::ThDEC begin
+@operator +(S1, S2)::DECQuantity begin
     @match (S1, S2) begin
         (ActScalar, ActScalar) => Scalar
         (ActScalar, ActFormParams([i,d,s,n])) || (ActFormParams([i,d,s,n]), ActScalar) => S1 # commutativity
@@ -159,9 +158,9 @@ end
     end
 end
 
-@register -(S1, S2)::ThDEC begin +(S1, S2) end
+@operator -(S1, S2)::DECQuantity begin +(S1, S2) end
 
-@register *(S1, S2)::ThDEC begin
+@operator *(S1, S2)::DECQuantity begin
     @match (S1, S2) begin
         (Scalar, Scalar) => Scalar
         (Scalar, ActFormParams([i,d,s,n])) || (ActFormParams([i,d,s,n]), Scalar) => Form{i,d,s,n}
@@ -169,7 +168,7 @@ end
     end
 end
 
-@register ∧(S1, S2)::ThDEC begin
+@operator ∧(S1, S2)::DECQuantity begin
     @match (S1, S2) begin
         (ActFormParams([i1,d1,s1,n1]), ActFormParams([i2,d2,s2,n2])) => begin
             (d1 == d2) && (s1 == s2) && (n1 == n2) || throw(SortError("Can only take a wedge product of two forms of the same duality on the same space"))
@@ -185,6 +184,8 @@ end
 struct SortError <: Exception
     message::String
 end
+
+# struct WedgeDimError <: SortError end
 
 Base.nameof(s::Scalar) = :Constant
 
@@ -224,6 +225,19 @@ Base.nameof(::typeof(d), s) = Symbol("d$(as_sub(dim(s)))")
 function Base.nameof(::typeof(⋆), s)
     inv = isdual(s) ? "⁻¹" : ""
     Symbol("★$(as_sub(isdual(s) ? dim(space(s)) - dim(s) : dim(s)))$(inv)")
+end
+
+function SymbolicUtils.symtype(::Quantity, qty::Symbol, space::Symbol)
+    @match qty begin
+        :Scalar => Scalar
+        :Form0 => PrimalForm{0, space, 1}
+        :Form1 => PrimalForm{1, space, 1}
+        :Form2 => PrimalForm{2, space, 1}
+        :DualForm0 => DualForm{0, space, 1}
+        :DualForm1 => DualForm{1, space, 1}
+        :DualForm2 => DualForm{2, space, 1}
+        _ => error("$qty")
+    end
 end
 
 end
