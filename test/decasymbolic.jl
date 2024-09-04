@@ -1,8 +1,10 @@
 using Test
+using DiagrammaticEquations
 using DiagrammaticEquations.Deca.ThDEC
 using DiagrammaticEquations.decapodes
 using SymbolicUtils
 using SymbolicUtils: symtype, promote_symtype
+using MLStyle
 
 # load up some variable variables and expressions
 a, b = @syms a::Scalar b::Scalar
@@ -11,10 +13,8 @@ u, v = @syms u::PrimalForm{0, :X, 2} du::PrimalForm{1, :X, 2}
 ϕ, ψ = @syms ϕ::PrimalVF{:X, 2} ψ::DualVF{:X, 2}
 # TODO would be nice to pass the space globally to avoid duplication
 
-
 @testset "Term Construction" begin
  
-    # TODO implement symtype
     @test symtype(a) == Scalar
     @test symtype(u) == PrimalForm{0, :X, 2}
     @test symtype(ω) == PrimalForm{1, :X, 2}
@@ -41,10 +41,29 @@ u, v = @syms u::PrimalForm{0, :X, 2} du::PrimalForm{1, :X, 2}
     @test Term(a * b) == Mult(Term[Var(:a), Var(:b)])
     @test Term(ω ∧ du) == App2(:∧₁₁, Var(:ω), Var(:du))
 
+    @test promote_symtype(d, u) == PrimalForm{1, :X, 2}
     @test promote_symtype(+, a, b) == Scalar
     @test promote_symtype(∧, u, u) == PrimalForm{0, :X, 2}
     @test promote_symtype(∧, u, ω) == PrimalForm{1, :X, 2}
 
+    @test promote_symtype(d ∘ d, u) == PrimalForm{2, :X, 2}
+end
+
+@testset "Operator definition" begin
+
+    # this is not nabla but "bizarro Δ"
+    @operator ∇(S)::DECQuantity begin
+        @match S begin
+            PatScalar(_) => error("Argument of type $S is invalid")
+            PatForm(_) => promote_symtype(★ ∘ d ∘ ★ ∘ d, S)
+        end
+    end
+    # @rule ~x --> ⋆(d(⋆(d(s))))
+    
+    @test_throws Exception ∇(b)
+    @test symtype(∇(u)) == PrimalForm{0, :X ,2}
+
+    @test_broken promote_symtype(Δ, [u,v])
 end
 
 @testset "Conversion" begin

@@ -107,7 +107,6 @@ end
 
 function SymbolicContext(d::decapodes.DecaExpr, __module__=@__MODULE__)
     # associates each var to its sort...
-    @info d.context
     context = map(d.context) do j
         j.var => symtype(ThDEC, j.dim, j.space)
     end
@@ -115,7 +114,6 @@ function SymbolicContext(d::decapodes.DecaExpr, __module__=@__MODULE__)
     vars = map(context) do (v, s)
         SymbolicUtils.Sym{s}(v)
     end
-    @info context
     context = Dict{Symbol,Quantity}(context)
     eqs = map(d.equations) do eq
         SymbolicEquation{Symbolic}(BasicSymbolic.(Ref(context), [eq.lhs, eq.rhs], Ref(__module__))...)

@@ -5,7 +5,8 @@ using ..DiagrammaticEquations: @operator, @alias, Quantity
 using MLStyle
 using StructEquality
 using SymbolicUtils
-using SymbolicUtils: Symbolic, BasicSymbolic, FnType, Sym, Term, symtype
+using SymbolicUtils: Symbolic, BasicSymbolic, FnType, Sym, Term
+import SymbolicUtils: symtype, promote_symtype
 
 import Base: +, -, *
 import Catlab: Δ, ∧
@@ -17,6 +18,10 @@ import Catlab: Δ, ∧
 # ##########################
 
 abstract type DECQuantity <: Quantity end
+export DECQuantity
+
+# this ensures symtype doesn't recurse endlessly
+SymbolicUtils.symtype(::Type{S}) where S<:DECQuantity = S
 
 struct Scalar <: DECQuantity end
 export Scalar
@@ -76,40 +81,40 @@ export DualVF
 
 # ACTIVE PATTERNS
 
-@active ActForm(T) begin
+@active PatForm(T) begin
     if T <: Form
         Some(T)
     end
 end
+export PatForm
 
-@active ActFormParams(T) begin
+@active PatFormParams(T) begin
     if T <: Form
         Some([T.parameters...])
     end
 end
+export PatFormParams
 
-@active ActFormDim(T) begin
+@active PatFormDim(T) begin
     if T <: Form
         Some(dim(T))
     end
 end
+export PatFormDim
 
-@active ActScalar(T) begin
+@active PatScalar(T) begin
     if T <: Scalar
         Some(T)
     end
 end
+export PatScalar
 
-@active ActVFParams(T) begin
+@active PatVFParams(T) begin
     if T <: VField
         Some([T.parameters...])
     end
 end
-
-# HERE WE DEFINE THE SYMBOLICUTILS
-
-# for every unary operator in our theory, take a BasicSymbolic type, convert its type parameter to a Sort in our theory, and return a term
-unops = [:♯, :♭]
+export PatVFParams
 
 @operator -(S)::DECQuantity begin S end
 
@@ -117,44 +122,41 @@ unops = [:♯, :♭]
 
 @operator d(S)::DECQuantity begin
     @match S begin
-        ActFormParams([i,d,s,n]) => Form{i+1,d,s,n}
-        _ => throw(SortError("Cannot apply the exterior derivative to $S"))
+        PatFormParams([i,d,s,n]) => Form{i+1,d,s,n}
+        _ => throw(ExteriorDerivativeError(S))
     end
 end
 
 @alias (d₀, d₁) => d
 
-@operator ⋆(S)::DECQuantity begin
+@operator ★(S)::DECQuantity begin
     @match S begin
-        ActFormParams([i,d,s,n]) => Form{n-i,d,s,n}
-        _ => throw(SortError("Cannot take the hodge star of $S"))
+        PatFormParams([i,d,s,n]) => Form{n-i,d,s,n}
+        _ => throw(HodgeStarError(S))
     end
 end
 
-@alias (⋆₀, ⋆₁, ⋆₂, ⋆₀⁻¹, ⋆₁⁻¹, ⋆₂⁻¹) => ⋆
+@alias (★₀, ★₁, ★₂, ★₀⁻¹, ★₁⁻¹, ★₂⁻¹) => ★
 
 @operator Δ(S)::DECQuantity begin
     @match S begin
-        ActForm(x) => ⋆(d(⋆(d(x))))
-        _ => throw(SortError("Cannot take the Laplacian of $S"))
+        PatForm(_) => promote_symtype(★ ∘ d ∘ ★ ∘ d, S)
+        _ => throw(LaplacianError(S))
     end
 end
 
 @operator +(S1, S2)::DECQuantity begin
     @match (S1, S2) begin
-        (ActScalar, ActScalar) => Scalar
-        (ActScalar, ActFormParams([i,d,s,n])) || (ActFormParams([i,d,s,n]), ActScalar) => S1 # commutativity
-        (ActFormParams([i1,d1,s1,n1]), ActFormParams([i2,d2,s2,n2])) => begin
+        (PatScalar, PatScalar) => Scalar
+        (PatScalar, PatFormParams([i,d,s,n])) || (PatFormParams([i,d,s,n]), PatScalar) => S1 # commutativity
+        (PatFormParams([i1,d1,s1,n1]), PatFormParams([i2,d2,s2,n2])) => begin
             if (i1 == i2) && (d1 == d2) && (s1 == s2) && (n1 == n2)
                 Form{i1, d1, s1, n1}
             else
-                throw(SortError("""
-                    Can not add two forms of different dimensions/dualities/spaces:
-                        $((i1,d1,s1)) and $((i2,d2,s2))
-                    """))
+                throw(AdditionDimensionalError(S1, S2))
             end
         end
-        _ => error("Nay!")
+        _ => throw(BinaryOpError("add", S1, S2))
     end
 end
 
@@ -163,27 +165,26 @@ end
 @operator *(S1, S2)::DECQuantity begin
     @match (S1, S2) begin
         (Scalar, Scalar) => Scalar
-        (Scalar, ActFormParams([i,d,s,n])) || (ActFormParams([i,d,s,n]), Scalar) => Form{i,d,s,n}
-        _ => throw(SortError("Cannot multiple $S1 and $S2"))
+        (Scalar, PatFormParams([i,d,s,n])) || (PatFormParams([i,d,s,n]), Scalar) => Form{i,d,s,n}
+        _ => throw(BinaryOpError("multiply", S1, S2))
     end
 end
 
 @operator ∧(S1, S2)::DECQuantity begin
     @match (S1, S2) begin
-        (ActFormParams([i1,d1,s1,n1]), ActFormParams([i2,d2,s2,n2])) => begin
-            (d1 == d2) && (s1 == s2) && (n1 == n2) || throw(SortError("Can only take a wedge product of two forms of the same duality on the same space"))
+        (PatFormParams([i1,d1,s1,n1]), PatFormParams([i2,d2,s2,n2])) => begin
+            (d1 == d2) && (s1 == s2) && (n1 == n2) || throw(WedgeOpError(S1, S2))
             if i1 + i2 <= n1
                 Form{i1 + i2, d1, s1, n1}
             else
-                throw(SortError("Can only take a wedge product when the dimensions of the forms add to less than n, where n = $n1 is the dimension of the ambient space: tried to wedge product $i1 and $i2"))
+                throw(WedgeDimError(S1, S2))
             end
         end
+        _ => throw(BinaryOpError("take the wedge product of", S1, S2))
     end
 end
 
-struct SortError <: Exception
-    message::String
-end
+abstract type SortError <: Exception end
 
 # struct WedgeDimError <: SortError end
 
@@ -222,7 +223,7 @@ end
 
 Base.nameof(::typeof(d), s) = Symbol("d$(as_sub(dim(s)))")
 
-function Base.nameof(::typeof(⋆), s)
+function Base.nameof(::typeof(★), s)
     inv = isdual(s) ? "⁻¹" : ""
     Symbol("★$(as_sub(isdual(s) ? dim(space(s)) - dim(s) : dim(s)))$(inv)")
 end
@@ -239,5 +240,55 @@ function SymbolicUtils.symtype(::Quantity, qty::Symbol, space::Symbol)
         _ => error("$qty")
     end
 end
+
+struct ExteriorDerivativeError <: SortError
+    sort::DECQuantity
+end
+
+Base.showerror(io, e::ExteriorDerivativeError) = print(io, "Cannot apply the exterior derivative to $(e.sort)")
+
+struct HodgeStarError <: SortError
+    sort::DECQuantity
+end
+
+Base.showerror(io, e::HodgeStarError) = print(io, "Cannot take the hodge star of $(e.sort)")
+
+struct LaplacianError <: SortError
+    sort::DECQuantity
+end
+
+Base.showerror(io, e::LaplacianError) = print(io, "Cannot take the Laplacian of $(e.sort)")
+
+struct AdditionDimensionalError <: SortError
+    sort1::DECQuantity
+    sort2::DECQuantity
+end
+
+Base.showerror(io, e::AdditionDimensionalError) = print(io, """
+                    Can not add two forms of different dimensions/dualities/spaces:
+                    $(e.sort1) and $(e.sort2)
+                        """)
+
+struct BinaryOpError <: SortError
+    verb::String
+    sort1::DECQuantity
+    sort2::DECQuantity
+end
+
+Base.showerror(io, e::BinaryOpError) = print(io, "Cannot $(e.verb) $(e.sort1) and $(e.sort2)")
+
+struct WedgeOpError <: SortError
+    sort1::DECQuantity
+    sort2::DECQuantity
+end
+
+Base.showerror(io, e::WedgeOpError) = print(io, "Can only take a wedge product of two forms of the same duality on the same space. Received $(e.sort1) and $(e.sort2)")
+
+struct WedgeOpDimError <: SortError
+    sort1::DECQuantity
+    sort2::DECQuantity
+end
+
+Base.showerror(io, e::WedgeOpDimError) = print(io, "Can only take a wedge product when the dimensions of the forms add to less than n, where n = $(e.sort.dim) is the dimension of the ambient space: tried to wedge product $(e.sort1) and $(e.sort2)")
 
 end
