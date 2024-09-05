@@ -1,7 +1,7 @@
 using DiagrammaticEquations
 using ACSets
 
-export TraversalNode, topological_sort_edges, number_of_ops, retrieve_name
+export TraversalNode, topological_sort_edges, number_of_ops, retrieve_name, start_nodes
 
 struct TraversalNode{T}
   index::Int

@@ -9,52 +9,54 @@ test_type = Form(0, false, test_space)
 Heat = @decapode begin
   C::Form0
   D::Constant
-  ∂ₜ(C) == (D+2)*Δ(C)
+  ∂ₜ(C) == D*Δ(d(C))
 end
 
 infer_types!(Heat)
 resolve_overloads!(Heat)
 
-function oldtype_to_new(old::Symbol, space::Space = Space(:I, 2))::Sort
-  @match old begin
-    :Form0 => PrimalForm(0, space)
-    :Form1 => PrimalForm(1, space)
-    :Form2 => PrimalForm(2, space)
-
-    :DualForm0 => DualForm(0, space)
-    :DualForm1 => DualForm(1, space)
-    :DualForm2 => DualForm(2, space)
-
-    :Constant => Scalar()
-    :Parameter => Scalar()
-  end
-end
-
 function isform_zero(x)
   getmetadata(x, Sort).dim == 0
+end
+
+function isform_one(x)
+  getmetadata(x, Sort).dim == 1
 end
 
 function isform_two(x)
   getmetadata(x, Sort).dim == 2
 end
 
-@syms Δ(x) d(x) ⋆(x)
+@syms Δ(x) d(x) ⋆(x) Δ₀(x) Δ₁(x) Δ₂(x) d₀(x)
 
-@syms C D Ċ sum_1
+lap_0_convert = @rule Δ₀(~x) => Δ(~x)
+lap_1_convert = @rule Δ₁(~x) => Δ(~x)
+lap_2_convert = @rule Δ₂(~x) => Δ(~x)
 
-C = setmetadata(C, Sort, oldtype_to_new(Heat[1, :type]))
+d_0_convert = @rule d₀(~x) => d(~x)
+
+overloaders = [lap_0_convert, lap_1_convert, lap_2_convert, d_0_convert]
 
 lap_0_rule = @rule Δ(~x::(isform_zero)) => ⋆(d(⋆(d(~x))))
+lap_1_rule = @rule Δ(~x::(isform_one)) => d(⋆(d(⋆(~x)))) + ⋆(d(⋆(d(~x))))
 lap_2_rule = @rule Δ(~x::(isform_two)) => d(⋆(d(⋆(~x))))
 
-test_eq = Δ(C)
-lap_0_rule(test_eq)
-lap_2_rule(test_eq) === nothing
+openers = [lap_0_rule, lap_1_rule, lap_2_rule]
 
-rewriter = SymbolicUtils.Postwalk(SymbolicUtils.Chain([lap_0_rule]))
-test_eq_long = (D + 2) * Δ(C)
-rewriter(test_eq_long)
+heat_exprs = extract_symexprs(Heat)
 
-# Δ₀(x) = ⋆₀⁻¹(dual_d₁(⋆₁(d₀(x))))
-# @syms Δ₀(x) d₀(x) ⋆₁(x) dual_d₁(x) ⋆₀⁻¹(x)
-# lap_0_rule = @rule Δ₀(~x::(isform_zero)) => ⋆₀⁻¹(dual_d₁(⋆₁(d₀(~x))))
+rewriter = SymbolicUtils.Postwalk(
+            SymbolicUtils.Fixpoint(SymbolicUtils.Chain(vcat(overloaders, openers))))
+
+res_exprs =  apply_rewrites(Heat, rewriter)
+
+merge_exprs = merge_equations(Heat, res_exprs)
+
+optm_dd_0 = @rule d(d(~x)) => 0
+star_0 = @rule ⋆(0) => 0
+d_0 = @rule d(0) => 0
+
+optm_rewriter = SymbolicUtils.Postwalk(
+  SymbolicUtils.Fixpoint(SymbolicUtils.Chain([optm_dd_0, star_0, d_0])))
+
+optm_rewriter(merge_exprs[1])
