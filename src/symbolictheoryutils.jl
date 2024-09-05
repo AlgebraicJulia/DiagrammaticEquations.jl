@@ -7,6 +7,22 @@ function promote_symtype(f::ComposedFunction, args)
     promote_symtype(f.outer, promote_symtype(f.inner, args))
 end
 
+@active PatMatch(e) begin
+    @match e begin
+        Expr(:macrocall, head, args...) && if head == Symbol("@", "match") end => Some(e)
+        _ => nothing
+    end
+end
+export PatMatch
+
+@active PatRule(e) begin
+    @match e begin
+        Expr(:macrocall, head, args...) && if head == Symbol("@", "rule") end => Some(e)
+        _ => nothing
+    end
+end
+export PatRule
+
 """ DECQuantities in DiagrammaticEquations must be subtypes of Number to integrate with SymbolicUtils. An intermediary type, Quantity, makes it clearer that terms in the theory are "symbolic quantities" which behave like numbers. In the context of SymbolicUtils, a Number is any type that you can do arithmetic operations on.
 """
 abstract type Quantity <: Number end
@@ -69,22 +85,30 @@ macro operator(head, body)
 
     sort_types = [:(::Type{$S}) for S in types]
     sort_constraints = [:($S<:$Theory) for S in types]
-    
+    arity = length(sort_types)
+
+    match_calls = []; rule_calls = [];
+    pb = @λ begin
+        Expr(:block, args...) => pb.(args)
+        PatMatch(e) => push!(match_calls, e)
+        PatRule(e) => push!(rule_calls, e)
+        s => nothing
+    end
+    pb(body);
+
     # initialize the result
     result = quote end
     
     # DEFINE TYPE INFERENCE IN THE ThDEC SYSTEM
-    
     push!(result.args, quote 
         function $f end; export $f 
     end)
 
-    arity = length(sort_types)
 
     # we want to feed symtype the generics
     push!(result.args, quote
         function SymbolicUtils.promote_symtype(::typeof($f), $(sort_types...)) where {$(sort_constraints...)}
-            $body
+            $(match_calls...)
         end
         function SymbolicUtils.promote_symtype(::typeof($f), args::Vararg{Symbolic, $arity})
             promote_symtype($f, symtype.(args)...)
@@ -92,24 +116,6 @@ macro operator(head, body)
     end)
 
     # CONSTRUCT THE FUNCTION ON BASIC SYMBOLICS
-
-    # ...associate each var (S1) to a generic. this will be used in the
-    # type constraint of the new function.
-    generic_types = [(v, Symbol("T$k")) for (k,v) in enumerate(types)]
-
-    # reassociate types with their BasicSymbolic Generic Types
-    basicsym_bindings = map(generic_types) do (var, T)
-        (var, :Symbolic)
-    end
-
-    # binding type bindings to the basicsymbolics
-    bs_arg_exprs = map(basicsym_bindings) do (var, bs_gen)
-        [:($var::$bs_gen)]
-    end
-    constraint_exprs = [:($T<:$Theory) for T in types]
-
-    # Δ(x::BasicSymbolic(T1}) where T1<:DECQuantity
-    # should be args subtype of symbolic, not basicsymbolic, not were-clause
     push!(result.args, quote
         @nospecialize
         function $f(args...)
@@ -118,6 +124,8 @@ macro operator(head, body)
         end
         export $f
     end)
+
+    push!(result.args, quote $rule_calls end)
 
     return esc(result)
 end

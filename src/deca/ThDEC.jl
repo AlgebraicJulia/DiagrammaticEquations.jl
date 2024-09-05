@@ -116,6 +116,33 @@ export PatScalar
 end
 export PatVFParams
 
+isDualForm(x) = @match symtype(x) begin
+    PatFormParams([_,d,_,_]) => d
+    _ => false
+end
+
+# TODO parameterize?
+isForm0(x) = @match symtype(x) begin
+    PatFormParams([0,_,_,_]) => true
+    _ => false
+end
+
+isForm1(x) = @match symtype(x) begin
+    PatFormParams([1,_,_,_]) => true
+    _ => false
+end
+
+isForm2(x) = @match symtype(x) begin
+    PatFormParams([2,_,_,_]) => true
+    _ => false
+end
+
+export isDualForm, isForm0, isForm1, isForm2
+
+# ###############################
+# OPERATORS
+# ###############################
+
 @operator -(S)::DECQuantity begin S end
 
 @operator ∂ₜ(S)::DECQuantity begin S end

@@ -3,7 +3,7 @@ using DiagrammaticEquations
 using DiagrammaticEquations.Deca.ThDEC
 using DiagrammaticEquations.decapodes
 using SymbolicUtils
-using SymbolicUtils: symtype, promote_symtype
+using SymbolicUtils: symtype, promote_symtype, Symbolic
 using MLStyle
 
 # load up some variable variables and expressions
@@ -52,14 +52,18 @@ end
 @testset "Operator definition" begin
 
     # this is not nabla but "bizarro Δ"
+    del_expand_0, del_expand_1 = 
     @operator ∇(S)::DECQuantity begin
         @match S begin
             PatScalar(_) => error("Argument of type $S is invalid")
             PatForm(_) => promote_symtype(★ ∘ d ∘ ★ ∘ d, S)
         end
-    end
-    # @rule ~x --> ⋆(d(⋆(d(s))))
-    
+        @rule ~~x::isForm0 => ★(d(★(d(x))))
+        @rule ~~x::isForm1 => ★(d(★(d(x)))) + d(★(d(★(x))))
+    end;
+    # TODO rewriting not working atm
+    # del_expand = Chain(del_expand0, del_expand1)
+
     @test_throws Exception ∇(b)
     @test symtype(∇(u)) == PrimalForm{0, :X ,2}
 
