@@ -4,6 +4,8 @@ using SymbolicUtils.Rewriters
 using SymbolicUtils.Code
 using MLStyle
 
+import DiagrammaticEquations.ThDEC: Space
+
 export extract_symexprs, apply_rewrites, merge_equations
 
 const DECA_EQUALITY_SYMBOL = (==)
