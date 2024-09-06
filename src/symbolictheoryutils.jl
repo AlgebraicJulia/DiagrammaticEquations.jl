@@ -83,27 +83,37 @@ macro operator(head, body)
     end
     (f, types, Theory) = ph(head)
 
+    # Passing types to functions requires that we type the signature with ::Type{T}. 
+    # This means that the user would have to write
+    #   my_op(::Type{T1}, ::Type{T2}, ...)
+    # As a convenience to the user, we allow them to specify the signature using just the types themselves.
+    #   my_op(T1, T2, ...)
     sort_types = [:(::Type{$S}) for S in types]
     sort_constraints = [:($S<:$Theory) for S in types]
     arity = length(sort_types)
 
+    # Parse the body for @match or @rule calls. The @match statement parsing is unsophisticated; multiple
+    # @match statements will be added, and there is currently no validation.
     match_calls = []; rule_calls = [];
     pb = @λ begin
         Expr(:block, args...) => pb.(args)
         PatMatch(e) => push!(match_calls, e)
         PatRule(e) => push!(rule_calls, e)
         s => nothing
-    end
-    pb(body);
+    end; pb(body);
 
     # initialize the result
     result = quote end
     
-    # DEFINE TYPE INFERENCE IN THE ThDEC SYSTEM
-    push!(result.args, quote 
-        function $f end; export $f 
+    # construct the function on basic symbolics
+    push!(result.args, quote
+        @nospecialize
+        function $f(args...)
+            s = promote_symtype($f, args...)
+            SymbolicUtils.Term{s}($f, [args...])
+        end
+        export $f
     end)
-
 
     # we want to feed symtype the generics
     push!(result.args, quote
@@ -115,17 +125,7 @@ macro operator(head, body)
         end
     end)
 
-    # CONSTRUCT THE FUNCTION ON BASIC SYMBOLICS
-    push!(result.args, quote
-        @nospecialize
-        function $f(args...)
-            s = promote_symtype($f, args...)
-            SymbolicUtils.Term{s}($f, [args...])
-        end
-        export $f
-    end)
-
-    push!(result.args, quote $rule_calls end)
+    push!(result.args, Expr(:tuple, rule_calls...))
 
     return esc(result)
 end

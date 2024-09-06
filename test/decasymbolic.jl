@@ -41,12 +41,15 @@ u, v = @syms u::PrimalForm{0, :X, 2} du::PrimalForm{1, :X, 2}
     @test Term(a * b) == Mult(Term[Var(:a), Var(:b)])
     @test Term(ω ∧ du) == App2(:∧₁₁, Var(:ω), Var(:du))
 
+    # test promoting types
     @test promote_symtype(d, u) == PrimalForm{1, :X, 2}
     @test promote_symtype(+, a, b) == Scalar
     @test promote_symtype(∧, u, u) == PrimalForm{0, :X, 2}
     @test promote_symtype(∧, u, ω) == PrimalForm{1, :X, 2}
 
+    # test composition
     @test promote_symtype(d ∘ d, u) == PrimalForm{2, :X, 2}
+
 end
 
 @testset "Operator definition" begin
@@ -58,8 +61,8 @@ end
             PatScalar(_) => error("Argument of type $S is invalid")
             PatForm(_) => promote_symtype(★ ∘ d ∘ ★ ∘ d, S)
         end
-        @rule ~~x::isForm0 => ★(d(★(d(x))))
-        @rule ~~x::isForm1 => ★(d(★(d(x)))) + d(★(d(★(x))))
+        @rule ~x::isForm0 => ★(d(★(d(~x))))
+        @rule ~x::isForm1 => ★(d(★(d(~x)))) + d(★(d(★(~x))))
     end;
     # TODO rewriting not working atm
     # del_expand = Chain(del_expand0, del_expand1)
@@ -68,6 +71,8 @@ end
     @test symtype(∇(u)) == PrimalForm{0, :X ,2}
 
     @test_broken promote_symtype(Δ, [u,v])
+
+    @test del_expand_0(u) == ★(d(★(d(u))))
 end
 
 @testset "Conversion" begin
