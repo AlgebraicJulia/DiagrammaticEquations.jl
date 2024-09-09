@@ -46,22 +46,38 @@ end)
 
 import .ThDEC: d, ⋆, SortError
 
-@register Δ(s::Sort) begin
-    @match s begin
-        ::Scalar => throw(SortError("Scalar"))
-        ::VField => throw(SortError("Nay!"))
-        ::Form => ⋆(d(⋆(d(s))))
-    end
-end
-
 ω, = @syms ω::PrimalFormT{1, :X, 2}
 
 @test Δ(PrimalForm(1, X)) == PrimalForm(1, X)
 @test symtype(Δ(ω)) == PrimalFormT{1, :X, 2}
 
 # TODO propagating module information is suited for a macro
-symbmodel = DecaSymbolic(lookup, Phytodynamics, Main)
+symbmodel = ps = DecaSymbolic(lookup, Phytodynamics, Main)
 
 DecaExpr(symbmodel)
 
 
+
+n = ps.vars[1]
+SymbolicUtils.symtype(n)
+Δ(n)
+
+r = @rule Δ(~n) => ⋆(d(⋆(d(~n))))
+
+t2 = r(Δ(n))
+t2 |> dump
+
+
+using SymbolicUtils.Rewriters
+using SymbolicUtils: promote_symtype
+r = @rule ⋆(⋆(~n)) => ~n
+nested_star_cancel = Postwalk(Chain([r]))
+nested_star_cancel(d(⋆(⋆(n))))
+nsc = nested_star_cancel
+
+isequal(nsc(⋆(⋆(d(n)))), d(n))
+dump(nsc(⋆(⋆(d(n))))) 
+dump(d(n))
+⋆(⋆(d(⋆(⋆(n)))))
+nsc(⋆(⋆(d(⋆(⋆(n))))))
+nsc(nsc(⋆(⋆(d(⋆(⋆(n)))))))
