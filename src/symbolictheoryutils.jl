@@ -106,11 +106,13 @@ macro operator(head, body)
     result = quote end
     
     # construct the function on basic symbolics
+    argnames = [gensym(:x) for _ in 1:arity]
+    argclaus = [:($a::Symbolic) for a in argnames]
     push!(result.args, quote
         @nospecialize
-        function $f(args...)
-            s = promote_symtype($f, args...)
-            SymbolicUtils.Term{s}($f, [args...])
+        function $f($(argclaus...))
+            s = promote_symtype($f, $(argnames...))
+            SymbolicUtils.Term{s}($f, Any[$(argnames...)])
         end
         export $f
     end)
