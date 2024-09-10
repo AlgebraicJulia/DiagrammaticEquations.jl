@@ -79,6 +79,9 @@ export PrimalVF
 const DualVF{s,n} = VField{true,s,n}
 export DualVF
 
+Base.nameof(u::Type{<:PrimalForm}) = Symbol("Form"*"$(dim(u))")
+Base.nameof(u::Type{<:DualForm}) = Symbol("DualForm"*"$(dim(u))")
+
 # ACTIVE PATTERNS
 
 @active PatForm(T) begin
@@ -250,72 +253,74 @@ end
 
 Base.nameof(::typeof(d), s) = Symbol("d$(as_sub(dim(s)))")
 
+Base.nameof(::typeof(Δ), s) = :Δ
+
 function Base.nameof(::typeof(★), s)
     inv = isdual(s) ? "⁻¹" : ""
     Symbol("★$(as_sub(isdual(s) ? dim(space(s)) - dim(s) : dim(s)))$(inv)")
 end
 
-function SymbolicUtils.symtype(::Quantity, qty::Symbol, space::Symbol)
+function SymbolicUtils.symtype(::Type{<:Quantity}, qty::Symbol, space::Symbol)
     @match qty begin
-        :Scalar => Scalar
+        :Scalar || :Constant => Scalar
         :Form0 => PrimalForm{0, space, 1}
         :Form1 => PrimalForm{1, space, 1}
         :Form2 => PrimalForm{2, space, 1}
         :DualForm0 => DualForm{0, space, 1}
         :DualForm1 => DualForm{1, space, 1}
         :DualForm2 => DualForm{2, space, 1}
-        _ => error("$qty")
+        _ => error("Received $qty")
     end
 end
 
 struct ExteriorDerivativeError <: SortError
-    sort::DECQuantity
+    sort::DataType
 end
 
-Base.showerror(io, e::ExteriorDerivativeError) = print(io, "Cannot apply the exterior derivative to $(e.sort)")
+Base.showerror(io::IO, e::ExteriorDerivativeError) = print(io, "Cannot apply the exterior derivative to $(e.sort)")
 
 struct HodgeStarError <: SortError
-    sort::DECQuantity
+    sort::DataType
 end
 
-Base.showerror(io, e::HodgeStarError) = print(io, "Cannot take the hodge star of $(e.sort)")
+Base.showerror(io::IO, e::HodgeStarError) = print(io, "Cannot take the hodge star of $(e.sort)")
 
 struct LaplacianError <: SortError
-    sort::DECQuantity
+    sort::DataType
 end
 
-Base.showerror(io, e::LaplacianError) = print(io, "Cannot take the Laplacian of $(e.sort)")
+Base.showerror(io::IO, e::LaplacianError) = print(io, "Cannot take the Laplacian of $(e.sort)")
 
 struct AdditionDimensionalError <: SortError
-    sort1::DECQuantity
-    sort2::DECQuantity
+    sort1::DataType
+    sort2::DataType
 end
 
-Base.showerror(io, e::AdditionDimensionalError) = print(io, """
+Base.showerror(io::IO, e::AdditionDimensionalError) = print(io, """
                     Can not add two forms of different dimensions/dualities/spaces:
                     $(e.sort1) and $(e.sort2)
                         """)
 
 struct BinaryOpError <: SortError
     verb::String
-    sort1::DECQuantity
-    sort2::DECQuantity
+    sort1::DataType
+    sort2::DataType
 end
 
-Base.showerror(io, e::BinaryOpError) = print(io, "Cannot $(e.verb) $(e.sort1) and $(e.sort2)")
+Base.showerror(io::IO, e::BinaryOpError) = print(io, "Cannot $(e.verb) $(e.sort1) and $(e.sort2)")
 
 struct WedgeOpError <: SortError
-    sort1::DECQuantity
-    sort2::DECQuantity
+    sort1::DataType
+    sort2::DataType
 end
 
-Base.showerror(io, e::WedgeOpError) = print(io, "Can only take a wedge product of two forms of the same duality on the same space. Received $(e.sort1) and $(e.sort2)")
+Base.showerror(io::IO, e::WedgeOpError) = print(io, "Can only take a wedge product of two forms of the same duality on the same space. Received $(e.sort1) and $(e.sort2)")
 
 struct WedgeOpDimError <: SortError
-    sort1::DECQuantity
-    sort2::DECQuantity
+    sort1::DataType
+    sort2::DataType
 end
 
-Base.showerror(io, e::WedgeOpDimError) = print(io, "Can only take a wedge product when the dimensions of the forms add to less than n, where n = $(e.sort.dim) is the dimension of the ambient space: tried to wedge product $(e.sort1) and $(e.sort2)")
+Base.showerror(io::IO, e::WedgeOpDimError) = print(io, "Can only take a wedge product when the dimensions of the forms add to less than n, where n = $(e.sort.dim) is the dimension of the ambient space: tried to wedge product $(e.sort1) and $(e.sort2)")
 
 end

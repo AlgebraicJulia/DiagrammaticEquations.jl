@@ -64,7 +64,7 @@ decapodes.Term(x::Real) = decapodes.Lit(Symbol(x))
 
 function decapodes.DecaExpr(d::SymbolicContext)
     context = map(d.vars) do var
-        decapodes.Judgement(nameof(var), nameof(Sort(var)), :X)
+        decapodes.Judgement(nameof(var), nameof(symtype(var)), :I)
     end
     equations = map(d.equations) do eq
         decapodes.Eq(decapodes.Term(eq.lhs), decapodes.Term(eq.rhs))
@@ -82,7 +82,7 @@ Example:
   SymbolicUtils.BasicSymbolic(context, Term(a))
 ```
 """
-function SymbolicUtils.BasicSymbolic(context::Dict{Symbol,Quantity}, t::decapodes.Term, __module__=@__MODULE__)
+function SymbolicUtils.BasicSymbolic(context::Dict{Symbol,DataType}, t::decapodes.Term, __module__=@__MODULE__)
     # user must import symbols into scope
     ! = (f -> getfield(__module__, f))
     @match t begin
@@ -108,13 +108,13 @@ end
 function SymbolicContext(d::decapodes.DecaExpr, __module__=@__MODULE__)
     # associates each var to its sort...
     context = map(d.context) do j
-        j.var => symtype(ThDEC, j.dim, j.space)
+        j.var => symtype(Deca.DECQuantity, j.dim, j.space)
     end
     # ... which we then produce a vector of symbolic vars
     vars = map(context) do (v, s)
         SymbolicUtils.Sym{s}(v)
     end
-    context = Dict{Symbol,Quantity}(context)
+    context = Dict{Symbol,DataType}(context)
     eqs = map(d.equations) do eq
         SymbolicEquation{Symbolic}(BasicSymbolic.(Ref(context), [eq.lhs, eq.rhs], Ref(__module__))...)
     end

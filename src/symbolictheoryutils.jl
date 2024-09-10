@@ -146,8 +146,6 @@ macro alias(body)
 end
 export @alias
 
-function alias(x)
-    error("$x has no aliases")
-end
+alias(x) = error("$x has no aliases")
 export alias
 

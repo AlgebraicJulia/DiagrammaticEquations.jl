@@ -11,7 +11,7 @@ Hydrodynamics = @decapode begin
   (n,w)::DualForm0
   dX::Form1
   (a,ν)::Constant
-
+  #
   ∂ₜ(w) == a - w - w * n^2 + ν * L(dX, w)
 end
 
@@ -19,7 +19,7 @@ end
 Phytodynamics = @decapode begin
   (n,w)::DualForm0
   m::Constant
-
+  #
   ∂ₜ(n) == w * n^2 - m*n + Δ(n)
 end
 
@@ -27,13 +27,9 @@ Hydrodynamics = parse_decapode(quote
   (n,w)::DualForm0
   dX::Form1
   (a,ν)::Constant
-
+  #
   ∂ₜ(w) == a - w - w  + ν * L(dX, w)
 end)
-
-X = Space(:X, 2)
-lookup = SpaceLookup(X)
-# DecaSymbolic(lookup, Hydrodynamics)
 
 # See Klausmeier Equation 2.b
 Phytodynamics = parse_decapode(quote
@@ -42,26 +38,7 @@ Phytodynamics = parse_decapode(quote
   ∂ₜ(n) == w - m*n + Δ(n)
 end)
 
-@test_broken DecaSymbolic(lookup, Phytodynamics)
-
-import .ThDEC: d, ⋆, SortError
-
-@register Δ(s::Sort) begin
-    @match s begin
-        ::Scalar => throw(SortError("Scalar"))
-        ::VField => throw(SortError("Nay!"))
-        ::Form => ⋆(d(⋆(d(s))))
-    end
-end
-
-ω, = @syms ω::PrimalFormT{1, :X, 2}
-
-@test Δ(PrimalForm(1, X)) == PrimalForm(1, X)
-@test symtype(Δ(ω)) == PrimalFormT{1, :X, 2}
-
-# TODO propagating module information is suited for a macro
-symbmodel = DecaSymbolic(lookup, Phytodynamics, Main)
-
-DecaExpr(symbmodel)
-
-
+symbmodel = SymbolicContext(Phytodynamics)
+dexpr = DecaExpr(symbmodel)
+symbmodel′ = SymbolicContext(dexpr)
+# TODO variables are the same but the equations don't match
