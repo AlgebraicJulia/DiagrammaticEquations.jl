@@ -61,18 +61,42 @@ end
             PatScalar(_) => error("Argument of type $S is invalid")
             PatForm(_) => promote_symtype(★ ∘ d ∘ ★ ∘ d, S)
         end
-        @rule ~x::isForm0 => ★(d(★(d(~x))))
-        @rule ~x::isForm1 => ★(d(★(d(~x)))) + d(★(d(★(~x))))
+        @rule ∇(~x::isForm0) => ★(d(★(d(~x))))
+        @rule ∇(~x::isForm1) => ★(d(★(d(~x)))) + d(★(d(★(~x))))
     end;
-    # TODO rewriting not working atm
-    # del_expand = Chain(del_expand0, del_expand1)
 
     @test_throws Exception ∇(b)
     @test symtype(∇(u)) == PrimalForm{0, :X ,2}
+    @test promote_symtype(∇, u) == PrimalForm{0, :X, 2}
 
-    @test_broken promote_symtype(Δ, [u,v])
+    @test isequal(del_expand_0(∇(u)), ★(d(★(d(u)))))
 
-    @test del_expand_0(u) == ★(d(★(d(u))))
+    # we will test is new operator
+    (r0, r1, r2) = @operator ρ(S)::DECQuantity begin
+        if S <: Form
+            Scalar
+        else
+            Form
+        end
+        @rule ρ(~x::isForm0) => 0
+        @rule ρ(~x::isForm1) => 1
+        @rule ρ(~x::isForm2) => 2
+    end
+
+    @test symtype(ρ(u)) == Scalar
+
+    R, = @operator φ(S1, S2, S3)::DECQuantity begin
+        let T1=S1, T2=S2, T3=S3
+            Scalar
+        end
+        @rule φ(2(~x::isForm0), 2(~y::isForm0), 2(~z::isForm0)) => 2*φ(~x,~y,~z)
+    end
+
+    # TODO we need to alias rewriting rules
+    @alias (φ′,) => φ
+
+    @test isequal(R(φ(2u,2u,2u)), R(φ′(2u,2u,2u)))
+
 end
 
 @testset "Conversion" begin

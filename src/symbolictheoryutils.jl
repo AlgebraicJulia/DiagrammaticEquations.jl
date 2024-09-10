@@ -7,13 +7,15 @@ function promote_symtype(f::ComposedFunction, args)
     promote_symtype(f.outer, promote_symtype(f.inner, args))
 end
 
-@active PatMatch(e) begin
+@active PatBlock(e) begin
     @match e begin
-        Expr(:macrocall, head, args...) && if head == Symbol("@", "match") end => Some(e)
+        Expr(:macrocall, name, args...) && if name == Symbol("@", "match") end => Some(e)
+        Expr(:block, args...) => Some(e)
+        Expr(:let, args...) => Some(e)
         _ => nothing
     end
 end
-export PatMatch
+export PatBlock
 
 @active PatRule(e) begin
     @match e begin
@@ -34,22 +36,26 @@ Creates an operator `foo` with arguments which are types in a given Theory. This
 ```
 @operator foo(S1, S2, ...)::Theory begin
     (body of function)
+    (@rule expr1)
+    ...
+    (@rule exprN)
 end     
 ```
 builds
 ```
-foo(::Type{S1}, ::Type{S2}, ...) where {S1<:ThDEC, S2<:ThDEC, ...}
+promote_symtype(::typeof{f}, ::Type{S1}, ::Type{S2}, ...) where {S1<:DECQuantity, S2<:DECQuantity, ...}
     (body of function)
 end
 ```
 as well as
 ```
-foo(S1::BasicSymbolic{T1}, S2::BasicSymbolic{T2}, ...) where {T1<:ThDEC, ...}
-    s = foo(T1, T2, ...)
+foo(S1, S2, ...) where {T1<:ThDEC, ...}
+    s = promote_symtype(f, S1, S2, ...)
     SymbolicUtils.Term{s}(foo, [S1, S2, ...])
 end
 ```
 
+Example:
 ```
 @operator Δ(s)::DECQuantity begin
     @match s begin
@@ -57,21 +63,9 @@ end
         ::VField => error("Invalid")
         ::Form => ⋆(d(⋆(d(s))))
     end
-    # @rule ~x --> ⋆(d(⋆(d(s))))
+    @rule ~s --> ⋆(d(⋆(d(~s))))
 end
 ```
-
-# relationship between
-#   - type-rewriting (via Metatheory)
-#   - pattern-matching (via MLStyle, e.g. active pattners)
-@operator Δ(s)::ThDEC begin
-    @rule Δ(s::PrimalForm{0, X, 1}) --> ⋆(d(⋆(d(s))))
-    @rule Δ(s::PrimalForm{1, X, 1}) --> ⋆(d(⋆(d(s))))
-    _ => nothing
-end
-        
-
-will create an additional method for Δ for operating on BasicSymbolic 
 """
 macro operator(head, body)
 
@@ -84,24 +78,19 @@ macro operator(head, body)
     (f, types, Theory) = ph(head)
 
     # Passing types to functions requires that we type the signature with ::Type{T}. 
-    # This means that the user would have to write
-    #   my_op(::Type{T1}, ::Type{T2}, ...)
-    # As a convenience to the user, we allow them to specify the signature using just the types themselves.
-    #   my_op(T1, T2, ...)
+    # This means that the user would have to write `my_op(::Type{T1}, ::Type{T2}, ...)`
+    # As a convenience to the user, we allow them to specify the signature using just the types themselves:
+    # `my_op(T1, T2, ...)`
     sort_types = [:(::Type{$S}) for S in types]
     sort_constraints = [:($S<:$Theory) for S in types]
     arity = length(sort_types)
 
-    # Parse the body for @match or @rule calls. The @match statement parsing is unsophisticated; multiple
-    # @match statements will be added, and there is currently no validation.
-    match_calls = []; rule_calls = [];
-    pb = @λ begin
-        Expr(:block, args...) => pb.(args)
-        PatMatch(e) => push!(match_calls, e)
-        PatRule(e) => push!(rule_calls, e)
+    # Parse the body for @rule calls. 
+    block, rulecalls = @match Base.remove_linenums!(body) begin
+        Expr(:block, block, rules...) => (block, rules)
         s => nothing
-    end; pb(body);
-
+    end
+    
     # initialize the result
     result = quote end
     
@@ -118,22 +107,18 @@ macro operator(head, body)
     # we want to feed symtype the generics
     push!(result.args, quote
         function SymbolicUtils.promote_symtype(::typeof($f), $(sort_types...)) where {$(sort_constraints...)}
-            $(match_calls...)
+            $block
         end
         function SymbolicUtils.promote_symtype(::typeof($f), args::Vararg{Symbolic, $arity})
             promote_symtype($f, symtype.(args)...)
         end
     end)
 
-    push!(result.args, Expr(:tuple, rule_calls...))
+    push!(result.args, Expr(:tuple, rulecalls...))
 
     return esc(result)
 end
 export @operator
-
-function alias(x)
-    error("$x has no aliases")
-end
 
 """
 Given a tuple of symbols ("aliases") and their canonical name (or "rep"), produces
@@ -159,4 +144,10 @@ macro alias(body)
     end
     result
 end
+export @alias
+
+function alias(x)
+    error("$x has no aliases")
+end
 export alias
+
