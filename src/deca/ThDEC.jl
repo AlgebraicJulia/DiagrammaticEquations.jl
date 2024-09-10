@@ -1,6 +1,7 @@
 module ThDEC
 
 using ..DiagrammaticEquations: @operator, @alias, Quantity
+import ..DiagrammaticEquations: rules
 
 using MLStyle
 using StructEquality
@@ -173,6 +174,8 @@ end
         PatForm(_) => promote_symtype(★ ∘ d ∘ ★ ∘ d, S)
         _ => throw(LaplacianError(S))
     end
+    @rule Δ(~x::isForm0) => ★(d(★(d(~x))))
+    @rule Δ(~x::isForm1) => ★(d(★(d(~x)))) + d(★(d(★(~x))))
 end
 
 @operator +(S1, S2)::DECQuantity begin

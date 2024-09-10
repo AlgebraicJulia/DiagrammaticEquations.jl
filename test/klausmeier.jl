@@ -38,31 +38,31 @@ Phytodynamics = parse_decapode(quote
   ∂ₜ(n) == w - m*n + Δ(n)
 end)
 
-symbmodel = SymbolicContext(Phytodynamics)
-dexpr = DecaExpr(symbmodel)
-symbmodel′ = SymbolicContext(dexpr)
+ps = SymbolicContext(Phytodynamics)
+dexpr = DecaExpr(ps)
+ps′ = SymbolicContext(dexpr)
 # TODO variables are the same but the equations don't match
 
 n = ps.vars[1]
 SymbolicUtils.symtype(n)
 Δ(n)
 
-r = @rule Δ(~n) => ⋆(d(⋆(d(~n))))
+r, _ = rules(Δ, Val(1));
 
 t2 = r(Δ(n))
 t2 |> dump
 
-
 using SymbolicUtils.Rewriters
 using SymbolicUtils: promote_symtype
-r = @rule ⋆(⋆(~n)) => ~n
+r = @rule ★(★(~n)) => ~n
+
 nested_star_cancel = Postwalk(Chain([r]))
-nested_star_cancel(d(⋆(⋆(n))))
+nested_star_cancel(d(★(★(n))))
 nsc = nested_star_cancel
 
-isequal(nsc(⋆(⋆(d(n)))), d(n))
-dump(nsc(⋆(⋆(d(n))))) 
+@test isequal(nsc(★(★(d(n)))), d(n))
+dump(nsc(★(★(d(n))))) 
 dump(d(n))
-⋆(⋆(d(⋆(⋆(n)))))
-nsc(⋆(⋆(d(⋆(⋆(n))))))
-nsc(nsc(⋆(⋆(d(⋆(⋆(n)))))))
+★(★(d(★(★(n)))))
+nsc(★(★(d(★(★(n))))))
+nsc(nsc(★(★(d(★(★(n)))))))

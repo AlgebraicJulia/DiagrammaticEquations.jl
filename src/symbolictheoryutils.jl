@@ -3,6 +3,9 @@ using SymbolicUtils
 using SymbolicUtils: Symbolic, BasicSymbolic, FnType, Sym, symtype
 import SymbolicUtils: promote_symtype
 
+function rules end
+export rules
+
 function promote_symtype(f::ComposedFunction, args)
     promote_symtype(f.outer, promote_symtype(f.inner, args))
 end
@@ -106,9 +109,18 @@ macro operator(head, body)
         export $f
     end)
 
+    if !isempty(rulecalls)
+        push!(result.args, quote
+            function rules(::typeof($f), ::Val{$arity})
+                [($(rulecalls...))]
+            end
+        end)
+    end
+
     # we want to feed symtype the generics
     push!(result.args, quote
-        function SymbolicUtils.promote_symtype(::typeof($f), $(sort_types...)) where {$(sort_constraints...)}
+        function SymbolicUtils.promote_symtype(::typeof($f),
+                $(sort_types...)) where {$(sort_constraints...)}
             $block
         end
         function SymbolicUtils.promote_symtype(::typeof($f), args::Vararg{Symbolic, $arity})
