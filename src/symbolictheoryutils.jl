@@ -52,7 +52,7 @@ end
 ```
 as well as
 ```
-foo(S1, S2, ...) where {T1<:ThDEC, ...}
+foo(S1, S2, ...) where {S1<:DECQuantity, ...}
     s = promote_symtype(f, S1, S2, ...)
     SymbolicUtils.Term{s}(foo, [S1, S2, ...])
 end
@@ -109,6 +109,7 @@ macro operator(head, body)
         export $f
     end)
 
+    # if there are rewriting rules, add a method which accepts the function symbol and its arity (to prevent shadowing on operators like `-`)
     if !isempty(rulecalls)
         push!(result.args, quote
             function rules(::typeof($f), ::Val{$arity})

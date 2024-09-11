@@ -51,9 +51,9 @@ function decapodes.Term(t::SymbolicUtils.BasicSymbolic)
         elseif op == ∂ₜ
             decapodes.Tan(only(termargs))
         elseif length(args) == 1
-            decapodes.App1(nameof(op, args...), termargs...)
+            decapodes.App1(nameof(op, symtype.(args)...), termargs...)
         elseif length(args) == 2
-            decapodes.App2(nameof(op, args...), termargs...)
+            decapodes.App2(nameof(op, symtype.(args)...), termargs...)
         else
             error("was unable to convert $t into a Term")
         end

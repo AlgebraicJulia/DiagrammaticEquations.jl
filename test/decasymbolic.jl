@@ -30,11 +30,7 @@ u, v = @syms u::PrimalForm{0, :X, 2} du::PrimalForm{1, :X, 2}
     @test Term(1) == Lit(Symbol("1"))
     @test Term(a) == Var(:a)
     @test Term(∂ₜ(u)) == Tan(Var(:u))
-    @test_broken Term(⋆(ω)) == App1(:⋆₁, Var(:ω))
-    # @test_broken Term(ThDEC.♭(ψ)) == App1(:♭s, Var(:ψ)) 
-    # @test Term(DiagrammaticEquations.ThDEC.♯(du))
-    
-    # @test_throws ThDEC.SortError ThDEC.⋆(ϕ)
+    @test Term(★(ω)) == App1(:★₁, Var(:ω))
     
     # test binary operator conversion to decaexpr
     @test Term(a + b) == Plus(Term[Var(:a), Var(:b)])
