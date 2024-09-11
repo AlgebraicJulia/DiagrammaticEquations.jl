@@ -1,45 +1,97 @@
 using Test
 using DiagrammaticEquations
-using DiagrammaticEquations.ThDEC
+using DiagrammaticEquations.Deca.ThDEC
 using DiagrammaticEquations.decapodes
 using SymbolicUtils
-# what space are we working in?
-X = Space(:X, 2)
-lookup = SpaceLookup(X)
+using SymbolicUtils: symtype, promote_symtype, Symbolic
+using MLStyle
 
 # load up some variable variables and expressions
-a, b = @syms a::Real b::Real
-u, v = @syms u::PrimalFormT{0, :X, 2} du::PrimalFormT{1, :X, 2}
-ω, η = @syms ω::PrimalFormT{1, :X, 2} η::DualFormT{2, :X, 2}
-ϕ, ψ = @syms ϕ::PrimalVFT{:X, 2} ψ::DualVFT{:X, 2}
+a, b = @syms a::Scalar b::Scalar
+u, v = @syms u::PrimalForm{0, :X, 2} du::PrimalForm{1, :X, 2}
+ω, η = @syms ω::PrimalForm{1, :X, 2} η::DualForm{2, :X, 2}
+ϕ, ψ = @syms ϕ::PrimalVF{:X, 2} ψ::DualVF{:X, 2}
 # TODO would be nice to pass the space globally to avoid duplication
 
 @testset "Term Construction" begin
-  
-    # test conversion to underlying type
-    @test Sort(a) == Scalar()
-    @test Sort(u) == PrimalForm(0, X)
-    @test Sort(ω) == PrimalForm(1, X)
-    @test Sort(η) == DualForm(2, X)
-    @test Sort(ϕ) == PrimalVF(X)
-    @test Sort(ψ) == DualVF(X)
+ 
+    @test symtype(a) == Scalar
+    @test symtype(u) == PrimalForm{0, :X, 2}
+    @test symtype(ω) == PrimalForm{1, :X, 2}
+    @test symtype(η) == DualForm{2, :X, 2}
+    @test symtype(ϕ) == PrimalVF{:X, 2}
+    @test symtype(ψ) == DualVF{:X, 2}
 
-    @test_throws ThDEC.SortError ThDEC.♯(u)
+    @test symtype(u ∧ ω) == PrimalForm{1, :X, 2}
+    @test symtype(ω ∧ ω) == PrimalForm{2, :X, 2}
+    # @test_throws ThDEC.SortError ThDEC.♯(u)
 
     # test unary operator conversion to decaexpr
-    @test Term(1) == DiagrammaticEquations.decapodes.Lit(Symbol("1"))
+    @test Term(1) == Lit(Symbol("1"))
     @test Term(a) == Var(:a)
-    @test Term(ThDEC.∂ₜ(u)) == Tan(Var(:u))
-    @test Term(ThDEC.⋆(ω)) == App1(:⋆₁, Var(:ω))
-    @test_broken Term(ThDEC.♭(ψ)) == App1(:♭s, Var(:ψ)) 
-    # @test Term(DiagrammaticEquations.ThDEC.♯(du))
-    
-    @test_throws ThDEC.SortError ThDEC.⋆(ϕ)
+    @test Term(∂ₜ(u)) == Tan(Var(:u))
+    @test Term(★(ω)) == App1(:★₁, Var(:ω))
     
     # test binary operator conversion to decaexpr
     @test Term(a + b) == Plus(Term[Var(:a), Var(:b)])
-    @test Term(a * b) == DiagrammaticEquations.decapodes.Mult(Term[Var(:a), Var(:b)])
-    @test Term(ThDEC.:∧(ω, du)) == App2(:∧₁₁, Var(:ω), Var(:du)) 
+    @test Term(a * b) == Mult(Term[Var(:a), Var(:b)])
+    @test Term(ω ∧ du) == App2(:∧₁₁, Var(:ω), Var(:du))
+
+    # test promoting types
+    @test promote_symtype(d, u) == PrimalForm{1, :X, 2}
+    @test promote_symtype(+, a, b) == Scalar
+    @test promote_symtype(∧, u, u) == PrimalForm{0, :X, 2}
+    @test promote_symtype(∧, u, ω) == PrimalForm{1, :X, 2}
+
+    # test composition
+    @test promote_symtype(d ∘ d, u) == PrimalForm{2, :X, 2}
+
+end
+
+@testset "Operator definition" begin
+
+    # this is not nabla but "bizarro Δ"
+    del_expand_0, del_expand_1 = 
+    @operator ∇(S)::DECQuantity begin
+        @match S begin
+            PatScalar(_) => error("Argument of type $S is invalid")
+            PatForm(_) => promote_symtype(★ ∘ d ∘ ★ ∘ d, S)
+        end
+        @rule ∇(~x::isForm0) => ★(d(★(d(~x))))
+        @rule ∇(~x::isForm1) => ★(d(★(d(~x)))) + d(★(d(★(~x))))
+    end;
+
+    @test_throws Exception ∇(b)
+    @test symtype(∇(u)) == PrimalForm{0, :X ,2}
+    @test promote_symtype(∇, u) == PrimalForm{0, :X, 2}
+
+    @test isequal(del_expand_0(∇(u)), ★(d(★(d(u)))))
+
+    # we will test is new operator
+    (r0, r1, r2) = @operator ρ(S)::DECQuantity begin
+        if S <: Form
+            Scalar
+        else
+            Form
+        end
+        @rule ρ(~x::isForm0) => 0
+        @rule ρ(~x::isForm1) => 1
+        @rule ρ(~x::isForm2) => 2
+    end
+
+    @test symtype(ρ(u)) == Scalar
+
+    R, = @operator φ(S1, S2, S3)::DECQuantity begin
+        let T1=S1, T2=S2, T3=S3
+            Scalar
+        end
+        @rule φ(2(~x::isForm0), 2(~y::isForm0), 2(~z::isForm0)) => 2*φ(~x,~y,~z)
+    end
+
+    # TODO we need to alias rewriting rules
+    @alias (φ′,) => φ
+
+    @test isequal(R(φ(2u,2u,2u)), R(φ′(2u,2u,2u)))
 
 end
 

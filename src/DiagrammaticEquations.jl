@@ -61,13 +61,12 @@ include("rewrite.jl")
 include("pretty.jl")
 include("colanguage.jl")
 include("openoperators.jl")
+include("symbolictheoryutils.jl")
 include("deca/Deca.jl")
 include("learn/Learn.jl")
-include("ThDEC.jl")
-include("decasymbolic.jl")
+include("SymbolicUtilsInterop.jl")
 
-@reexport using .ThDEC
-@reexport using .SymbolicUtilsInterop
 @reexport using .Deca
+@reexport using .SymbolicUtilsInterop
 
 end

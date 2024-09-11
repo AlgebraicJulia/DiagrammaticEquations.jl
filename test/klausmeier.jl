@@ -1,17 +1,17 @@
 using DiagrammaticEquations
 using DiagrammaticEquations.SymbolicUtilsInterop
-
+#
 using Test
 using MLStyle
 using SymbolicUtils
-using SymbolicUtils: BasicSymbolic
+using SymbolicUtils: BasicSymbolic, symtype
 
 # See Klausmeier Equation 2.a
 Hydrodynamics = @decapode begin
   (n,w)::DualForm0
   dX::Form1
   (a,ν)::Constant
-
+  #
   ∂ₜ(w) == a - w - w * n^2 + ν * L(dX, w)
 end
 
@@ -19,7 +19,7 @@ end
 Phytodynamics = @decapode begin
   (n,w)::DualForm0
   m::Constant
-
+  #
   ∂ₜ(n) == w * n^2 - m*n + Δ(n)
 end
 
@@ -27,13 +27,9 @@ Hydrodynamics = parse_decapode(quote
   (n,w)::DualForm0
   dX::Form1
   (a,ν)::Constant
-
+  #
   ∂ₜ(w) == a - w - w  + ν * L(dX, w)
 end)
-
-X = Space(:X, 2)
-lookup = SpaceLookup(X)
-# DecaSymbolic(lookup, Hydrodynamics)
 
 # See Klausmeier Equation 2.b
 Phytodynamics = parse_decapode(quote
@@ -42,19 +38,31 @@ Phytodynamics = parse_decapode(quote
   ∂ₜ(n) == w - m*n + Δ(n)
 end)
 
-import .ThDEC: d, ⋆, SortError
+ps = SymbolicContext(Phytodynamics)
+dexpr = DecaExpr(ps)
+ps′ = SymbolicContext(dexpr)
+# TODO variables are the same but the equations don't match
 
-@register Δ(s::Sort) begin
-    @match s begin
-        ::Scalar => throw(SortError("Scalar"))
-        ::VField => throw(SortError("Nay!"))
-        ::Form => ⋆(d(⋆(d(s))))
-    end
-end
+n = ps.vars[1]
+SymbolicUtils.symtype(n)
+Δ(n)
 
-ω, = @syms ω::PrimalFormT{1, :X, 2}
+r, _ = rules(Δ, Val(1));
 
-@test Δ(PrimalForm(1, X)) == PrimalForm(1, X)
-@test Δ(ω) |> typeof == BasicSymbolic{PrimalFormT{1, :X, 2}}
+t2 = r(Δ(n))
+t2 |> dump
 
-DecaSymbolic(lookup, Phytodynamics)
+using SymbolicUtils.Rewriters
+using SymbolicUtils: promote_symtype
+r = @rule ★(★(~n)) => ~n
+
+nested_star_cancel = Postwalk(Chain([r]))
+nested_star_cancel(d(★(★(n))))
+nsc = nested_star_cancel
+
+@test isequal(nsc(★(★(d(n)))), d(n))
+dump(nsc(★(★(d(n))))) 
+dump(d(n))
+★(★(d(★(★(n)))))
+nsc(★(★(d(★(★(n))))))
+nsc(nsc(★(★(d(★(★(n)))))))
