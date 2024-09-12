@@ -4,9 +4,9 @@ using DataStructures
 using ..DiagrammaticEquations
 using Catlab
 
-import ..infer_types!, ..resolve_overloads!
+import ..infer_types!, ..resolve_overloads!, ..rewrite!
 
-export normalize_unicode, varname, infer_types!, resolve_overloads!, typename, spacename, recursive_delete_parents, recursive_delete_parents!, unicode!, op1_res_rules_1D, op2_res_rules_1D, op1_res_rules_2D, op2_res_rules_2D, op1_inf_rules_1D, op2_inf_rules_1D, op1_inf_rules_2D, op2_inf_rules_2D, vec_to_dec!
+export normalize_unicode, varname, infer_types!, resolve_overloads!, rewrite!, typename, spacename, recursive_delete_parents, recursive_delete_parents!, unicode!, op1_res_rules_1D, op2_res_rules_1D, op1_res_rules_2D, op2_res_rules_2D, op1_inf_rules_1D, op2_inf_rules_1D, op1_inf_rules_2D, op2_inf_rules_2D, vec_to_dec!
 
 include("deca_acset.jl")
 include("deca_visualization.jl")
