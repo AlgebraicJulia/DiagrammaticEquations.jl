@@ -6,12 +6,19 @@ using Catlab.ACSetInterface
 
 using Reexport
 
-import ..infer_types!, ..resolve_overloads!, ..type_check, ..infer_resolve!
+import ..infer_types!, ..resolve_overloads!, ..type_check, ..infer_resolve!, ..rewrite!
 import ..arithmetic_operators, ..same_type_rules_op
 
-export normalize_unicode, varname, infer_types!, resolve_overloads!, type_check, infer_resolve!,
-typename, spacename, recursive_delete_parents, recursive_delete_parents!, unicode!, vec_to_dec!,
-op1_operators, op1_1D_bound_operators, op1_2D_bound_operators, op2_operators, default_operators
+export normalize_unicode, varname, infer_types!, resolve_overloads!, type_check,
+infer_resolve!, typename, spacename, recursive_delete_parents,
+recursive_delete_parents!, unicode!, vec_to_dec!, op1_operators,
+op1_1D_bound_operators, op1_2D_bound_operators, op2_operators, default_operators
+
+export normalize_unicode, varname, infer_types!, resolve_overloads!, type_check,
+infer_resolve!, typename, spacename, recursive_delete_parents,
+recursive_delete_parents!, unicode!, vec_to_dec!, op1_operators,
+op1_1D_bound_operators, op1_2D_bound_operators, op2_operators, default_operators,
+rewrite!
 
 include("deca_acset.jl")
 include("deca_visualization.jl")
