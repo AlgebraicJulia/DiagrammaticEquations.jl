@@ -6,6 +6,7 @@ import SymbolicUtils: promote_symtype
 function rules end
 export rules
 
+# TODO: Probable piracy here
 function promote_symtype(f::ComposedFunction, args)
     promote_symtype(f.outer, promote_symtype(f.inner, args))
 end
