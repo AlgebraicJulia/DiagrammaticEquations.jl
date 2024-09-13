@@ -59,4 +59,20 @@ d_0 = @rule d(0) => 0
 optm_rewriter = SymbolicUtils.Postwalk(
   SymbolicUtils.Fixpoint(SymbolicUtils.Chain([optm_dd_0, star_0, d_0])))
 
-optm_rewriter(merge_exprs[1])
+res_merge_exprs = map(optm_rewriter, merge_exprs)
+
+final_exprs = SymbolicUtils.Code.toexpr.(res_merge_exprs)
+map(x -> x.args[1] = :(==), final_exprs)
+
+to_decapode = quote
+  C::Form0
+  D::Constant
+  Ċ::Form0
+end
+
+append!(to_decapode.args, final_exprs)
+
+test = parse_decapode(to_decapode)
+deca_test = SummationDecapode(test)
+infer_types!(deca_test)
+resolve_overloads!(deca_test)

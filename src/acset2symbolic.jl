@@ -126,6 +126,29 @@ function recursive_descent(expr, lookup)
   return expr
 end
 
+function to_acset(og_d, sym_exprs)
+  final_exprs = SymbolicUtils.Code.toexpr.(sym_exprs)
+  map(x -> x.args[1] = :(==), final_exprs)
+
+  deca_block = quote end
+
+  states = infer_states(og_d)
+  terminals = infer_terminals(og_d)
+
+  deca_type_gen = idx -> :($(og_d[idx, :name])::$(og_d[idx, :type]))
+
+  append!(deca_block.args, map(deca_type_gen, vcat(states, terminals)))
+
+  append!(deca_block.args, final_exprs)
+
+  d = SummationDecapode(parse_decapode(deca_block))
+
+  infer_types!(d)
+  resolve_overloads!(d)
+
+  d
+end
+
 # TODO: We need a way to get information like the d and ⋆ even when not in the ACSet
 # @syms Δ(x) d(x) ⋆(x)
 # lap_0_rule = @rule Δ(~x) => ⋆(d(⋆(d(~x))))
