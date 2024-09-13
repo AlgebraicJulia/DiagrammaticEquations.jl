@@ -4,9 +4,7 @@ using SymbolicUtils.Rewriters
 using SymbolicUtils.Code
 using MLStyle
 
-import DiagrammaticEquations.ThDEC: Space
-
-export extract_symexprs, apply_rewrites, merge_equations
+export extract_symexprs, apply_rewrites, merge_equations, to_acset
 
 const DECA_EQUALITY_SYMBOL = (==)
 
@@ -17,8 +15,8 @@ function to_symbolics(d::SummationDecapode, op_index::Int, ::Val{:Op1})
   output_sym = SymbolicUtils.Sym{Number}(d[d[op_index, :tgt], :name])
   op_sym = SymbolicUtils.Sym{(SymbolicUtils.FnType){Tuple{Number}, Number}}(d[op_index, :op1])
 
-  input_sym = setmetadata(input_sym, Sort, oldtype_to_new(d[d[op_index, :src], :type]))
-  output_sym = setmetadata(output_sym, Sort, oldtype_to_new(d[d[op_index, :tgt], :type]))
+  # input_sym = setmetadata(input_sym, Sort, oldtype_to_new(d[d[op_index, :src], :type]))
+  # output_sym = setmetadata(output_sym, Sort, oldtype_to_new(d[d[op_index, :tgt], :type]))
 
   rhs = SymbolicUtils.Term{Number}(op_sym, [input_sym])
   SymbolicUtils.Term{Number}(DECA_EQUALITY_SYMBOL, [output_sym, rhs])
@@ -30,9 +28,9 @@ function to_symbolics(d::SummationDecapode, op_index::Int, ::Val{:Op2})
   output_sym = SymbolicUtils.Sym{Number}(d[d[op_index, :res], :name])
   op_sym = SymbolicUtils.Sym{(SymbolicUtils.FnType){Tuple{Number, Number}, Number}}(d[op_index, :op2])
 
-  input1_sym = setmetadata(input1_sym, Sort, oldtype_to_new(d[d[op_index, :proj1], :type]))
-  input2_sym = setmetadata(input2_sym, Sort, oldtype_to_new(d[d[op_index, :proj2], :type]))
-  output_sym = setmetadata(output_sym, Sort, oldtype_to_new(d[d[op_index, :res], :type]))
+  # input1_sym = setmetadata(input1_sym, Sort, oldtype_to_new(d[d[op_index, :proj1], :type]))
+  # input2_sym = setmetadata(input2_sym, Sort, oldtype_to_new(d[d[op_index, :proj2], :type]))
+  # output_sym = setmetadata(output_sym, Sort, oldtype_to_new(d[d[op_index, :res], :type]))
 
   rhs = SymbolicUtils.Term{Number}(op_sym, [input1_sym, input2_sym])
   SymbolicUtils.Term{Number}(DECA_EQUALITY_SYMBOL, [output_sym, rhs])
@@ -43,20 +41,20 @@ end
 #   Expr(EQUALITY_SYMBOL, c.output, Expr(:call, Expr(:., :+), c.inputs...))
 # end
 
-function oldtype_to_new(old::Symbol, space::Space = Space(:I, 2))::Sort
-  @match old begin
-    :Form0 => PrimalForm(0, space)
-    :Form1 => PrimalForm(1, space)
-    :Form2 => PrimalForm(2, space)
+# function oldtype_to_new(old::Symbol, space::Space = Space(:I, 2))::Sort
+#   @match old begin
+#     :Form0 => PrimalForm(0, space)
+#     :Form1 => PrimalForm(1, space)
+#     :Form2 => PrimalForm(2, space)
 
-    :DualForm0 => DualForm(0, space)
-    :DualForm1 => DualForm(1, space)
-    :DualForm2 => DualForm(2, space)
+#     :DualForm0 => DualForm(0, space)
+#     :DualForm1 => DualForm(1, space)
+#     :DualForm2 => DualForm(2, space)
 
-    :Constant => Scalar()
-    :Parameter => Scalar()
-  end
-end
+#     :Constant => Scalar()
+#     :Parameter => Scalar()
+#   end
+# end
 
 function extract_symexprs(d::SummationDecapode)
   topo_list = topological_sort_edges(d)
@@ -88,7 +86,7 @@ function merge_equations(d::SummationDecapode, rewritten_syms)
 
   for node in start_nodes(d)
     sym = SymbolicUtils.Sym{Number}(d[node, :name])
-    sym = setmetadata(sym, Sort, oldtype_to_new(d[node, :type]))
+    # sym = setmetadata(sym, Sort, oldtype_to_new(d[node, :type]))
     push!(lookup, (sym => sym))
   end
 
@@ -148,8 +146,3 @@ function to_acset(og_d, sym_exprs)
 
   d
 end
-
-# TODO: We need a way to get information like the d and ⋆ even when not in the ACSet
-# @syms Δ(x) d(x) ⋆(x)
-# lap_0_rule = @rule Δ(~x) => ⋆(d(⋆(d(~x))))
-# rewriter = Postwalk(RestartedChain([lap_0_rule]))
