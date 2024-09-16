@@ -67,6 +67,6 @@ function retrieve_name(d::SummationDecapode, tsr::TraversalNode)
     :Op1 => d[tsr.index, :op1]
     :Op2 => d[tsr.index, :op2]
     :Σ => :+
-    _ => error("$(tsr.name) is not a valid table for names")
+    _ => error("$(tsr.name) is a table without names")
   end
 end
