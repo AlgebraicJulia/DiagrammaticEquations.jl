@@ -195,7 +195,9 @@ end
     end
 end
 
-@operator -(S1, S2)::DECQuantity begin +(S1, S2) end
+@operator -(S1, S2)::DECQuantity begin
+    promote_symtype(+, S1, S2)
+end
 
 @operator *(S1, S2)::DECQuantity begin
     @match (S1, S2) begin
