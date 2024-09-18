@@ -4,47 +4,71 @@ using MLStyle
 
 Heat = @decapode begin
   C::Form0
+  G::Form1
   D::Constant
-  ∂ₜ(C) == D*Δ(d(C))
+  ∂ₜ(G) == D*Δ(d(C))
 end
 
 infer_types!(Heat)
-resolve_overloads!(Heat)
 
-@syms Δ(x) d(x) ⋆(x) Δ₀(x) Δ₁(x) Δ₂(x) d₀(x)
+Brusselator = @decapode begin
+  (U, V)::Form0
+  U2V::Form0
+  (U̇, V̇)::Form0
 
-lap_0_convert = @rule Δ₀(~x) => Δ(~x)
-lap_1_convert = @rule Δ₁(~x) => Δ(~x)
-lap_2_convert = @rule Δ₂(~x) => Δ(~x)
+  (α)::Constant
+  F::Parameter
 
-d_0_convert = @rule d₀(~x) => d(~x)
+  U2V == (U .* U) .* V
 
-overloaders = [lap_0_convert, lap_1_convert, lap_2_convert, d_0_convert]
+  U̇ == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
+  V̇ == (3.4 * U) - U2V + (α * Δ(V))
+  ∂ₜ(U) == U̇
+  ∂ₜ(V) == V̇
+end
+infer_types!(Brusselator)
 
-lap_0_rule = @rule Δ(~x) => ⋆(d(⋆(d(~x))))
-lap_1_rule = @rule Δ(~x) => d(⋆(d(⋆(~x)))) + ⋆(d(⋆(d(~x))))
-lap_2_rule = @rule Δ(~x) => d(⋆(d(⋆(~x))))
+Phytodynamics = @decapode begin
+  (n,w)::Form0
+  m::Constant
+  ∂ₜ(n) == w + m*n + Δ(n)
+end
+infer_types!(Phytodynamics)
+test = to_acset(Phytodynamics, symbolic_rewriting(Phytodynamics))
 
-openers = [lap_0_rule, lap_1_rule, lap_2_rule]
+# resolve_overloads!(Heat)
 
-heat_exprs = extract_symexprs(Heat)
+# lap_0_convert = @rule Δ₀(~x) => Δ(~x)
+# lap_1_convert = @rule Δ₁(~x) => Δ(~x)
+# lap_2_convert = @rule Δ₂(~x) => Δ(~x)
 
-rewriter = SymbolicUtils.Postwalk(
-            SymbolicUtils.Fixpoint(SymbolicUtils.Chain(vcat(overloaders, openers))))
+# d_0_convert = @rule d₀(~x) => d(~x)
 
-res_exprs =  apply_rewrites(Heat, rewriter)
+# overloaders = [lap_0_convert, lap_1_convert, lap_2_convert, d_0_convert]
 
-merge_exprs = merge_equations(Heat, res_exprs)
+# lap_0_rule = @rule Δ(~x) => ⋆(d(⋆(d(~x))))
+# lap_1_rule = @rule Δ(~x) => d(⋆(d(⋆(~x)))) + ⋆(d(⋆(d(~x))))
+# lap_2_rule = @rule Δ(~x) => d(⋆(d(⋆(~x))))
+
+# openers = [lap_0_rule, lap_1_rule, lap_2_rule]
+
+r = rules(Δ, Val(1))
+
+heat_exprs = symbolic_rewriting(Heat)
+
+rewriter = SymbolicUtils.Fixpoint(SymbolicUtils.Prewalk(test_rule))
+
+res_exprs =  apply_rewrites(heat_exprs, rewriter)
 
 optm_dd_0 = @rule d(d(~x)) => 0
-star_0 = @rule ⋆(0) => 0
+star_0 = @rule ★(0) => 0
 d_0 = @rule d(0) => 0
 
 optm_rewriter = SymbolicUtils.Postwalk(
   SymbolicUtils.Fixpoint(SymbolicUtils.Chain([optm_dd_0, star_0, d_0])))
 
-res_merge_exprs = map(optm_rewriter, merge_exprs)
+res_merge_exprs = map(optm_rewriter, res_exprs)
 
-deca_test = to_acset(Heat, res_merge_exprs)
+deca_test = to_acset(Heat, res_exprs)
 infer_types!(deca_test)
 resolve_overloads!(deca_test)

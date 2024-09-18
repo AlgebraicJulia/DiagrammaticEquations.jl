@@ -178,6 +178,8 @@ end
     @rule Δ(~x::isForm1) => ★(d(★(d(~x)))) + d(★(d(★(~x))))
 end
 
+@alias (Δ₀, Δ₁, Δ₂) => Δ
+
 @operator +(S1, S2)::DECQuantity begin
     @match (S1, S2) begin
         (PatScalar(_), PatScalar(_)) => Scalar
