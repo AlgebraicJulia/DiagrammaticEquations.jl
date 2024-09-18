@@ -180,8 +180,8 @@ end
 
 @operator +(S1, S2)::DECQuantity begin
     @match (S1, S2) begin
-        (PatScalar, PatScalar) => Scalar
-        (PatScalar, PatFormParams([i,d,s,n])) || (PatFormParams([i,d,s,n]), PatScalar) => S1 # commutativity
+        (PatScalar(_), PatScalar(_)) => Scalar
+        (PatScalar(_), PatFormParams([i,d,s,n])) || (PatFormParams([i,d,s,n]), PatScalar(_)) => S1 # commutativity
         (PatFormParams([i1,d1,s1,n1]), PatFormParams([i2,d2,s2,n2])) => begin
             if (i1 == i2) && (d1 == d2) && (s1 == s2) && (n1 == n2)
                 Form{i1, d1, s1, n1}
@@ -197,8 +197,8 @@ end
 
 @operator *(S1, S2)::DECQuantity begin
     @match (S1, S2) begin
-        (Scalar, Scalar) => Scalar
-        (Scalar, PatFormParams([i,d,s,n])) || (PatFormParams([i,d,s,n]), Scalar) => Form{i,d,s,n}
+        (PatScalar(_), PatScalar(_)) => Scalar
+        (PatScalar(_), PatFormParams([i,d,s,n])) || (PatFormParams([i,d,s,n]), PatScalar(_)) => Form{i,d,s,n}
         _ => throw(BinaryOpError("multiply", S1, S2))
     end
 end

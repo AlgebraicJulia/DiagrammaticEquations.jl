@@ -13,6 +13,7 @@ u, v = @syms u::PrimalForm{0, :X, 2} du::PrimalForm{1, :X, 2}
 ϕ, ψ = @syms ϕ::PrimalVF{:X, 2} ψ::DualVF{:X, 2}
 # TODO would be nice to pass the space globally to avoid duplication
 
+
 @testset "Term Construction" begin
  
     @test symtype(a) == Scalar
@@ -25,6 +26,7 @@ u, v = @syms u::PrimalForm{0, :X, 2} du::PrimalForm{1, :X, 2}
     @test symtype(u ∧ ω) == PrimalForm{1, :X, 2}
     @test symtype(ω ∧ ω) == PrimalForm{2, :X, 2}
     # @test_throws ThDEC.SortError ThDEC.♯(u)
+    @test symtype(Δ(u) + Δ(u)) == PrimalForm{0, :X, 2}
 
     # test unary operator conversion to decaexpr
     @test Term(1) == Lit(Symbol("1"))
@@ -36,7 +38,7 @@ u, v = @syms u::PrimalForm{0, :X, 2} du::PrimalForm{1, :X, 2}
     @test Term(a + b) == Plus(Term[Var(:a), Var(:b)])
     @test Term(a * b) == Mult(Term[Var(:a), Var(:b)])
     @test Term(ω ∧ du) == App2(:∧₁₁, Var(:ω), Var(:du))
-
+ 
     # test promoting types
     @test promote_symtype(d, u) == PrimalForm{1, :X, 2}
     @test promote_symtype(+, a, b) == Scalar
