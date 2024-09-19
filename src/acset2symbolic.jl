@@ -33,12 +33,12 @@ function to_symbolics(d::SummationDecapode, symvar_lookup::Dict{Symbol, Symbolic
 
   op_sym = getfield(@__MODULE__, d[op_index, :op1])
 
-  @info typeof(op_sym)
-
-  rhs = SymbolicUtils.Term{Number}(op_sym, [input_sym])
+  S = promote_symtype(op_sym, input_sym)
+  rhs = SymbolicUtils.Term{S}(op_sym, [input_sym])
   SymbolicUtils.Term{Number}(DECA_EQUALITY_SYMBOL, [output_sym, rhs])
 end
 
+# TODO add promote_symtype as Op1
 function to_symbolics(d::SummationDecapode, symvar_lookup::Dict{Symbol, SymbolicUtils.BasicSymbolic}, op_index::Int, ::Val{:Op2})
   input1_sym = symvar_lookup[d[d[op_index, :proj1], :name]]
   input2_sym = symvar_lookup[d[d[op_index, :proj2], :name]]
@@ -47,7 +47,8 @@ function to_symbolics(d::SummationDecapode, symvar_lookup::Dict{Symbol, Symbolic
 
   op_sym = getfield(@__MODULE__, d[op_index, :op2])
 
-  rhs = SymbolicUtils.Term{Number}(op_sym, [input1_sym, input2_sym])
+  S = promote_symtype(op_sym, input1_sym, input2_sym)
+  rhs = SymbolicUtils.Term{S}(op_sym, [input1_sym, input2_sym])
   SymbolicUtils.Term{Number}(DECA_EQUALITY_SYMBOL, [output_sym, rhs])
 end
 
@@ -56,7 +57,9 @@ function to_symbolics(d::SummationDecapode, symvar_lookup::Dict{Symbol, Symbolic
   syms_array = [symvar_lookup[var] for var in d[d[incident(d, op_index, :summation), :summand], :name]]
   output_sym = symvar_lookup[d[d[op_index, :sum], :name]]
 
-  rhs = SymbolicUtils.Term{Number}(+, syms_array)
+  # TODO pls test
+  S = promote_symtype(+, syms_array...)
+  rhs = SymbolicUtils.Term{S}(+, syms_array)
   SymbolicUtils.Term{Number}(DECA_EQUALITY_SYMBOL, [output_sym, rhs])
 end
 
