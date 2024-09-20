@@ -8,9 +8,15 @@ Heat = @decapode begin
   C::Form0
   G::Form1
   D::Constant
-  ∂ₜ(G) == D*Δ(d(C))
+  ∂ₜ(G) == D*Δ(C)
 end;
 infer_types!(Heat)
+test_heat_same = symbolic_rewriting(Heat)
+
+r = rules(Δ, Val(1))
+
+rwr = Fixpoint(Prewalk(Chain(r)))
+test_heat_open = symbolic_rewriting(Heat, rwr)
 
 Brusselator = @decapode begin
   (U, V)::Form0
@@ -35,24 +41,7 @@ Phytodynamics = @decapode begin
   ∂ₜ(n) == w + m*n + Δ(n)
 end
 infer_types!(Phytodynamics)
-test = to_acset(Phytodynamics, symbolic_rewriting(Phytodynamics))
-
-# resolve_overloads!(Heat)
-
-# lap_0_convert = @rule Δ₀(~x) => Δ(~x)
-# lap_1_convert = @rule Δ₁(~x) => Δ(~x)
-# lap_2_convert = @rule Δ₂(~x) => Δ(~x)
-
-# d_0_convert = @rule d₀(~x) => d(~x)
-
-# overloaders = [lap_0_convert, lap_1_convert, lap_2_convert, d_0_convert]
-
-# lap_0_rule = @rule Δ(~x) => ⋆(d(⋆(d(~x))))
-# lap_1_rule = @rule Δ(~x) => d(⋆(d(⋆(~x)))) + ⋆(d(⋆(d(~x))))
-# lap_2_rule = @rule Δ(~x) => d(⋆(d(⋆(~x))))
-
-# openers = [lap_0_rule, lap_1_rule, lap_2_rule]
-
+test_phy = symbolic_rewriting(Phytodynamics)
 
 # it seems that type-instability or improper type promotion is happening. expressions derived from this have BasicSymbolic{Number} type, which means we can't conditionally rewrite on forms.
 heat_exprs = symbolic_rewriting(Heat)
@@ -102,8 +91,6 @@ R1 = @rule Δ(~~x::(x->isForm1(x))) => ★(d(★(d(~x))))
 
 # pulling out the subexpression
 rewriter = SymbolicUtils.Fixpoint(SymbolicUtils.Prewalk(SymbolicUtils.Chain(r)))
-
-
 
 res_exprs =  apply_rewrites(heat_exprs, rewriter)
 sub_exprs =  apply_rewrites([sub], rewriter)

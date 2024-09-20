@@ -1,7 +1,7 @@
 using DiagrammaticEquations
 using ACSets
 
-export TraversalNode, topological_sort_edges, number_of_ops, retrieve_name, start_nodes
+export TraversalNode, topological_sort_edges, n_ops, retrieve_name, start_nodes
 
 struct TraversalNode{T}
   index::Int
@@ -20,7 +20,7 @@ function topological_sort_edges(d::SummationDecapode)
   # FIXME: this is a quadratic implementation of topological_sort inlined in here.
   op_order = TraversalNode{Symbol}[]
 
-  for _ in 1:number_of_ops(d)
+  for _ in 1:n_ops(d)
     for op in parts(d, :Op1)
       if !visited_1[op] && visited_Var[d[op, :src]]
 
@@ -49,12 +49,12 @@ function topological_sort_edges(d::SummationDecapode)
     end
   end
 
-  @assert length(op_order) == number_of_ops(d)
+  @assert length(op_order) == n_ops(d)
 
   op_order
 end
 
-function number_of_ops(d::SummationDecapode)
+function n_ops(d::SummationDecapode)
   return nparts(d, :Op1) + nparts(d, :Op2) + nparts(d, :Σ)
 end
 
