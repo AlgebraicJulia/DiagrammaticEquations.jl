@@ -29,7 +29,8 @@ abstract type AbstractScalar <: DECQuantity end
 struct Scalar <: AbstractScalar end
 struct Parameter <: AbstractScalar end
 struct ConstScalar <: AbstractScalar end
-export Scalar, Parameter, ConstScalar
+struct Literal <: AbstractScalar end
+export Scalar, Parameter, ConstScalar, Literal
 
 struct FormParams
     dim::Int
@@ -227,8 +228,7 @@ end
 
 abstract type SortError <: Exception end
 
-# struct WedgeDimError <: SortError end
-
+Base.nameof(s::Literal) = :Literal
 Base.nameof(s::ConstScalar) = :ConstScalar
 Base.nameof(s::Parameter) = :Parameter
 Base.nameof(s::Scalar) = :Scalar
@@ -276,8 +276,9 @@ end
 function SymbolicUtils.symtype(::Type{<:Quantity}, qty::Symbol, space::Symbol)
     @match qty begin
         :Scalar => Scalar
-        :ConstScalar => ConstScalar
+        :Constant => ConstScalar
         :Parameter => Parameter
+        :Literal => Literal
         :Form0 => PrimalForm{0, space, 1}
         :Form1 => PrimalForm{1, space, 1}
         :Form2 => PrimalForm{2, space, 1}

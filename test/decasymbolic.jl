@@ -7,6 +7,7 @@ using SymbolicUtils: symtype, promote_symtype, Symbolic
 using MLStyle
 
 # load up some variable variables and expressions
+ℓ,   = @syms ℓ::Literal
 c, t = @syms c::ConstScalar t::Parameter
 a, b = @syms a::Scalar b::Scalar
 u, v = @syms u::PrimalForm{0, :X, 2} du::PrimalForm{1, :X, 2}
@@ -16,9 +17,11 @@ u, v = @syms u::PrimalForm{0, :X, 2} du::PrimalForm{1, :X, 2}
 
 @testset "Term Construction" begin
 
+    @test symtype(ℓ) == Literal
     @test symtype(c) == ConstScalar
     @test symtype(t) == Parameter
     @test symtype(a) == Scalar
+    
     @test symtype(u) == PrimalForm{0, :X, 2}
     @test symtype(ω) == PrimalForm{1, :X, 2}
     @test symtype(η) == DualForm{2, :X, 2}
