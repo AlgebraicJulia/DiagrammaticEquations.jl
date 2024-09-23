@@ -38,7 +38,10 @@ end
   include("openoperators.jl")
 end
 
-include("aqua.jl")
 @testset "Symbolic Rewriting" begin
   include("graph_traversal.jl")
+  include("acset2symbolic.jl")
 end
+
+
+include("aqua.jl")

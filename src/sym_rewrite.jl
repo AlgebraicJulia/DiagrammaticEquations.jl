@@ -4,19 +4,6 @@ using SymbolicUtils
 using SymbolicUtils: Fixpoint, Prewalk, Postwalk, Chain, symtype, promote_symtype
 using MLStyle
 
-Heat = @decapode begin
-  C::Form0
-  G::Form1
-  D::Constant
-  ∂ₜ(G) == D*Δ(C)
-end;
-infer_types!(Heat)
-test_heat_same = symbolic_rewriting(Heat)
-
-r = rules(Δ, Val(1))
-
-rwr = Fixpoint(Prewalk(Chain(r)))
-test_heat_open = symbolic_rewriting(Heat, rwr)
 
 Brusselator = @decapode begin
   (U, V)::Form0
@@ -35,13 +22,6 @@ Brusselator = @decapode begin
 end
 infer_types!(Brusselator)
 
-Phytodynamics = @decapode begin
-  (n,w)::Form0
-  m::Constant
-  ∂ₜ(n) == w + m*n + Δ(n)
-end
-infer_types!(Phytodynamics)
-test_phy = symbolic_rewriting(Phytodynamics)
 
 # it seems that type-instability or improper type promotion is happening. expressions derived from this have BasicSymbolic{Number} type, which means we can't conditionally rewrite on forms.
 heat_exprs = symbolic_rewriting(Heat)
