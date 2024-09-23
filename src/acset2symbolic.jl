@@ -129,12 +129,13 @@ end
 
 
 function to_acset(og_d, sym_exprs)
+
+  #TODO: This step is breaking up summations
   final_exprs = SymbolicUtils.Code.toexpr.(sym_exprs)
 
   recursive_descent = @λ begin
     e::Expr => begin
       if e.head == :call
-        @show nameof(e.args[1])
         e.args[1] = nameof(e.args[1])
         map(recursive_descent, e.args[2:end])
       end

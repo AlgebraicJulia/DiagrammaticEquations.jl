@@ -276,7 +276,7 @@ end
 function SymbolicUtils.symtype(::Type{<:Quantity}, qty::Symbol, space::Symbol)
     @match qty begin
         :Scalar => Scalar
-        :ConstScalar => ConstScalar
+        :Constant => ConstScalar
         :Parameter => Parameter
         :Form0 => PrimalForm{0, space, 1}
         :Form1 => PrimalForm{1, space, 1}
