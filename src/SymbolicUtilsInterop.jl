@@ -14,6 +14,7 @@ struct SymbolicEquation{E}
     lhs::E
     rhs::E
 end
+export SymbolicEquation
 
 Base.show(io::IO, e::SymbolicEquation) = begin
     print(io, e.lhs); print(io, " == "); print(io, e.rhs)

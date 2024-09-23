@@ -4,7 +4,7 @@ using MLStyle
 using Test
 
 function is_correct_length(d::SummationDecapode, result)
-  return length(result) == number_of_ops(d)
+  return length(result) == n_ops(d)
 end
 
 @testset "Topological Sort on Edges" begin

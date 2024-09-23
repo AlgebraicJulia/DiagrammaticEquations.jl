@@ -69,9 +69,10 @@ include("graph_traversal.jl")
 include("deca/Deca.jl")
 include("learn/Learn.jl")
 include("SymbolicUtilsInterop.jl")
-include("acset2symbolic.jl")
 
 @reexport using .Deca
 @reexport using .SymbolicUtilsInterop
+
+include("acset2symbolic.jl")
 
 end

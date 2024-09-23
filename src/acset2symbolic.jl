@@ -5,14 +5,16 @@ using SymbolicUtils.Rewriters
 using SymbolicUtils.Code
 using MLStyle
 
-export extract_symexprs, apply_rewrites, merge_equations, to_acset, symbolic_rewriting, symbolics_lookup
+import SymbolicUtils: BasicSymbolic, Symbolic
+
+export symbolics_lookup, extract_symexprs, apply_rewrites, merge_equations, to_acset, symbolic_rewriting, symbolics_lookup
 
 const DECA_EQUALITY_SYMBOL = (==)
 
-to_symbolics(d::SummationDecapode, symvar_lookup::Dict{Symbol, SymbolicUtils.BasicSymbolic}, node::TraversalNode) = to_symbolics(d, symvar_lookup, node.index, Val(node.name))
+to_symbolics(d::SummationDecapode, symvar_lookup::Dict{Symbol, BasicSymbolic}, node::TraversalNode) = to_symbolics(d, symvar_lookup, node.index, Val(node.name))
 
 function symbolics_lookup(d::SummationDecapode)
-  lookup = Dict{Symbol, SymbolicUtils.BasicSymbolic}()
+  lookup = Dict{Symbol, BasicSymbolic}()
   for i in parts(d, :Var)
     push!(lookup, d[i, :name] => decavar_to_symbolics(d, i))
   end
@@ -22,66 +24,96 @@ end
 function decavar_to_symbolics(d::SummationDecapode, index::Int; space = :I)
   var = d[index, :name]
   new_type = SymbolicUtils.symtype(Deca.DECQuantity, d[index, :type], space)
-  @info new_type
+
   SymbolicUtils.Sym{new_type}(var)
 end
 
-function to_symbolics(d::SummationDecapode, symvar_lookup::Dict{Symbol, SymbolicUtils.BasicSymbolic}, op_index::Int, ::Val{:Op1})
+function to_symbolics(d::SummationDecapode, symvar_lookup::Dict{Symbol, BasicSymbolic}, op_index::Int, ::Val{:Op1})
   input_sym = symvar_lookup[d[d[op_index, :src], :name]]
   output_sym = symvar_lookup[d[d[op_index, :tgt], :name]]
-  # op_sym = SymbolicUtils.Sym{(SymbolicUtils.FnType){Tuple{Number}, Number}}(d[op_index, :op1])
 
   op_sym = getfield(@__MODULE__, d[op_index, :op1])
 
   S = promote_symtype(op_sym, input_sym)
   rhs = SymbolicUtils.Term{S}(op_sym, [input_sym])
-  SymbolicUtils.Term{Number}(DECA_EQUALITY_SYMBOL, [output_sym, rhs])
+  SymbolicEquation{Symbolic}(output_sym, rhs)
 end
 
-# TODO add promote_symtype as Op1
-function to_symbolics(d::SummationDecapode, symvar_lookup::Dict{Symbol, SymbolicUtils.BasicSymbolic}, op_index::Int, ::Val{:Op2})
+function to_symbolics(d::SummationDecapode, symvar_lookup::Dict{Symbol, BasicSymbolic}, op_index::Int, ::Val{:Op2})
   input1_sym = symvar_lookup[d[d[op_index, :proj1], :name]]
   input2_sym = symvar_lookup[d[d[op_index, :proj2], :name]]
   output_sym = symvar_lookup[d[d[op_index, :res], :name]]
-  # op_sym = SymbolicUtils.Sym{(SymbolicUtils.FnType){Tuple{Number, Number}, Number}}(d[op_index, :op2])
 
   op_sym = getfield(@__MODULE__, d[op_index, :op2])
 
   S = promote_symtype(op_sym, input1_sym, input2_sym)
   rhs = SymbolicUtils.Term{S}(op_sym, [input1_sym, input2_sym])
-  SymbolicUtils.Term{Number}(DECA_EQUALITY_SYMBOL, [output_sym, rhs])
+  SymbolicEquation{Symbolic}(output_sym, rhs)
 end
 
 #XXX: Always converting + -> .+ here since summation doesn't store the style of addition
-function to_symbolics(d::SummationDecapode, symvar_lookup::Dict{Symbol, SymbolicUtils.BasicSymbolic}, op_index::Int, ::Val{:Σ})
+function to_symbolics(d::SummationDecapode, symvar_lookup::Dict{Symbol, BasicSymbolic}, op_index::Int, ::Val{:Σ})
   syms_array = [symvar_lookup[var] for var in d[d[incident(d, op_index, :summation), :summand], :name]]
   output_sym = symvar_lookup[d[d[op_index, :sum], :name]]
 
   # TODO pls test
   S = promote_symtype(+, syms_array...)
   rhs = SymbolicUtils.Term{S}(+, syms_array)
-  SymbolicUtils.Term{Number}(DECA_EQUALITY_SYMBOL, [output_sym, rhs])
+  SymbolicEquation{Symbolic}(output_sym,rhs)
 end
 
-function symbolic_rewriting(old_d::SummationDecapode)
+function symbolic_rewriting(old_d::SummationDecapode, rewriter = nothing)
   d = deepcopy(old_d)
 
   infer_types!(d)
-  # resolve_overloads!(d)
 
   symvar_lookup = symbolics_lookup(d)
-  merge_equations(d, symvar_lookup, extract_symexprs(d, symvar_lookup))
+  eqns = merge_equations(d, symvar_lookup, extract_symexprs(d, symvar_lookup))
+
+  if !isnothing(rewriter)
+    eqns = map(rewriter, eqns)
+  end
+
+  to_acset(d, eqns)
 end
 
-function extract_symexprs(d::SummationDecapode, symvar_lookup::Dict{Symbol, SymbolicUtils.BasicSymbolic})
-  topo_list = topological_sort_edges(d)
-  sym_list = []
-  for node in topo_list
-    retrieve_name(d, node) != DerivOp || continue
+function extract_symexprs(d::SummationDecapode, symvar_lookup::Dict{Symbol, BasicSymbolic})
+  sym_list = SymbolicEquation{Symbolic}[]
+  for node in topological_sort_edges(d)
+    retrieve_name(d, node) != DerivOp || continue # This is not part of ThDEC
     push!(sym_list, to_symbolics(d, symvar_lookup, node))
   end
   sym_list
 end
+
+function merge_equations(d::SummationDecapode, symvar_lookup::Dict{Symbol, BasicSymbolic}, symexpr_list::Vector{SymbolicEquation{Symbolic}})
+
+  eqn_lookup = Dict()
+
+  final_list = []
+
+  for node in start_nodes(d)
+    sym = symvar_lookup[d[node, :name]]
+    push!(eqn_lookup, (sym => sym))
+  end
+
+  final_nodes = infer_terminal_names(d)
+
+  for expr in symexpr_list
+
+    merged_rhs = SymbolicUtils.substitute(expr.rhs, eqn_lookup)
+
+    push!(eqn_lookup, (expr.lhs => merged_rhs))
+
+    if expr.lhs.name in final_nodes
+      push!(final_list, formed_deca_eqn(expr.lhs, merged_rhs))
+    end
+  end
+
+  final_list
+end
+
+formed_deca_eqn(lhs, rhs) = SymbolicUtils.Term{Number}(DECA_EQUALITY_SYMBOL, [lhs, rhs])
 
 function apply_rewrites(symexprs, rewriter)
 
@@ -95,34 +127,6 @@ function apply_rewrites(symexprs, rewriter)
   rewritten_list
 end
 
-function merge_equations(d::SummationDecapode, symvar_lookup::Dict{Symbol, SymbolicUtils.BasicSymbolic}, rewritten_syms)
-
-  eqn_lookup = Dict()
-
-  final_list = []
-
-  for node in start_nodes(d)
-    sym = symvar_lookup[d[node, :name]]
-    push!(eqn_lookup, (sym => sym))
-  end
-
-  final_nodes = infer_terminal_names(d)
-
-  for expr in rewritten_syms
-
-    merged_eqn = SymbolicUtils.substitute(expr, eqn_lookup)
-    lhs = merged_eqn.arguments[1]
-    rhs = merged_eqn.arguments[2]
-
-    push!(eqn_lookup, (lhs => rhs))
-
-    if lhs.name in final_nodes
-      push!(final_list, merged_eqn)
-    end
-  end
-
-  final_list
-end
 
 function to_acset(og_d, sym_exprs)
   final_exprs = SymbolicUtils.Code.toexpr.(sym_exprs)
@@ -159,7 +163,6 @@ function to_acset(og_d, sym_exprs)
   d = SummationDecapode(parse_decapode(deca_block))
 
   infer_types!(d)
-  # resolve_overloads!(d)
 
   d
 end
