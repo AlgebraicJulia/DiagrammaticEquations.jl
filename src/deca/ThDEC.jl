@@ -24,8 +24,12 @@ export DECQuantity
 # this ensures symtype doesn't recurse endlessly
 SymbolicUtils.symtype(::Type{S}) where S<:DECQuantity = S
 
-struct Scalar <: DECQuantity end
-export Scalar
+abstract type AbstractScalar <: DECQuantity end
+
+struct Scalar <: AbstractScalar end
+struct Parameter <: AbstractScalar end
+struct ConstScalar <: AbstractScalar end
+export Scalar, Parameter, ConstScalar
 
 struct FormParams
     dim::Int
@@ -107,7 +111,7 @@ end
 export PatFormDim
 
 @active PatScalar(T) begin
-    if T <: Scalar
+    if T <: AbstractScalar
         Some(T)
     end
 end
@@ -225,7 +229,9 @@ abstract type SortError <: Exception end
 
 # struct WedgeDimError <: SortError end
 
-Base.nameof(s::Scalar) = :Constant
+Base.nameof(s::ConstScalar) = :ConstScalar
+Base.nameof(s::Parameter) = :Parameter
+Base.nameof(s::Scalar) = :Scalar
 
 function Base.nameof(f::Form; with_dim_parameter=false)
     dual = isdual(f) ? "Dual" : ""
@@ -269,7 +275,9 @@ end
 
 function SymbolicUtils.symtype(::Type{<:Quantity}, qty::Symbol, space::Symbol)
     @match qty begin
-        :Scalar || :Constant => Scalar
+        :Scalar => Scalar
+        :ConstScalar => ConstScalar
+        :Parameter => Parameter
         :Form0 => PrimalForm{0, space, 1}
         :Form1 => PrimalForm{1, space, 1}
         :Form2 => PrimalForm{2, space, 1}

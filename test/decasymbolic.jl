@@ -7,6 +7,7 @@ using SymbolicUtils: symtype, promote_symtype, Symbolic
 using MLStyle
 
 # load up some variable variables and expressions
+c, t = @syms c::ConstScalar t::Parameter
 a, b = @syms a::Scalar b::Scalar
 u, v = @syms u::PrimalForm{0, :X, 2} du::PrimalForm{1, :X, 2}
 ω, η = @syms ω::PrimalForm{1, :X, 2} η::DualForm{2, :X, 2}
@@ -14,13 +15,19 @@ u, v = @syms u::PrimalForm{0, :X, 2} du::PrimalForm{1, :X, 2}
 # TODO would be nice to pass the space globally to avoid duplication
 
 @testset "Term Construction" begin
- 
+
+    @test symtype(c) == ConstScalar
+    @test symtype(t) == Parameter
     @test symtype(a) == Scalar
     @test symtype(u) == PrimalForm{0, :X, 2}
     @test symtype(ω) == PrimalForm{1, :X, 2}
     @test symtype(η) == DualForm{2, :X, 2}
     @test symtype(ϕ) == PrimalVF{:X, 2}
     @test symtype(ψ) == DualVF{:X, 2}
+
+    @test symtype(c + t) == Scalar
+    @test symtype(t + t) == Scalar
+    @test symtype(c + c) == Scalar
 
     @test symtype(u ∧ ω) == PrimalForm{1, :X, 2}
     @test symtype(ω ∧ ω) == PrimalForm{2, :X, 2}
@@ -30,6 +37,8 @@ u, v = @syms u::PrimalForm{0, :X, 2} du::PrimalForm{1, :X, 2}
     # test unary operator conversion to decaexpr
     @test Term(1) == Lit(Symbol("1"))
     @test Term(a) == Var(:a)
+    @test Term(c) == Var(:c)
+    @test Term(t) == Var(:t)
     @test Term(∂ₜ(u)) == Tan(Var(:u))
     @test Term(★(ω)) == App1(:★₁, Var(:ω))
     
