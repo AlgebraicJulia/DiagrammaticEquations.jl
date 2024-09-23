@@ -163,3 +163,14 @@ end
   infer_types!(Phytodynamics)
   test_phy = symbolic_rewriting(Phytodynamics)
 end
+
+@testset "Literals" begin
+    Heat = parse_decapode(quote
+        C::Form0
+        G::Form0
+        ∂ₜ(G) == 3*Δ(C)
+    end)
+    context = SymbolicContext(Heat)
+    SummationDecapode(context)
+
+end

@@ -1,6 +1,8 @@
 module SymbolicUtilsInterop
 
+using ACSets
 using ..DiagrammaticEquations: AbstractDecapode, Quantity
+using ..DiagrammaticEquations: recognize_types, fill_names!, make_sum_mult_unique!
 import ..DiagrammaticEquations: eval_eq!, SummationDecapode
 using ..decapodes
 using ..Deca
@@ -123,7 +125,7 @@ function SymbolicContext(d::decapodes.DecaExpr, __module__=@__MODULE__)
 end
 
 function eval_eq!(eq::SymbolicEquation, d::AbstractDecapode, syms::Dict{Symbol, Int}, deletions::Vector{Int})
-    eval_eq!(Equation(Term(eq.lhs), Term(eq.rhs)), d, syms, deletions)
+    eval_eq!(Eq(Term(eq.lhs), Term(eq.rhs)), d, syms, deletions)
 end
 
 """    function SummationDecapode(e::SymbolicContext) """
@@ -133,7 +135,7 @@ function SummationDecapode(e::SymbolicContext)
 
     foreach(e.vars) do var
         # convert Sort(var)::PrimalForm0 --> :Form0
-        var_id = add_part!(d, :Var, name=var.name, type=nameof(Sort(var)))
+        var_id = add_part!(d, :Var, name=var.name, type=nameof(symtype(var)))
         symbol_table[var.name] = var_id
     end
 

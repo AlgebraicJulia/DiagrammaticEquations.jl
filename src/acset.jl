@@ -187,6 +187,7 @@ function recognize_types(d::AbstractNamedDecapode)
   isempty(unrecognized_types) ||
   error("Types $unrecognized_types are not recognized. CHECK: $types")
 end
+export recognize_types
 
 """    is_expanded(d::AbstractNamedDecapode)
 
