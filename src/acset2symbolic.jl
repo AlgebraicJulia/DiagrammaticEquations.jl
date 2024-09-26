@@ -56,7 +56,6 @@ function to_symbolics(d::SummationDecapode, symvar_lookup::Dict{Symbol, BasicSym
   syms_array = [symvar_lookup[var] for var in d[d[incident(d, op_index, :summation), :summand], :name]]
   output_sym = symvar_lookup[d[d[op_index, :sum], :name]]
 
-  # TODO pls test
   S = promote_symtype(+, syms_array...)
   rhs = SymbolicUtils.Term{S}(+, syms_array)
   SymbolicEquation{Symbolic}(output_sym,rhs)
@@ -101,6 +100,14 @@ function merge_equations(d::SummationDecapode, symvar_lookup::Dict{Symbol, Basic
 
   for expr in symexpr_list
 
+    # XXX SymbolicUtils.substitute swaps the order of multiplication.
+    # example: @decapode begin
+    #   u::Form0
+    #   G::Form0
+    #   κ::Constant
+    #   ∂ₜ(G) == κ*★(d(★(d(u))))
+    # end
+    # will have the kappa*var term rewritten to var*kappa
     merged_rhs = SymbolicUtils.substitute(expr.rhs, eqn_lookup)
 
     push!(eqn_lookup, (expr.lhs => merged_rhs))
@@ -127,7 +134,9 @@ function apply_rewrites(symexprs, rewriter)
   rewritten_list
 end
 
-
+"""
+og_d = original reference decapode which provides type information, state and terminal information
+"""
 function to_acset(og_d, sym_exprs)
 
   #TODO: This step is breaking up summations

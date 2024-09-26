@@ -3,6 +3,8 @@ using DiagrammaticEquations
 using SymbolicUtils: Fixpoint, Prewalk, Postwalk, Chain, @rule
 using Catlab
 
+(≃) = is_isomorphic
+
 @testset "Basic Roundtrip" begin
   op1_only = @decapode begin
     A::Form0
@@ -65,7 +67,7 @@ using Catlab
   all_ops_res = symbolic_rewriting(all_ops)
   all_ops_res[5, :name] = :D
   all_ops_res[6, :name] = :C
-  @test is_isomorphic(all_ops,all_ops_res)
+  @test all_ops ≃ all_ops_res
 end
 
 function expr_rewriter(rules::Vector)
@@ -151,7 +153,7 @@ end
   Heat_open[6, :name] = Symbol("•3")
   Heat_open[7, :name] = Symbol("•4")
 
-  @test is_isomorphic(Heat_open, symbolic_rewriting(Heat, expr_rewriter(rules(Δ, Val(1)))))
+  @test Heat_open ≃ symbolic_rewriting(Heat, expr_rewriter(rules(Δ, Val(1))))
 end
 
 @testset "Phytodynamics" begin
@@ -172,5 +174,31 @@ end
     end)
     context = SymbolicContext(Heat)
     SummationDecapode(context)
+
+end
+
+@testset "Parameters" begin
+
+    Heat = @decapode begin
+        u::Form0
+        G::Form0
+        κ::Parameter
+        ∂ₜ(G) == Δ(u)*κ
+    end
+    infer_types!(Heat)
+    
+    Heat_open = @decapode begin
+        u::Form0
+        G::Form0
+        κ::Parameter
+        ∂ₜ(G) == ★(d(★(d(u))))*κ
+    end
+    infer_types!(Heat_open)
+
+    Heat_open[7, :name] = Symbol("•4")
+    Heat_open[8, :name] = Symbol("•1")
+
+    z = symbolic_rewriting(Heat, expr_rewriter(rules(Δ, Val(1))))
+    @test Heat_open ≃ z
 
 end

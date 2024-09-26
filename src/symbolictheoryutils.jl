@@ -73,7 +73,7 @@ end
 """
 macro operator(head, body)
 
-    # parse body
+    # parse head
     ph = @λ begin
         Expr(:call, foo, Expr(:(::), vars..., theory)) => (foo, vars, theory)
         Expr(:(::), Expr(:call, foo, vars...), theory) => (foo, vars, theory)
