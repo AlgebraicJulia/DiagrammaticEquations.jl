@@ -1,7 +1,7 @@
 module SymbolicUtilsInterop
 
 using ACSets
-using ..DiagrammaticEquations: AbstractDecapode, Quantity
+using ..DiagrammaticEquations: AbstractDecapode, Quantity, DerivOp
 using ..DiagrammaticEquations: recognize_types, fill_names!, make_sum_mult_unique!
 import ..DiagrammaticEquations: eval_eq!, SummationDecapode
 using ..decapodes
@@ -51,7 +51,7 @@ function decapodes.Term(t::SymbolicUtils.BasicSymbolic)
             decapodes.Plus(termargs)
         elseif op == *
             decapodes.Mult(termargs)
-        elseif op == ∂ₜ
+        elseif op ∈ [DerivOp, ∂ₜ]
             decapodes.Tan(only(termargs))
         elseif length(args) == 1
             decapodes.App1(nameof(op, symtype.(args)...), termargs...)
@@ -85,9 +85,9 @@ Example:
   SymbolicUtils.BasicSymbolic(context, Term(a))
 ```
 """
-function SymbolicUtils.BasicSymbolic(context::Dict{Symbol,DataType}, t::decapodes.Term, __module__=@__MODULE__)
+function SymbolicUtils.BasicSymbolic(context::Dict{Symbol,DataType}, t::decapodes.Term)
     # user must import symbols into scope
-    ! = (f -> getfield(__module__, f))
+    ! = (f -> getfield(@__MODULE__, f))
     @match t begin
         Var(name) => SymbolicUtils.Sym{context[name]}(name)
         Lit(v) => Meta.parse(string(v))
@@ -98,17 +98,17 @@ function SymbolicUtils.BasicSymbolic(context::Dict{Symbol,DataType}, t::decapode
             # see test/language.jl
             (f, x) -> (!(f))(x),
             fs;
-            init=BasicSymbolic(context, arg, __module__)
+            init=BasicSymbolic(context, arg)
         )
-        App1(f, x) => (!(f))(BasicSymbolic(context, x, __module__))
-        App2(f, x, y) => (!(f))(BasicSymbolic(context, x, __module__), BasicSymbolic(context, y, __module__))
-        Plus(xs) => +(BasicSymbolic.(Ref(context), xs, Ref(__module__))...)
-        Mult(xs) => *(BasicSymbolic.(Ref(context), xs, Ref(__module__))...)
-        Tan(x) => ∂ₜ(BasicSymbolic(context, x, __module__))
+        App1(f, x) => (!(f))(BasicSymbolic(context, x))
+        App2(f, x, y) => (!(f))(BasicSymbolic(context, x), BasicSymbolic(context, y))
+        Plus(xs) => +(BasicSymbolic.(Ref(context), xs)...)
+        Mult(xs) => *(BasicSymbolic.(Ref(context), xs)...)
+        Tan(x) => (!(DerivOp))(BasicSymbolic(context, x))
     end
 end
 
-function SymbolicContext(d::decapodes.DecaExpr, __module__=@__MODULE__)
+function SymbolicContext(d::decapodes.DecaExpr)
     # associates each var to its sort...
     context = map(d.context) do j
         j.var => symtype(Deca.DECQuantity, j.dim, j.space)
@@ -119,7 +119,7 @@ function SymbolicContext(d::decapodes.DecaExpr, __module__=@__MODULE__)
     end
     context = Dict{Symbol,DataType}(context)
     eqs = map(d.equations) do eq
-        SymbolicEquation{Symbolic}(BasicSymbolic.(Ref(context), [eq.lhs, eq.rhs], Ref(__module__))...)
+        SymbolicEquation{Symbolic}(BasicSymbolic.(Ref(context), [eq.lhs, eq.rhs])...)
     end
     SymbolicContext(vars, eqs)
 end

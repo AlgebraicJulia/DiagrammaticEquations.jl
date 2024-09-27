@@ -38,6 +38,10 @@ end
   include("openoperators.jl")
 end
 
+@testset "ThDEC Symbolics" begin
+  include("decasymbolic.jl")
+end
+
 @testset "Symbolic Rewriting" begin
   include("graph_traversal.jl")
   include("acset2symbolic.jl")

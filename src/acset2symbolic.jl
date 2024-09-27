@@ -79,7 +79,7 @@ end
 function extract_symexprs(d::SummationDecapode, symvar_lookup::Dict{Symbol, BasicSymbolic})
   sym_list = SymbolicEquation{Symbolic}[]
   for node in topological_sort_edges(d)
-    retrieve_name(d, node) != DerivOp || continue # This is not part of ThDEC
+    # retrieve_name(d, node) != DerivOp || continue # This is not part of ThDEC
     push!(sym_list, to_symbolics(d, symvar_lookup, node))
   end
   sym_list

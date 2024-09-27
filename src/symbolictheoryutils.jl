@@ -108,6 +108,8 @@ macro operator(head, body)
             SymbolicUtils.Term{s}($f, Any[$(argnames...)])
         end
         export $f
+
+        Base.show(io::IO, ::typeof($f)) = print(io, $f)
     end)
 
     # if there are rewriting rules, add a method which accepts the function symbol and its arity (to prevent shadowing on operators like `-`)

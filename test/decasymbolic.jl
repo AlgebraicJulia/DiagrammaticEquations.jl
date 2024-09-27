@@ -7,18 +7,20 @@ using SymbolicUtils: symtype, promote_symtype, Symbolic
 using MLStyle
 
 # load up some variable variables and expressions
-ℓ,   = @syms ℓ::Literal
-c, t = @syms c::ConstScalar t::Parameter
-a, b = @syms a::Scalar b::Scalar
-u, v = @syms u::PrimalForm{0, :X, 2} du::PrimalForm{1, :X, 2}
-ω, η = @syms ω::PrimalForm{1, :X, 2} η::DualForm{2, :X, 2}
-ϕ, ψ = @syms ϕ::PrimalVF{:X, 2} ψ::DualVF{:X, 2}
+👻,   = @syms 👻::InferredType
+ℓ,    = @syms ℓ::Literal
+c, t  = @syms c::Const t::Parameter
+a, b  = @syms a::Scalar b::Scalar
+u, du = @syms u::PrimalForm{0, :X, 2} du::PrimalForm{1, :X, 2}
+ω, η  = @syms ω::PrimalForm{1, :X, 2} η::DualForm{2, :X, 2}
+ϕ, ψ  = @syms ϕ::PrimalVF{:X, 2} ψ::DualVF{:X, 2}
 # TODO would be nice to pass the space globally to avoid duplication
 
 @testset "Term Construction" begin
 
+    @test symtype(👻) == InferredType
     @test symtype(ℓ) == Literal
-    @test symtype(c) == ConstScalar
+    @test symtype(c) == Const
     @test symtype(t) == Parameter
     @test symtype(a) == Scalar
     
@@ -31,9 +33,12 @@ u, v = @syms u::PrimalForm{0, :X, 2} du::PrimalForm{1, :X, 2}
     @test symtype(c + t) == Scalar
     @test symtype(t + t) == Scalar
     @test symtype(c + c) == Scalar
+    @test symtype(t + 👻) == InferredType
 
     @test symtype(u ∧ ω) == PrimalForm{1, :X, 2}
     @test symtype(ω ∧ ω) == PrimalForm{2, :X, 2}
+    @test symtype(u ∧ 👻) == InferredType
+
     # @test_throws ThDEC.SortError ThDEC.♯(u)
     @test symtype(Δ(u) + Δ(u)) == PrimalForm{0, :X, 2}
 
@@ -112,40 +117,39 @@ end
 
 @testset "Conversion" begin
 
-    context = Dict(:a => Scalar(),:b => Scalar()
-                    ,:u => PrimalForm(0, X),:du => PrimalForm(1, X))
-    js = [Judgement(:u, :Form0, :X)
-        ,Judgement(:∂ₜu, :Form0, :X)
-        ,Judgement(:Δu, :Form0, :X)]
-    eqs = [Eq(Var(:∂ₜu)
-        , AppCirc1([:⋆₂⁻¹, :d₁, :⋆₁, :d₀], Var(:u)))
-        , Eq(Tan(Var(:u)), Var(:∂ₜu))]
-    heat_eq = DecaExpr(js, eqs)
+    Exp = @decapode begin
+        u::Form0
+        v::Form0
+        ∂ₜ(v) == u
+    end
+    context = SymbolicContext(Term(Exp))
+    Exp′ = SummationDecapode(DecaExpr(context))
 
-    symb_heat_eq = DecaSymbolic(lookup, heat_eq)
-    deca_expr = DecaExpr(symb_heat_eq)
+    # does roundtripping work
+    @test Exp == Exp′
 
-end
+    Heat = @decapode begin
+        u::Form0
+        v::Form0
+        κ::Constant
+        ∂ₜ(v) == Δ(u)*κ
+    end
+    infer_types!(Heat)
+    context = SymbolicContext(Term(Heat))
+    Heat′ = SummationDecapode(DecaExpr(context))
 
-@testset "Moving between DecaExpr and DecaSymbolic" begin
-    
-    @test js == deca_expr.context
+    @test Heat == Heat′
 
-    # eqs in the left has AppCirc1[vector, term]
-    # deca_expr.equations on the right has nested App1
-    # expected behavior is that nested AppCirc1 is preserved
-    @test_broken eqs == deca_expr.equations
-    # use expand_operators to get rid of parentheses
-    # infer_types and resolve_overloads
-    
-end
+    TumorInvasion = @decapode begin
+        (C,fC)::Form0
+        (Dif,Kd,Cmax)::Constant
+        ∂ₜ(C) == Dif * Δ(C) + fC - Kd * C
+    end
+    infer_types!(TumorInvasion)
+    context = SymbolicContext(Term(TumorInvasion))
+    TumorInvasion′ = SummationDecapode(DecaExpr(context))
 
-# convert both into ACSets then is_iso them
-@testset "" begin
-
-    Σ = DiagrammaticEquations.SummationDecapode(deca_expr)
-    Δ = DiagrammaticEquations.SummationDecapode(symb_heat_eq)
-    @test Σ == Δ
-
+    # new terms introduced
+    @test_broken TumorInvasion == TumorInvasion′
 
 end

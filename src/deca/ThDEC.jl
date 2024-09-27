@@ -26,11 +26,14 @@ SymbolicUtils.symtype(::Type{S}) where S<:DECQuantity = S
 
 abstract type AbstractScalar <: DECQuantity end
 
+struct InferredType <: DECQuantity end
+export InferredType
+
 struct Scalar <: AbstractScalar end
 struct Parameter <: AbstractScalar end
-struct ConstScalar <: AbstractScalar end
+struct Const <: AbstractScalar end
 struct Literal <: AbstractScalar end
-export Scalar, Parameter, ConstScalar, Literal
+export Scalar, Parameter, Const, Literal
 
 struct FormParams
     dim::Int
@@ -89,6 +92,18 @@ Base.nameof(u::Type{<:PrimalForm}) = Symbol("Form"*"$(dim(u))")
 Base.nameof(u::Type{<:DualForm}) = Symbol("DualForm"*"$(dim(u))")
 
 # ACTIVE PATTERNS
+
+@active PatInferredType(T) begin
+    if T <: InferredType
+        Some(InferredType)
+    end
+end
+
+@active PatInferredTypes(T) begin
+    if any(S->S<:InferredType, T)
+        Some(InferredType)
+    end
+end
 
 @active PatForm(T) begin
     if T <: Form
@@ -158,6 +173,7 @@ export isDualForm, isForm0, isForm1, isForm2
 
 @operator d(S)::DECQuantity begin
     @match S begin
+        PatInferredType(_) => InferredType
         PatFormParams([i,d,s,n]) => Form{i+1,d,s,n}
         _ => throw(ExteriorDerivativeError(S))
     end
@@ -167,6 +183,7 @@ end
 
 @operator ★(S)::DECQuantity begin
     @match S begin
+        PatInferredType(_) => InferredType
         PatFormParams([i,d,s,n]) => Form{n-i,d,s,n}
         _ => throw(HodgeStarError(S))
     end
@@ -176,6 +193,7 @@ end
 
 @operator Δ(S)::DECQuantity begin
     @match S begin
+        PatInferredType(_) => InferredType
         PatForm(_) => promote_symtype(★ ∘ d ∘ ★ ∘ d, S)
         _ => throw(LaplacianError(S))
     end
@@ -185,8 +203,11 @@ end
 
 @alias (Δ₀, Δ₁, Δ₂) => Δ
 
+# Base.show(io::IO, 
+
 @operator +(S1, S2)::DECQuantity begin
     @match (S1, S2) begin
+        PatInferredTypes(_) => InferredType
         (PatScalar(_), PatScalar(_)) => Scalar
         (PatScalar(_), PatFormParams([i,d,s,n])) || (PatFormParams([i,d,s,n]), PatScalar(_)) => S1 # commutativity
         (PatFormParams([i1,d1,s1,n1]), PatFormParams([i2,d2,s2,n2])) => begin
@@ -206,6 +227,7 @@ end
 
 @operator *(S1, S2)::DECQuantity begin
     @match (S1, S2) begin
+        PatInferredTypes(_) => InferredType
         (PatScalar(_), PatScalar(_)) => Scalar
         (PatScalar(_), PatFormParams([i,d,s,n])) || (PatFormParams([i,d,s,n]), PatScalar(_)) => Form{i,d,s,n}
         _ => throw(BinaryOpError("multiply", S1, S2))
@@ -214,6 +236,7 @@ end
 
 @operator ∧(S1, S2)::DECQuantity begin
     @match (S1, S2) begin
+        PatInferredTypes(_) => InferredType
         (PatFormParams([i1,d1,s1,n1]), PatFormParams([i2,d2,s2,n2])) => begin
             (d1 == d2) && (s1 == s2) && (n1 == n2) || throw(WedgeOpError(S1, S2))
             if i1 + i2 <= n1
@@ -228,10 +251,10 @@ end
 
 abstract type SortError <: Exception end
 
-Base.nameof(s::Literal) = :Literal
-Base.nameof(s::ConstScalar) = :ConstScalar
-Base.nameof(s::Parameter) = :Parameter
-Base.nameof(s::Scalar) = :Scalar
+Base.nameof(s::Union{Literal,Type{Literal}}) = :Literal
+Base.nameof(s::Union{Const, Type{Const}}) = :Constant
+Base.nameof(s::Union{Parameter, Type{Parameter}}) = :Parameter
+Base.nameof(s::Union{Scalar, Type{Scalar}}) = :Scalar
 
 function Base.nameof(f::Form; with_dim_parameter=false)
     dual = isdual(f) ? "Dual" : ""
@@ -264,6 +287,8 @@ function Base.nameof(::typeof(∧), s1, s2)
     Symbol("∧$(as_sub(dim(s1)))$(as_sub(dim(s2)))")
 end
 
+Base.nameof(::typeof(∂ₜ), s) = Symbol("∂ₜ($(nameof(s)))")
+
 Base.nameof(::typeof(d), s) = Symbol("d$(as_sub(dim(s)))")
 
 Base.nameof(::typeof(Δ), s) = :Δ
@@ -276,7 +301,7 @@ end
 function SymbolicUtils.symtype(::Type{<:Quantity}, qty::Symbol, space::Symbol)
     @match qty begin
         :Scalar => Scalar
-        :Constant => ConstScalar
+        :Constant => Const
         :Parameter => Parameter
         :Literal => Literal
         :Form0 => PrimalForm{0, space, 1}
@@ -285,6 +310,7 @@ function SymbolicUtils.symtype(::Type{<:Quantity}, qty::Symbol, space::Symbol)
         :DualForm0 => DualForm{0, space, 1}
         :DualForm1 => DualForm{1, space, 1}
         :DualForm2 => DualForm{2, space, 1}
+        :Infer => InferredType
         _ => error("Received $qty")
     end
 end
