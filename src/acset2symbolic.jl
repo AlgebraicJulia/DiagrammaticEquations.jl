@@ -1,11 +1,9 @@
 using DiagrammaticEquations
 using ACSets
-using MLStyle
 using SymbolicUtils
-using SymbolicUtils.Rewriters
 using SymbolicUtils: BasicSymbolic, Symbolic
 
-export symbolics_lookup, extract_symexprs, apply_rewrites, merge_equations, to_acset, symbolic_rewriting, symbolics_lookup
+export symbolics_lookup, extract_symexprs, apply_rewrites, merge_equations, to_acset, symbolic_rewriting
 
 const DECA_EQUALITY_SYMBOL = (==)
 
@@ -23,12 +21,10 @@ end
 function to_symbolics(d::SummationDecapode, symvar_lookup::Dict{Symbol, BasicSymbolic}, op_idx::Int, op_type::Symbol)
   input_syms = getindex.(Ref(symvar_lookup), d[edge_inputs(d,op_idx,Val(op_type)), :name])
   output_sym = getindex.(Ref(symvar_lookup), d[edge_output(d,op_idx,Val(op_type)), :name])
-
   op_sym = getfield(@__MODULE__, edge_function(d,op_idx,Val(op_type)))
 
   S = promote_symtype(op_sym, input_syms...)
-  rhs = SymbolicUtils.Term{S}(op_sym, input_syms)
-  SymbolicEquation{Symbolic}(output_sym, rhs)
+  SymbolicEquation{Symbolic}(output_sym, SymbolicUtils.Term{S}(op_sym, input_syms))
 end
 
 function symbolic_rewriting(old_d::SummationDecapode, rewriter = nothing)
@@ -38,34 +34,30 @@ function symbolic_rewriting(old_d::SummationDecapode, rewriter = nothing)
 end
 
 function extract_symexprs(d::SummationDecapode, symvar_lookup::Dict{Symbol, BasicSymbolic})
-  non_tangents = filter(x -> retrieve_name(d, x) != DerivOp, topological_sort_edges(d))
+  non_tangents = Iterators.filter(x -> retrieve_name(d, x) != DerivOp, topological_sort_edges(d))
   map(non_tangents) do node
     to_symbolics(d, symvar_lookup, node.index, node.name)
   end
 end
 
 # XXX SymbolicUtils.substitute swaps the order of multiplication.
-# example: @decapode begin
-#   u::Form0
-#   G::Form0
-#   κ::Constant
-#   ∂ₜ(G) == κ*★(d(★(d(u))))
+# e.g. @decapode begin
+#   ∂ₜ(G) == κ*u
 # end
-# will have the kappa*var term rewritten to var*kappa
+# will have the κ*u term rewritten to u*κ
 function merge_equations(d::SummationDecapode)
   symvar_lookup = symbolics_lookup(d)
   symexpr_list = extract_symexprs(d, symvar_lookup)
 
-  eqn_lookup = Dict{Any,Any}(map(start_nodes(d)) do node
-    sym = symvar_lookup[d[node, :name]]
+  eqn_lookup = Dict{Any,Any}(map(start_nodes(d)) do i
+    sym = symvar_lookup[d[i, :name]]
     (sym, sym)
   end)
-  foreach(symexpr_list) do expr
-    merged_rhs = SymbolicUtils.substitute(expr.rhs, eqn_lookup)
-    push!(eqn_lookup, (expr.lhs => merged_rhs))
+  foreach(symexpr_list) do x
+    push!(eqn_lookup, (x.lhs => SymbolicUtils.substitute(x.rhs, eqn_lookup)))
   end
 
-  terminals = filter(x -> x.lhs.name in infer_terminal_names(d), symexpr_list)
+  terminals = Iterators.filter(x -> x.lhs.name in infer_terminal_names(d), symexpr_list)
   map(x -> formed_deca_eqn(x.lhs, eqn_lookup[x.lhs]), terminals)
 end
 
@@ -79,8 +71,8 @@ function apply_rewrites(symexprs, rewriter)
 end
 
 function to_acset(d::SummationDecapode, sym_exprs)
-  outer_types = map([infer_states(d)..., infer_terminals(d)...]) do idx
-    :($(d[idx, :name])::$(d[idx, :type]))
+  outer_types = map([infer_states(d)..., infer_terminals(d)...]) do i
+    :($(d[i, :name])::$(d[i, :type]))
   end
 
   tangents = map(incident(d, DerivOp, :op1)) do op1
@@ -89,19 +81,16 @@ function to_acset(d::SummationDecapode, sym_exprs)
 
   #TODO: This step is breaking up summations
   final_exprs = SymbolicUtils.Code.toexpr.(sym_exprs)
-  recursive_descent = @λ begin
-    e::Expr => begin
-      if e.head == :call
-        e.args[1] = nameof(e.args[1])
-        map(recursive_descent, e.args[2:end])
-      end
+  reify!(exprs) = foreach(exprs) do x
+    if typeof(x)==Expr && x.head == :call
+      x.args[1] = nameof(x.args[1])
+      reify!(x.args[2:end])
     end
-    sym => nothing
   end
-  foreach(recursive_descent, final_exprs)
+  reify!(final_exprs)
 
   deca_block = quote end
   deca_block.args = [outer_types..., tangents..., final_exprs...]
-  infer_types!(SummationDecapode(parse_decapode(deca_block)))
+  ∘(infer_types!, SummationDecapode, parse_decapode)(deca_block)
 end
 
