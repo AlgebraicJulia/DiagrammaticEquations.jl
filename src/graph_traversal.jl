@@ -1,12 +1,33 @@
 using DiagrammaticEquations
 using ACSets
 
-export TraversalNode, topological_sort_edges, n_ops, retrieve_name, start_nodes
+export TraversalNode, topological_sort_edges, n_ops, retrieve_name, start_nodes, edge_inputs, edge_outputs, edge_function
 
 struct TraversalNode{T}
   index::Int
   name::T
 end
+
+edge_inputs(d::SummationDecapode, idx::Int, ::Val{:Op1}) =
+  [d[idx,:src]]
+edge_inputs(d::SummationDecapode, idx::Int, ::Val{:Op2}) =
+  [d[idx,:proj1], d[idx,:proj2]]
+edge_inputs(d::SummationDecapode, idx::Int, ::Val{:Σ}) =
+  d[incident(d, idx, :summation), :summand]
+
+edge_output(d::SummationDecapode, idx::Int, ::Val{:Op1}) =
+  d[idx,:tgt]
+edge_output(d::SummationDecapode, idx::Int, ::Val{:Op2}) =
+  d[idx,:res]
+edge_output(d::SummationDecapode, idx::Int, ::Val{:Σ}) =
+  d[idx, :sum]
+
+edge_function(d::SummationDecapode, idx::Int, ::Val{:Op1}) =
+  d[idx,:op1]
+edge_function(d::SummationDecapode, idx::Int, ::Val{:Op2}) =
+  d[idx,:op2]
+edge_function(d::SummationDecapode, idx::Int, ::Val{:Σ}) =
+  :+
 
 function topological_sort_edges(d::SummationDecapode)
   visited_Var = falses(nparts(d, :Var))
