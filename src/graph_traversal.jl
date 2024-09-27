@@ -1,66 +1,66 @@
 using DiagrammaticEquations
 using ACSets
 
-export TraversalNode, topological_sort_edges, n_ops, retrieve_name, start_nodes
+export TraversalNode, topological_sort_edges, n_ops, retrieve_name, start_nodes, edge_inputs, edge_output, edge_function
 
 struct TraversalNode{T}
   index::Int
   name::T
 end
 
+edge_inputs(d::SummationDecapode, idx::Int, ::Val{:Op1}) =
+  [d[idx,:src]]
+edge_inputs(d::SummationDecapode, idx::Int, ::Val{:Op2}) =
+  [d[idx,:proj1], d[idx,:proj2]]
+edge_inputs(d::SummationDecapode, idx::Int, ::Val{:Σ}) =
+  d[incident(d, idx, :summation), :summand]
+
+edge_output(d::SummationDecapode, idx::Int, ::Val{:Op1}) =
+  d[idx,:tgt]
+edge_output(d::SummationDecapode, idx::Int, ::Val{:Op2}) =
+  d[idx,:res]
+edge_output(d::SummationDecapode, idx::Int, ::Val{:Σ}) =
+  d[idx, :sum]
+
+edge_function(d::SummationDecapode, idx::Int, ::Val{:Op1}) =
+  d[idx,:op1]
+edge_function(d::SummationDecapode, idx::Int, ::Val{:Op2}) =
+  d[idx,:op2]
+edge_function(d::SummationDecapode, idx::Int, ::Val{:Σ}) =
+  :+
+
+#XXX: This topological sort is O(n^2).
 function topological_sort_edges(d::SummationDecapode)
   visited_Var = falses(nparts(d, :Var))
   visited_Var[start_nodes(d)] .= true
+  visited = Dict(:Op1 => falses(nparts(d, :Op1)),
+    :Op2 => falses(nparts(d, :Op2)), :Σ => falses(nparts(d, :Σ)))
 
-  # TODO: Collect these visited arrays into one structure indexed by :Op1, :Op2, and :Σ
-  visited_1 = falses(nparts(d, :Op1))
-  visited_2 = falses(nparts(d, :Op2))
-  visited_Σ = falses(nparts(d, :Σ))
-
-  # FIXME: this is a quadratic implementation of topological_sort inlined in here.
   op_order = TraversalNode{Symbol}[]
 
-  for _ in 1:n_ops(d)
-    for op in parts(d, :Op1)
-      if !visited_1[op] && visited_Var[d[op, :src]]
-
-        visited_1[op] = true
-        visited_Var[d[op, :tgt]] = true
-
-        push!(op_order, TraversalNode(op, :Op1))
-      end
-    end
-
-    for op in parts(d, :Op2)
-      if !visited_2[op] && visited_Var[d[op, :proj1]] && visited_Var[d[op, :proj2]]
-        visited_2[op] = true
-        visited_Var[d[op, :res]] = true
-        push!(op_order, TraversalNode(op, :Op2))
-      end
-    end
-
-    for op in parts(d, :Σ)
-      args = subpart(d, incident(d, op, :summation), :summand)
-      if !visited_Σ[op] && all(visited_Var[args])
-        visited_Σ[op] = true
-        visited_Var[d[op, :sum]] = true
-        push!(op_order, TraversalNode(op, :Σ))
-      end
+  function visit(op, op_type)
+    if !visited[op_type][op] && all(visited_Var[edge_inputs(d,op,Val(op_type))])
+      visited[op_type][op] = true
+      visited_Var[edge_output(d,op,Val(op_type))] = true
+      push!(op_order, TraversalNode(op, op_type))
     end
   end
 
-  @assert length(op_order) == n_ops(d)
+  for _ in 1:n_ops(d)
+    visit.(parts(d,:Op1), :Op1)
+    visit.(parts(d,:Op2), :Op2)
+    visit.(parts(d,:Σ), :Σ)
+  end
 
+  @assert length(op_order) == n_ops(d)
   op_order
 end
 
-function n_ops(d::SummationDecapode)
-  return nparts(d, :Op1) + nparts(d, :Op2) + nparts(d, :Σ)
-end
+n_ops(d::SummationDecapode) =
+  nparts(d, :Op1) + nparts(d, :Op2) + nparts(d, :Σ)
 
-function start_nodes(d::SummationDecapode)
-  return vcat(infer_states(d), incident(d, :Literal, :type))
-end
+start_nodes(d::SummationDecapode) =
+  vcat(infer_states(d), incident(d, :Literal, :type))
 
 function retrieve_name(d::SummationDecapode, tsr::TraversalNode)
   @match tsr.name begin
@@ -70,3 +70,4 @@ function retrieve_name(d::SummationDecapode, tsr::TraversalNode)
     _ => error("$(tsr.name) is a table without names")
   end
 end
+

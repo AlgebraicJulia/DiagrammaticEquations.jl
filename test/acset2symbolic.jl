@@ -202,17 +202,3 @@ end
     @test Heat_open ≃ z
 
 end
-
-x=@decapode begin
-    u::Form0
-    ∂ₜ(u) == u
-end
-symbolic_rewriting(x)
-# if the `for op1 in parts(og_d, :Op1)...` block is removed, this is annihilated because x has no terminals
-
-x=@decapode begin
-    u::Form0
-    v::Form0
-    ∂ₜ(v) == u
-end
-symbolic_rewriting(x) # fine
