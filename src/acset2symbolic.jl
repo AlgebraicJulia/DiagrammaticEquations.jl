@@ -73,10 +73,6 @@ function to_acset(d::SummationDecapode, sym_exprs)
     :($(d[i, :name])::$(d[i, :type]))
   end
 
-  tangents = map(incident(d, DerivOp, :op1)) do op1
-    :($(d[d[op1, :tgt], :name]) == $DerivOp($(d[d[op1, :src], :name])))
-  end
-
   #TODO: This step is breaking up summations
   final_exprs = SymbolicUtils.Code.toexpr.(sym_exprs)
   reify!(exprs) = foreach(exprs) do x
