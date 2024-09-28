@@ -68,6 +68,36 @@ using Catlab
   all_ops_res[5, :name] = :D
   all_ops_res[6, :name] = :C
   @test all_ops ≃ all_ops_res
+
+  with_deriv = @decapode begin
+    A::Form0
+    Ȧ::Form0
+
+    ∂ₜ(A) == Ȧ
+    Ȧ == Δ(A)
+  end
+
+  @test with_deriv == symbolic_rewriting(with_deriv)
+
+  repeated_vars = @decapode begin
+    A::Form0
+    B::Form1
+    C::Form1
+
+    C == d(A)
+    C == Δ(B)
+    C == d(A)
+  end
+
+  @test repeated_vars == symbolic_rewriting(repeated_vars)
+
+  # TODO: This is broken because of the terminals issue in #77
+  self_changing = @decapode begin
+    A::Form0
+    A == ∂ₜ(A)
+  end
+
+  @test_broken repeated_vars == symbolic_rewriting(self_changing)
 end
 
 function expr_rewriter(rules::Vector)

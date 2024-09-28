@@ -3,6 +3,7 @@ using ACSets
 using SymbolicUtils
 using SymbolicUtils: BasicSymbolic, Symbolic
 
+# TODO: Expose only the symbolic_rewriting function
 export symbolics_lookup, extract_symexprs, apply_rewrites, merge_equations, to_acset, symbolic_rewriting
 
 const DECA_EQUALITY_SYMBOL = (==)
@@ -30,13 +31,13 @@ end
 function symbolic_rewriting(old_d::SummationDecapode, rewriter = nothing)
   d = infer_types!(deepcopy(old_d))
   eqns = merge_equations(d)
-  to_acset(d, isnothing(rewriter) ? eqns : map(rewriter, eqns))
+  to_acset(d, apply_rewrites(eqns, rewriter))
 end
 
+apply_rewrites(eqns, rewriter) = isnothing(rewriter) ? eqns : map(rewriter, eqns)
+
 function extract_symexprs(d::SummationDecapode, symvar_lookup::Dict{Symbol, BasicSymbolic})
-  sym_list = SymbolicEquation{Symbolic}[]
-  non_tangents = Iterators.filter(x -> retrieve_name(d, x) != DerivOp, topological_sort_edges(d))
-  map(non_tangents) do node
+  map(topological_sort_edges(d)) do node
     to_symbolics(d, symvar_lookup, node.index, node.name)
   end
 end
@@ -50,26 +51,22 @@ function merge_equations(d::SummationDecapode)
   symvar_lookup = symbolics_lookup(d)
   symexpr_list = extract_symexprs(d, symvar_lookup)
 
-  eqn_lookup = Dict{Any,Any}(map(start_nodes(d)) do i
-    sym = symvar_lookup[d[i, :name]]
-    (sym, sym)
-  end)
+  eqn_lookup = Dict()
+
+  terminal_vars = infer_terminal_names(d)
+  terminal_eqns = SymbolicEquation{Symbolic}[]
+
   foreach(symexpr_list) do x
     push!(eqn_lookup, (x.lhs => SymbolicUtils.substitute(x.rhs, eqn_lookup)))
+    if x.lhs.name in terminal_vars
+      push!(terminal_eqns, SymbolicEquation{Symbolic}(x.lhs, eqn_lookup[x.lhs]))
+    end
   end
 
-  terminals = Iterators.filter(x -> x.lhs.name in infer_terminal_names(d), symexpr_list)
-  map(x -> formed_deca_eqn(x.lhs, eqn_lookup[x.lhs]), terminals)
+  formed_deca_eqn.(terminal_eqns)
 end
 
-formed_deca_eqn(lhs, rhs) = SymbolicUtils.Term{Number}(DECA_EQUALITY_SYMBOL, [lhs, rhs])
-
-function apply_rewrites(symexprs, rewriter)
-  map(symexprs) do sym
-    res_sym = rewriter(sym)
-    isnothing(res_sym) ? sym : res_sym
-  end
-end
+formed_deca_eqn(symeqn::SymbolicEquation{Symbolic}) = SymbolicUtils.Term{Number}(DECA_EQUALITY_SYMBOL, [symeqn.lhs, symeqn.rhs])
 
 function to_acset(d::SummationDecapode, sym_exprs)
   outer_types = map([infer_states(d)..., infer_terminals(d)...]) do i
@@ -90,8 +87,11 @@ function to_acset(d::SummationDecapode, sym_exprs)
   end
   reify!(final_exprs)
 
-  deca_block = quote end
-  deca_block.args = [outer_types..., tangents..., final_exprs...]
+  deca_block = quote
+    $(outer_types...) 
+    $(final_exprs...)
+  end
+
   ∘(infer_types!, SummationDecapode, parse_decapode)(deca_block)
 end
 
