@@ -93,8 +93,7 @@ using Catlab
 
   # TODO: This is broken because of the terminals issue in #77
   self_changing = @decapode begin
-    A::Form0
-    A == ∂ₜ(A)
+    c_exp == ∂ₜ(c_exp)
   end
 
   @test_broken repeated_vars == symbolic_rewriting(self_changing)
