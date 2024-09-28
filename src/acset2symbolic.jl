@@ -10,11 +10,11 @@ const SymEqSym = SymbolicEquation{Symbolic}
 
 function symbolics_lookup(d::SummationDecapode)
   Dict{Symbol, BasicSymbolic}(map(d[:name],d[:type]) do name,type
-    (name, decavar_to_symbolics(d, name, type))
+    (name, decavar_to_symbolics(name, type))
   end)
 end
 
-function decavar_to_symbolics(d::SummationDecapode, var_name::Symbol, var_type::Symbol; space = :I)
+function decavar_to_symbolics(var_name::Symbol, var_type::Symbol; space = :I)
   new_type = SymbolicUtils.symtype(Deca.DECQuantity, var_type, space)
   SymbolicUtils.Sym{new_type}(var_name)
 end
