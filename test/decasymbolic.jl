@@ -143,7 +143,7 @@ end
     TumorInvasion = @decapode begin
         (C,fC)::Form0
         (Dif,Kd,Cmax)::Constant
-        ∂ₜ(C) == Dif * Δ(C) + fC - Kd * C
+        ∂ₜ(C) == Dif * Δ(C) + fC - C * Kd
     end
     infer_types!(TumorInvasion)
     context = SymbolicContext(Term(TumorInvasion))
@@ -151,5 +151,8 @@ end
 
     # new terms introduced
     @test_broken TumorInvasion == TumorInvasion′
+    # TI' has (11, Literal, -1) and (12, infer, mult_1)
+    # Op1 (2, 1, 4, 7) should be (2, 4, 1, 7)
+    # Sum is (1, 6), (2, 10)
 
 end

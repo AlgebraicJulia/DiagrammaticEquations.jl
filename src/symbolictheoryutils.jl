@@ -157,6 +157,7 @@ macro alias(body)
                     $rep(s...) 
                 end
                 export $alias
+
                 Base.nameof(::typeof($alias), s) = Symbol("$alias")
             end))
     end

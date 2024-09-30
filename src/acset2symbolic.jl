@@ -35,8 +35,7 @@ end
 
 function extract_symexprs(d::SummationDecapode, symvar_lookup::Dict{Symbol, BasicSymbolic})
   sym_list = SymbolicEquation{Symbolic}[]
-  non_tangents = Iterators.filter(x -> retrieve_name(d, x) != DerivOp, topological_sort_edges(d))
-  map(non_tangents) do node
+  map(topological_sort_edges(d)) do node
     to_symbolics(d, symvar_lookup, node.index, node.name)
   end
 end
