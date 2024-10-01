@@ -107,12 +107,14 @@ macro operator(head, body)
             s = promote_symtype($f, $(argnames...))
             SymbolicUtils.Term{s}($f, Any[$(argnames...)])
         end
+
         export $f
 
         Base.show(io::IO, ::typeof($f)) = print(io, $f)
     end)
 
-    # if there are rewriting rules, add a method which accepts the function symbol and its arity (to prevent shadowing on operators like `-`)
+    # if there are rewriting rules, add a method which accepts the function symbol and its arity 
+    # (to prevent shadowing on operators like `-`)
     if !isempty(rulecalls)
         push!(result.args, quote
             function rules(::typeof($f), ::Val{$arity})
@@ -152,16 +154,16 @@ macro alias(body)
     result = quote end
     foreach(aliases) do alias
         push!(result.args,
-            esc(quote
+            quote
                 function $alias(s...)
                     $rep(s...) 
                 end
                 export $alias
 
                 Base.nameof(::typeof($alias), s) = Symbol("$alias")
-            end))
+            end)
     end
-    result
+    return esc(result)
 end
 export @alias
 

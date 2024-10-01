@@ -62,6 +62,9 @@ function decapodes.Term(t::SymbolicUtils.BasicSymbolic)
         end
     end
 end
+# TODO subtraction is not parsed as such. e.g.,
+# a, b = @syms a::Scalar b::Scalar
+# Term(a-b) = Plus(Term[Var(:a), Mult(Term[Lit(Symbol("-1")), Var(:b)]))
 
 decapodes.Term(x::Real) = decapodes.Lit(Symbol(x))
 
