@@ -120,6 +120,8 @@ macro operator(head, body)
             function rules(::typeof($f), ::Val{$arity})
                 [($(rulecalls...))]
             end
+            
+            rules(::typeof($f)) = rules($f, Val{1})
         end)
     end
 

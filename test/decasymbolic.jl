@@ -6,8 +6,10 @@ using SymbolicUtils
 using SymbolicUtils: symtype, promote_symtype, Symbolic
 using MLStyle
 
+import DiagrammaticEquations: rules
+
 # load up some variable variables and expressions
-👻,   = @syms 👻::InferredType
+ϐ,    = @syms ϐ::InferredType # \varbeta
 ℓ,    = @syms ℓ::Literal
 c, t  = @syms c::Const t::Parameter
 a, b  = @syms a::Scalar b::Scalar
@@ -18,7 +20,7 @@ u, du = @syms u::PrimalForm{0, :X, 2} du::PrimalForm{1, :X, 2}
 
 @testset "Term Construction" begin
 
-    @test symtype(👻) == InferredType
+    @test symtype(ϐ) == InferredType
     @test symtype(ℓ) == Literal
     @test symtype(c) == Const
     @test symtype(t) == Parameter
@@ -33,11 +35,11 @@ u, du = @syms u::PrimalForm{0, :X, 2} du::PrimalForm{1, :X, 2}
     @test symtype(c + t) == Scalar
     @test symtype(t + t) == Scalar
     @test symtype(c + c) == Scalar
-    @test symtype(t + 👻) == InferredType
+    @test symtype(t + ϐ) == InferredType
 
     @test symtype(u ∧ ω) == PrimalForm{1, :X, 2}
     @test symtype(ω ∧ ω) == PrimalForm{2, :X, 2}
-    @test symtype(u ∧ 👻) == InferredType
+    @test symtype(u ∧ ϐ) == InferredType
 
     # @test_throws ThDEC.SortError ThDEC.♯(u)
     @test symtype(Δ(u) + Δ(u)) == PrimalForm{0, :X, 2}
