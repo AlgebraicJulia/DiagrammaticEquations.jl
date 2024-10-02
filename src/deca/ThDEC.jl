@@ -199,6 +199,7 @@ end
     end
     @rule Δ(~x::isForm0) => ★(d(★(d(~x))))
     @rule Δ(~x::isForm1) => ★(d(★(d(~x)))) + d(★(d(★(~x))))
+    @rule Δ(~x::isForm2) => d(★(d(★(~x))))
 end
 
 @alias (Δ₀, Δ₁, Δ₂) => Δ
@@ -297,6 +298,7 @@ function Base.nameof(::typeof(★), s)
     Symbol("★$(as_sub(isdual(s) ? dim(space(s)) - dim(s) : dim(s)))$(inv)")
 end
 
+# TODO: Check that form type is no larger than the ambient dimension
 function SymbolicUtils.symtype(::Type{<:Quantity}, qty::Symbol, space::Symbol, dim::Int = 2)
     @match qty begin
         :Scalar => Scalar
