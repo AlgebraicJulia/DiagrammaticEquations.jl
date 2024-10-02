@@ -33,13 +33,6 @@ function to_symbolics(d::SummationDecapode)
   map(e -> to_symbolics(d, symvar_lookup, e.index, e.name), topological_sort_edges(d))
 end
 
-function extract_symexprs(d::SummationDecapode, symvar_lookup::Dict{Symbol, BasicSymbolic})
-  sym_list = SymbolicEquation{Symbolic}[]
-  map(topological_sort_edges(d)) do node
-    to_symbolics(d, symvar_lookup, node.index, node.name)
-  end
-end
-
 function symbolic_rewriting(d::SummationDecapode, rewriter=identity)
   d′ = infer_types!(deepcopy(d))
   eqns = merge_equations(d′)
