@@ -14,7 +14,7 @@ function symbolics_lookup(d::SummationDecapode)
   end)
 end
 
-function decavar_to_symbolics(var_name::Symbol, var_type::Symbol; space = :I)
+function decavar_to_symbolics(var_name::Symbol, var_type::Symbol, space = :I)
   new_type = SymbolicUtils.symtype(Deca.DECQuantity, var_type, space)
   SymbolicUtils.Sym{new_type}(var_name)
 end
@@ -65,7 +65,9 @@ function merge_equations(d::SummationDecapode)
 end
 
 function to_acset(d::SummationDecapode, sym_exprs)
-  outer_types = map([infer_states(d)..., infer_terminals(d)...]) do i
+  literals = incident(d, :Literal, :type)
+
+  outer_types = map([infer_states(d)..., infer_terminals(d)..., literals...]) do i
     :($(d[i, :name])::$(d[i, :type]))
   end
 
@@ -81,5 +83,6 @@ function to_acset(d::SummationDecapode, sym_exprs)
 
   deca_block = quote end
   deca_block.args = [outer_types..., final_exprs...]
+
   ∘(infer_types!, SummationDecapode, parse_decapode)(deca_block)
 end

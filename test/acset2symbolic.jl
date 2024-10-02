@@ -97,6 +97,35 @@ using Catlab
   end
 
   @test_broken repeated_vars == symbolic_rewriting(self_changing)
+
+  literal = @decapode begin
+    A::Form0
+    B::Form0
+
+    B == A * 2
+  end
+
+  @test literal == symbolic_rewriting(literal)
+
+  parameter = @decapode begin
+    A::Form0
+    P::Parameter
+    B::Form0
+
+    B == A * P
+  end
+
+  @test parameter == symbolic_rewriting(parameter)
+
+  constant = @decapode begin
+    A::Form0
+    C::Constant
+    B::Form0
+
+    B == A * C
+  end
+
+  @test constant == symbolic_rewriting(constant)
 end
 
 function expr_rewriter(rules::Vector)
@@ -154,6 +183,30 @@ end
 
   @test op2s_equiv == op2s_rewritten
 
+
+  distr_d = @decapode begin
+    A::Form0
+    B::Form0
+    C::Form0
+
+    C == d(∧(A, B))
+  end
+  infer_types!(distr_d)
+
+  leibniz = @rule d(∧(~x, ~y)) => ∧(d(~x), ~y) + ∧(~x, d(~y))
+
+  distr_d_rewritten = symbolic_rewriting(distr_d, expr_rewriter([leibniz]))
+
+  distr_d_res = @decapode begin
+    A::Form0
+    B::Form0
+    C::Form0
+
+    C == ∧(d(A), B) + ∧(A, d(B))
+  end
+  infer_types!(distr_d_res)
+
+  @test distr_d_res == distr_d_rewritten
 end
 
 @testset "Heat" begin
@@ -215,7 +268,7 @@ end
         ∂ₜ(G) == Δ(u)*κ
     end
     infer_types!(Heat)
-    
+
     Heat_open = @decapode begin
         u::Form0
         G::Form0
