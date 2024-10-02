@@ -186,8 +186,8 @@ end
 
   distr_d = @decapode begin
     A::Form0
-    B::Form0
-    C::Form0
+    B::Form1
+    C::Form2
 
     C == d(∧(A, B))
   end
@@ -199,8 +199,8 @@ end
 
   distr_d_res = @decapode begin
     A::Form0
-    B::Form0
-    C::Form0
+    B::Form1
+    C::Form2
 
     C == ∧(d(A), B) + ∧(A, d(B))
   end

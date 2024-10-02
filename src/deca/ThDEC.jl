@@ -203,13 +203,12 @@ end
 
 @alias (Δ₀, Δ₁, Δ₂) => Δ
 
-# Base.show(io::IO, 
-
+# TODO: Determine what we need to do for .+
 @operator +(S1, S2)::DECQuantity begin
     @match (S1, S2) begin
         PatInferredTypes(_) => InferredType
         (PatScalar(_), PatScalar(_)) => Scalar
-        (PatScalar(_), PatFormParams([i,d,s,n])) || (PatFormParams([i,d,s,n]), PatScalar(_)) => S1 # commutativity
+        (PatScalar(_), PatFormParams([i,d,s,n])) || (PatFormParams([i,d,s,n]), PatScalar(_)) => Form{i, d, s, n} # commutativity
         (PatFormParams([i1,d1,s1,n1]), PatFormParams([i2,d2,s2,n2])) => begin
             if (i1 == i2) && (d1 == d2) && (s1 == s2) && (n1 == n2)
                 Form{i1, d1, s1, n1}
@@ -298,18 +297,18 @@ function Base.nameof(::typeof(★), s)
     Symbol("★$(as_sub(isdual(s) ? dim(space(s)) - dim(s) : dim(s)))$(inv)")
 end
 
-function SymbolicUtils.symtype(::Type{<:Quantity}, qty::Symbol, space::Symbol)
+function SymbolicUtils.symtype(::Type{<:Quantity}, qty::Symbol, space::Symbol, dim::Int = 2)
     @match qty begin
         :Scalar => Scalar
         :Constant => Const
         :Parameter => Parameter
         :Literal => Literal
-        :Form0 => PrimalForm{0, space, 1}
-        :Form1 => PrimalForm{1, space, 1}
-        :Form2 => PrimalForm{2, space, 1}
-        :DualForm0 => DualForm{0, space, 1}
-        :DualForm1 => DualForm{1, space, 1}
-        :DualForm2 => DualForm{2, space, 1}
+        :Form0 => PrimalForm{0, space, dim}
+        :Form1 => PrimalForm{1, space, dim}
+        :Form2 => PrimalForm{2, space, dim}
+        :DualForm0 => DualForm{0, space, dim}
+        :DualForm1 => DualForm{1, space, dim}
+        :DualForm2 => DualForm{2, space, dim}
         :Infer => InferredType
         _ => error("Received $qty")
     end

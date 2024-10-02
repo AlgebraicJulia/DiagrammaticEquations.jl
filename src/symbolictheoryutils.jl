@@ -43,7 +43,7 @@ Creates an operator `foo` with arguments which are types in a given Theory. This
     (@rule expr1)
     ...
     (@rule exprN)
-end     
+end
 ```
 builds
 ```
@@ -81,7 +81,7 @@ macro operator(head, body)
     end
     (f, types, Theory) = ph(head)
 
-    # Passing types to functions requires that we type the signature with ::Type{T}. 
+    # Passing types to functions requires that we type the signature with ::Type{T}.
     # This means that the user would have to write `my_op(::Type{T1}, ::Type{T2}, ...)`
     # As a convenience to the user, we allow them to specify the signature using just the types themselves:
     # `my_op(T1, T2, ...)`
@@ -89,15 +89,15 @@ macro operator(head, body)
     sort_constraints = [:($S<:$Theory) for S in types]
     arity = length(sort_types)
 
-    # Parse the body for @rule calls. 
+    # Parse the body for @rule calls.
     block, rulecalls = @match Base.remove_linenums!(body) begin
         Expr(:block, block, rules...) => (block, rules)
         s => nothing
     end
-    
+
     # initialize the result
     result = quote end
-    
+
     # construct the function on basic symbolics
     argnames = [gensym(:x) for _ in 1:arity]
     argclaus = [:($a::Symbolic) for a in argnames]
@@ -110,17 +110,17 @@ macro operator(head, body)
 
         export $f
 
-        Base.show(io::IO, ::typeof($f)) = print(io, $f)
+        # Base.show(io::IO, ::typeof($f)) = print(io, $f)
     end)
 
-    # if there are rewriting rules, add a method which accepts the function symbol and its arity 
+    # if there are rewriting rules, add a method which accepts the function symbol and its arity
     # (to prevent shadowing on operators like `-`)
     if !isempty(rulecalls)
         push!(result.args, quote
             function rules(::typeof($f), ::Val{$arity})
                 [($(rulecalls...))]
             end
-            
+
             rules(::typeof($f)) = rules($f, Val{1})
         end)
     end
@@ -158,7 +158,7 @@ macro alias(body)
         push!(result.args,
             quote
                 function $alias(s...)
-                    $rep(s...) 
+                    $rep(s...)
                 end
                 export $alias
 
@@ -171,4 +171,3 @@ export @alias
 
 alias(x) = error("$x has no aliases")
 export alias
-
