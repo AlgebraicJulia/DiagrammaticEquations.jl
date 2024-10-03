@@ -24,8 +24,16 @@ export DECQuantity
 # this ensures symtype doesn't recurse endlessly
 SymbolicUtils.symtype(::Type{S}) where S<:DECQuantity = S
 
-struct Scalar <: DECQuantity end
-export Scalar
+abstract type AbstractScalar <: DECQuantity end
+
+struct InferredType <: DECQuantity end
+export InferredType
+
+struct Scalar <: AbstractScalar end
+struct Parameter <: AbstractScalar end
+struct Const <: AbstractScalar end
+struct Literal <: AbstractScalar end
+export Scalar, Parameter, Const, Literal
 
 struct FormParams
     dim::Int
@@ -85,6 +93,18 @@ Base.nameof(u::Type{<:DualForm}) = Symbol("DualForm"*"$(dim(u))")
 
 # ACTIVE PATTERNS
 
+@active PatInferredType(T) begin
+    if T <: InferredType
+        Some(InferredType)
+    end
+end
+
+@active PatInferredTypes(T) begin
+    if any(S->S<:InferredType, T)
+        Some(InferredType)
+    end
+end
+
 @active PatForm(T) begin
     if T <: Form
         Some(T)
@@ -107,7 +127,7 @@ end
 export PatFormDim
 
 @active PatScalar(T) begin
-    if T <: Scalar
+    if T <: AbstractScalar
         Some(T)
     end
 end
@@ -153,6 +173,7 @@ export isDualForm, isForm0, isForm1, isForm2
 
 @operator d(S)::DECQuantity begin
     @match S begin
+        PatInferredType(_) => InferredType
         PatFormParams([i,d,s,n]) => Form{i+1,d,s,n}
         _ => throw(ExteriorDerivativeError(S))
     end
@@ -162,6 +183,7 @@ end
 
 @operator ★(S)::DECQuantity begin
     @match S begin
+        PatInferredType(_) => InferredType
         PatFormParams([i,d,s,n]) => Form{n-i,d,s,n}
         _ => throw(HodgeStarError(S))
     end
@@ -171,17 +193,23 @@ end
 
 @operator Δ(S)::DECQuantity begin
     @match S begin
+        PatInferredType(_) => InferredType
         PatForm(_) => promote_symtype(★ ∘ d ∘ ★ ∘ d, S)
         _ => throw(LaplacianError(S))
     end
     @rule Δ(~x::isForm0) => ★(d(★(d(~x))))
     @rule Δ(~x::isForm1) => ★(d(★(d(~x)))) + d(★(d(★(~x))))
+    @rule Δ(~x::isForm2) => d(★(d(★(~x))))
 end
 
+@alias (Δ₀, Δ₁, Δ₂) => Δ
+
+# TODO: Determine what we need to do for .+
 @operator +(S1, S2)::DECQuantity begin
     @match (S1, S2) begin
+        PatInferredTypes(_) => InferredType
         (PatScalar(_), PatScalar(_)) => Scalar
-        (PatScalar(_), PatFormParams([i,d,s,n])) || (PatFormParams([i,d,s,n]), PatScalar(_)) => S1 # commutativity
+        (PatScalar(_), PatFormParams([i,d,s,n])) || (PatFormParams([i,d,s,n]), PatScalar(_)) => Form{i, d, s, n} # commutativity
         (PatFormParams([i1,d1,s1,n1]), PatFormParams([i2,d2,s2,n2])) => begin
             if (i1 == i2) && (d1 == d2) && (s1 == s2) && (n1 == n2)
                 Form{i1, d1, s1, n1}
@@ -193,10 +221,13 @@ end
     end
 end
 
-@operator -(S1, S2)::DECQuantity begin +(S1, S2) end
+@operator -(S1, S2)::DECQuantity begin
+    promote_symtype(+, S1, S2)
+end
 
 @operator *(S1, S2)::DECQuantity begin
     @match (S1, S2) begin
+        PatInferredTypes(_) => InferredType
         (PatScalar(_), PatScalar(_)) => Scalar
         (PatScalar(_), PatFormParams([i,d,s,n])) || (PatFormParams([i,d,s,n]), PatScalar(_)) => Form{i,d,s,n}
         _ => throw(BinaryOpError("multiply", S1, S2))
@@ -205,6 +236,7 @@ end
 
 @operator ∧(S1, S2)::DECQuantity begin
     @match (S1, S2) begin
+        PatInferredTypes(_) => InferredType
         (PatFormParams([i1,d1,s1,n1]), PatFormParams([i2,d2,s2,n2])) => begin
             (d1 == d2) && (s1 == s2) && (n1 == n2) || throw(WedgeOpError(S1, S2))
             if i1 + i2 <= n1
@@ -219,9 +251,10 @@ end
 
 abstract type SortError <: Exception end
 
-# struct WedgeDimError <: SortError end
-
-Base.nameof(s::Scalar) = :Constant
+Base.nameof(s::Union{Literal,Type{Literal}}) = :Literal
+Base.nameof(s::Union{Const, Type{Const}}) = :Constant
+Base.nameof(s::Union{Parameter, Type{Parameter}}) = :Parameter
+Base.nameof(s::Union{Scalar, Type{Scalar}}) = :Scalar
 
 function Base.nameof(f::Form; with_dim_parameter=false)
     dual = isdual(f) ? "Dual" : ""
@@ -254,6 +287,8 @@ function Base.nameof(::typeof(∧), s1, s2)
     Symbol("∧$(as_sub(dim(s1)))$(as_sub(dim(s2)))")
 end
 
+Base.nameof(::typeof(∂ₜ), s) = Symbol("∂ₜ($(nameof(s)))")
+
 Base.nameof(::typeof(d), s) = Symbol("d$(as_sub(dim(s)))")
 
 Base.nameof(::typeof(Δ), s) = :Δ
@@ -263,15 +298,20 @@ function Base.nameof(::typeof(★), s)
     Symbol("★$(as_sub(isdual(s) ? dim(space(s)) - dim(s) : dim(s)))$(inv)")
 end
 
-function SymbolicUtils.symtype(::Type{<:Quantity}, qty::Symbol, space::Symbol)
+# TODO: Check that form type is no larger than the ambient dimension
+function SymbolicUtils.symtype(::Type{<:Quantity}, qty::Symbol, space::Symbol, dim::Int = 2)
     @match qty begin
-        :Scalar || :Constant => Scalar
-        :Form0 => PrimalForm{0, space, 1}
-        :Form1 => PrimalForm{1, space, 1}
-        :Form2 => PrimalForm{2, space, 1}
-        :DualForm0 => DualForm{0, space, 1}
-        :DualForm1 => DualForm{1, space, 1}
-        :DualForm2 => DualForm{2, space, 1}
+        :Scalar => Scalar
+        :Constant => Const
+        :Parameter => Parameter
+        :Literal => Literal
+        :Form0 => PrimalForm{0, space, dim}
+        :Form1 => PrimalForm{1, space, dim}
+        :Form2 => PrimalForm{2, space, dim}
+        :DualForm0 => DualForm{0, space, dim}
+        :DualForm1 => DualForm{1, space, dim}
+        :DualForm2 => DualForm{2, space, dim}
+        :Infer => InferredType
         _ => error("Received $qty")
     end
 end
