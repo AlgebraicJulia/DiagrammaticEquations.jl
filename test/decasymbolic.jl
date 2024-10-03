@@ -15,8 +15,12 @@ c, t  = @syms c::Const t::Parameter
 a, b  = @syms a::Scalar b::Scalar
 u, du = @syms u::PrimalForm{0, :X, 2} du::PrimalForm{1, :X, 2}
 ω, η  = @syms ω::PrimalForm{1, :X, 2} η::DualForm{2, :X, 2}
+h,    = @syms h::PrimalForm{2, :X, 2}
 ϕ, ψ  = @syms ϕ::PrimalVF{:X, 2} ψ::DualVF{:X, 2}
 # TODO would be nice to pass the space globally to avoid duplication
+
+u2,   = @syms u2::PrimalForm{0, :Y, 2}
+u3,   = @syms u3::PrimalForm{0, :X, 3}
 
 @testset "Term Construction" begin
 
@@ -111,6 +115,42 @@ end
     # R
     @test isequal(R(φ(2u,2u,2u)), R(φ′(2u,2u,2u)))
     # TODO we need to alias rewriting rules
+
+end
+
+@testset "Errors" begin
+
+    # addition
+    @test_throws OperatorError u + du # mismatched grade
+    @test_throws OperatorError h + η  # primal and dual
+    @test_throws OperatorError u + u2 # differing spaces
+    @test_throws OperatorError u + u3 # differing codimension
+
+    # subtraction
+    @test_throws OperatorError u - du # mismatched grade
+    @test_throws OperatorError h - η  # primal and dual
+    @test_throws OperatorError u - u2 # differing spaces
+    @test_throws OperatorError u - u3 # differing spatial dimension
+
+    # exterior derivative
+    @test_throws OperatorError d(a)
+    @test_throws OperatorError d(ϕ)
+
+    # hodge star
+    @test_throws OperatorError ★(a)
+    @test_throws OperatorError ★(ϕ)
+
+    # Laplacian
+    @test_throws OperatorError Δ(a)
+    @test_throws OperatorError Δ(ϕ)
+
+    # multiplication
+    @test_throws OperatorError u * du
+    @test_throws OperatorError ϕ * u
+
+    @test_throws OperatorError du ∧ h # checks if spaces exceed dimension
+    @test_throws OperatorError a ∧ a  # cannot take wedge of scalars
+    @test_throws OperatorError u ∧ ϕ  # cannot take wedge of vector fields
 
 end
 

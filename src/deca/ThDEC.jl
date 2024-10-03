@@ -175,7 +175,7 @@ export isDualForm, isForm0, isForm1, isForm2
     @match S begin
         PatInferredType(_) => InferredType
         PatFormParams([i,d,s,n]) => Form{i+1,d,s,n}
-        _ => throw(ExteriorDerivativeError(S))
+        _ => throw(OperatorError("take the exterior derivative", S))
     end
 end
 
@@ -185,17 +185,18 @@ end
     @match S begin
         PatInferredType(_) => InferredType
         PatFormParams([i,d,s,n]) => Form{n-i,d,s,n}
-        _ => throw(HodgeStarError(S))
+        _ => throw(OperatorError("take the hodge star", S))
     end
 end
 
+# TODO in orthodox Decapodes, these are type-specific.
 @alias (★₀, ★₁, ★₂, ★₀⁻¹, ★₁⁻¹, ★₂⁻¹) => ★
 
 @operator Δ(S)::DECQuantity begin
     @match S begin
         PatInferredType(_) => InferredType
         PatForm(_) => promote_symtype(★ ∘ d ∘ ★ ∘ d, S)
-        _ => throw(LaplacianError(S))
+        _ => throw(OperatorError("take the Laplacian", S))
     end
     @rule Δ(~x::isForm0) => ★(d(★(d(~x))))
     @rule Δ(~x::isForm1) => ★(d(★(d(~x)))) + d(★(d(★(~x))))
@@ -214,10 +215,10 @@ end
             if (i1 == i2) && (d1 == d2) && (s1 == s2) && (n1 == n2)
                 Form{i1, d1, s1, n1}
             else
-                throw(AdditionDimensionalError(S1, S2))
+                throw(OperatorError("sum", [S1, S2]))
             end
         end
-        _ => throw(BinaryOpError("add", S1, S2))
+        _ => throw(OperatorError("add", [S1, S2]))
     end
 end
 
@@ -230,7 +231,7 @@ end
         PatInferredTypes(_) => InferredType
         (PatScalar(_), PatScalar(_)) => Scalar
         (PatScalar(_), PatFormParams([i,d,s,n])) || (PatFormParams([i,d,s,n]), PatScalar(_)) => Form{i,d,s,n}
-        _ => throw(BinaryOpError("multiply", S1, S2))
+        _ => throw(OperatorError("multiply", [S1, S2]))
     end
 end
 
@@ -238,14 +239,14 @@ end
     @match (S1, S2) begin
         PatInferredTypes(_) => InferredType
         (PatFormParams([i1,d1,s1,n1]), PatFormParams([i2,d2,s2,n2])) => begin
-            (d1 == d2) && (s1 == s2) && (n1 == n2) || throw(WedgeOpError(S1, S2))
+            (d1 == d2) && (s1 == s2) && (n1 == n2) || throw(OperatorError("take the wedge product", [S1, S2]))
             if i1 + i2 <= n1
                 Form{i1 + i2, d1, s1, n1}
             else
-                throw(WedgeDimError(S1, S2))
+                throw(OperatorError("take the wedge product", [S1, S2], "The dimensions of the form are bounded by $n1"))
             end
         end
-        _ => throw(BinaryOpError("take the wedge product of", S1, S2))
+        _ => throw(OperatorError("take the wedge product", [S1, S2]))
     end
 end
 
@@ -316,54 +317,19 @@ function SymbolicUtils.symtype(::Type{<:Quantity}, qty::Symbol, space::Symbol, d
     end
 end
 
-struct ExteriorDerivativeError <: SortError
-    sort::DataType
-end
-
-Base.showerror(io::IO, e::ExteriorDerivativeError) = print(io, "Cannot apply the exterior derivative to $(e.sort)")
-
-struct HodgeStarError <: SortError
-    sort::DataType
-end
-
-Base.showerror(io::IO, e::HodgeStarError) = print(io, "Cannot take the hodge star of $(e.sort)")
-
-struct LaplacianError <: SortError
-    sort::DataType
-end
-
-Base.showerror(io::IO, e::LaplacianError) = print(io, "Cannot take the Laplacian of $(e.sort)")
-
-struct AdditionDimensionalError <: SortError
-    sort1::DataType
-    sort2::DataType
-end
-
-Base.showerror(io::IO, e::AdditionDimensionalError) = print(io, """
-                    Can not add two forms of different dimensions/dualities/spaces:
-                    $(e.sort1) and $(e.sort2)
-                        """)
-
-struct BinaryOpError <: SortError
+struct OperatorError <: SortError
     verb::String
-    sort1::DataType
-    sort2::DataType
+    sorts::Vector{DataType}
+    othermsg::String
+    function OperatorError(verb::String, sorts::Vector{DataType}, othermsg::String="")
+        new(verb, sorts, othermsg)
+    end
+    function OperatorError(verb::String, sort::DataType, othermsg::String="")
+        new(verb, [sort], othermsg)
+    end
 end
+export OperatorError
 
-Base.showerror(io::IO, e::BinaryOpError) = print(io, "Cannot $(e.verb) $(e.sort1) and $(e.sort2)")
-
-struct WedgeOpError <: SortError
-    sort1::DataType
-    sort2::DataType
-end
-
-Base.showerror(io::IO, e::WedgeOpError) = print(io, "Can only take a wedge product of two forms of the same duality on the same space. Received $(e.sort1) and $(e.sort2)")
-
-struct WedgeOpDimError <: SortError
-    sort1::DataType
-    sort2::DataType
-end
-
-Base.showerror(io::IO, e::WedgeOpDimError) = print(io, "Can only take a wedge product when the dimensions of the forms add to less than n, where n = $(e.sort.dim) is the dimension of the ambient space: tried to wedge product $(e.sort1) and $(e.sort2)")
+Base.showerror(io::IO, e::OperatorError) = print(io, "Cannot take the $(e.verb) of $(join(e.sorts, " and ")). $(e.othermsg)")
 
 end
