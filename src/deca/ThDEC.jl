@@ -271,32 +271,41 @@ end
 show_duality(ω::Form) = isdual(ω) ? "dual" : "primal"
 
 function Base.show(io::IO, ω::Form)
-    print(io, isdual(ω) ? "DualForm($(dim(ω))) on $(space(ω))" : "PrimalForm($(dim(ω))) on $(space(ω))")
+  if isdual(ω)
+    print(io, "DualForm($(dim(ω))) on $(space(ω))")
+  else
+    print(io, "PrimalForm($(dim(ω))) on $(space(ω))")
+  end
 end
 
-Base.nameof(::typeof(-), s1, s2) = Symbol("$(as_sub(dim(s1)))-$(as_sub(dim(s2)))")
+sub_dim(s) = as_sub(dim(s))
+
+Base.nameof(::typeof(-), s1, s2) = Symbol("$(sub_dim(s1))-$(sub_dim(s2))")
 
 const SUBSCRIPT_DIGIT_0 = '₀'
 
 as_sub(n::Int) = join(map(d -> SUBSCRIPT_DIGIT_0 + d, digits(n)))
 
+
 function Base.nameof(::typeof(∧), s1::B1, s2::B2) where {S1,S2,B1<:BasicSymbolic{S1}, B2<:BasicSymbolic{S2}}
-    Symbol("∧$(as_sub(dim(symtype(s1))))$(as_sub(dim(symtype(s2))))")
+    Symbol("∧$(sub_dim(symtype(s1)))$(sub_dim(symtype(s2)))")
 end
 
 function Base.nameof(::typeof(∧), s1, s2)
-    Symbol("∧$(as_sub(dim(s1)))$(as_sub(dim(s2)))")
+    Symbol("∧$(sub_dim(s1))$(sub_dim(s2))")
 end
 
 Base.nameof(::typeof(∂ₜ), s) = Symbol("∂ₜ($(nameof(s)))")
 
-Base.nameof(::typeof(d), s) = Symbol("d$(as_sub(dim(s)))")
+Base.nameof(::typeof(d), s) = Symbol("d$(sub_dim(s))")
 
+# Base.nameof(::typeof(Δ), s) = Symbol("Δ$(sub_dim(s))")
 Base.nameof(::typeof(Δ), s) = :Δ
 
 function Base.nameof(::typeof(★), s)
     inv = isdual(s) ? "⁻¹" : ""
-    Symbol("★$(as_sub(isdual(s) ? dim(space(s)) - dim(s) : dim(s)))$(inv)")
+    hdg_dim = isdual(s) ? spacedim(s) - dim(s) : dim(s)
+    Symbol("★$(as_sub(hdg_dim))$(inv)")
 end
 
 # TODO: Check that form type is no larger than the ambient dimension

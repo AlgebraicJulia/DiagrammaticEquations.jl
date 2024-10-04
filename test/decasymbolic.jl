@@ -29,7 +29,7 @@ u3,   = @syms u3::PrimalForm{0, :X, 3}
     @test symtype(c) == Const
     @test symtype(t) == Parameter
     @test symtype(a) == Scalar
-    
+
     @test symtype(u) == PrimalForm{0, :X, 2}
     @test symtype(ω) == PrimalForm{1, :X, 2}
     @test symtype(η) == DualForm{2, :X, 2}
@@ -54,13 +54,25 @@ u3,   = @syms u3::PrimalForm{0, :X, 3}
     @test Term(c) == Var(:c)
     @test Term(t) == Var(:t)
     @test Term(∂ₜ(u)) == Tan(Var(:u))
+    @test_broken Term(∂ₜ(u)) == Term(DerivOp(u))
+
     @test Term(★(ω)) == App1(:★₁, Var(:ω))
-    
+    @test Term(★(η)) == App1(:★₀⁻¹, Var(:η))
+
     # test binary operator conversion to decaexpr
     @test Term(a + b) == Plus(Term[Var(:a), Var(:b)])
+    # TODO: Currently parses as addition
+    @test_broken Term(a - b) == App2(:-, Var(:a), Var(:b))
     @test Term(a * b) == Mult(Term[Var(:a), Var(:b)])
     @test Term(ω ∧ du) == App2(:∧₁₁, Var(:ω), Var(:du))
- 
+
+    @test Term(ω + du + d(u)) == Plus(Term[App1(:d₀, Var(:u)), Var(:du), Var(:ω)])
+
+    let
+      @syms f(x, y, z)
+      @test_throws "was unable to convert" Term(f(a, b, u))
+    end
+
     # test promoting types
     @test promote_symtype(d, u) == PrimalForm{1, :X, 2}
     @test promote_symtype(+, a, b) == Scalar
@@ -108,7 +120,7 @@ end
     @test symtype(∇(u)) == PrimalForm{0, :X ,2}
     @test promote_symtype(∇, u) == PrimalForm{0, :X, 2}
     @test isequal(del_expand_0(∇(u)), ★(d(★(d(u)))))
-    
+
     # ρ
     @test symtype(ρ(u)) == Scalar
 

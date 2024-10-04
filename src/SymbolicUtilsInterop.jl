@@ -18,9 +18,7 @@ struct SymbolicEquation{E}
 end
 export SymbolicEquation
 
-Base.show(io::IO, e::SymbolicEquation) = begin
-    print(io, e.lhs); print(io, " == "); print(io, e.rhs)
-end
+Base.show(io::IO, e::SymbolicEquation) = print(io, "$(e.lhs) == $(e.rhs)")
 
 ## a struct carry the symbolic variables and their equations
 struct SymbolicContext
