@@ -268,6 +268,7 @@ function Base.nameof(f::Form; with_dim_parameter=false)
 end
 
 # show methods
+# TODO: Remove me? Not being used anywhere
 show_duality(ω::Form) = isdual(ω) ? "dual" : "primal"
 
 function Base.show(io::IO, ω::Form)
@@ -286,7 +287,7 @@ const SUBSCRIPT_DIGIT_0 = '₀'
 
 as_sub(n::Int) = join(map(d -> SUBSCRIPT_DIGIT_0 + d, digits(n)))
 
-
+# TODO: Do we want both nameof's for wedges? This one belows expects different args
 function Base.nameof(::typeof(∧), s1::B1, s2::B2) where {S1,S2,B1<:BasicSymbolic{S1}, B2<:BasicSymbolic{S2}}
     Symbol("∧$(sub_dim(symtype(s1)))$(sub_dim(symtype(s2)))")
 end
@@ -297,6 +298,7 @@ end
 
 Base.nameof(::typeof(∂ₜ), s) = Symbol("∂ₜ($(nameof(s)))")
 
+#TODO: Add an option to output d for dual forms, typically d₀ -> dual_d₀
 Base.nameof(::typeof(d), s) = Symbol("d$(sub_dim(s))")
 
 # Base.nameof(::typeof(Δ), s) = Symbol("Δ$(sub_dim(s))")

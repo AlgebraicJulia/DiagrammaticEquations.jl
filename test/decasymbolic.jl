@@ -22,7 +22,7 @@ h,    = @syms h::PrimalForm{2, :X, 2}
 u2,   = @syms u2::PrimalForm{0, :Y, 2}
 u3,   = @syms u3::PrimalForm{0, :X, 3}
 
-@testset "Term Construction" begin
+@testset "Symtypes" begin
 
     @test symtype(ϐ) == InferredType
     @test symtype(ℓ) == Literal
@@ -47,32 +47,73 @@ u3,   = @syms u3::PrimalForm{0, :X, 3}
 
     # @test_throws ThDEC.SortError ThDEC.♯(u)
     @test symtype(Δ(u) + Δ(u)) == PrimalForm{0, :X, 2}
+end
 
-    # test unary operator conversion to decaexpr
-    @test Term(1) == Lit(Symbol("1"))
-    @test Term(a) == Var(:a)
-    @test Term(c) == Var(:c)
-    @test Term(t) == Var(:t)
-    @test Term(∂ₜ(u)) == Tan(Var(:u))
-    @test_broken Term(∂ₜ(u)) == Term(DerivOp(u))
+@testset "Type Information" begin
 
-    @test Term(★(ω)) == App1(:★₁, Var(:ω))
-    @test Term(★(η)) == App1(:★₀⁻¹, Var(:η))
+  @test dim(symtype(η)) == 2
 
-    # test binary operator conversion to decaexpr
-    @test Term(a + b) == Plus(Term[Var(:a), Var(:b)])
-    # TODO: Currently parses as addition
-    @test_broken Term(a - b) == App2(:-, Var(:a), Var(:b))
-    @test Term(a * b) == Mult(Term[Var(:a), Var(:b)])
-    @test Term(ω ∧ du) == App2(:∧₁₁, Var(:ω), Var(:du))
+  @test isdual(symtype(η))
+  @test !isdual(symtype(u))
 
-    @test Term(ω + du + d(u)) == Plus(Term[App1(:d₀, Var(:u)), Var(:du), Var(:ω)])
+  @test space(symtype(η)) == :X
+  @test spacedim(symtype(η)) == 2
 
-    let
-      @syms f(x, y, z)
-      @test_throws "was unable to convert" Term(f(a, b, u))
-    end
+  @test isForm0(u)
+  @test !isForm0(du)
+  @test !isForm0(a)
 
+  @test isForm1(ω)
+  @test !isForm1(u)
+  @test !isForm1(a)
+
+  @test isForm2(η)
+  @test !isForm2(u)
+  @test !isForm2(a)
+
+  @test isDualForm(η)
+  @test !isDualForm(u)
+  @test !isDualForm(a)
+end
+
+@testset "Nameof" begin
+  @test nameof(symtype(c)) == :Constant
+  @test nameof(symtype(t)) == :Parameter
+  @test nameof(symtype(a)) == :Scalar
+  @test nameof(symtype(ℓ)) == :Literal
+
+  @test nameof(symtype(u)) == :Form0
+  @test nameof(symtype(ω)) == :Form1
+  @test nameof(symtype(η)) == :DualForm2
+
+  # TODO: Do we want this style of typed subtraction?
+  @test nameof(-, symtype(u), symtype(u)) == Symbol("₀-₀")
+  # TODO: This breaks since this expects the types to have a `dim` function
+  @test_broken nameof(-, symtype(a), symtype(b)) == Symbol("-")
+
+  @test nameof(∧, symtype(u), symtype(u)) == Symbol("∧₀₀")
+  @test nameof(∧, symtype(u), symtype(ω)) == Symbol("∧₀₁")
+  @test nameof(∧, symtype(ω), symtype(u)) == Symbol("∧₁₀")
+
+  # TODO: Do we need a special designation for wedges with duals in them?
+  @test nameof(∧, symtype(ω), symtype(η)) == Symbol("∧₁₂")
+
+  # TODO: Why is this being named as such?
+  @test nameof(∂ₜ, symtype(u)) == Symbol("∂ₜ(Form0)")
+  @test nameof(∂ₜ, symtype(d(u))) == Symbol("∂ₜ(Form1)")
+
+  @test nameof(d, symtype(u)) == Symbol("d₀")
+  @test_broken nameof(d, symtype(η)) == Symbol("dual_d₂")
+
+  @test_broken nameof(Δ, symtype(u)) == Symbol("Δ₀")
+  @test_broken nameof(Δ, symtype(ω)) == Symbol("Δ₁")
+
+  @test nameof(★, symtype(u)) == Symbol("★₀")
+  @test nameof(★, symtype(ω)) == Symbol("★₁")
+  @test nameof(★, symtype(η)) == Symbol("★₀⁻¹")
+end
+
+@testset "Symtype Promotion" begin
     # test promoting types
     @test promote_symtype(d, u) == PrimalForm{1, :X, 2}
     @test promote_symtype(+, a, b) == Scalar
@@ -83,8 +124,38 @@ u3,   = @syms u3::PrimalForm{0, :X, 3}
 
     # test composition
     @test promote_symtype(d ∘ d, u) == PrimalForm{2, :X, 2}
+end
+
+@testset "Term Construction" begin
+
+  # test unary operator conversion to decaexpr
+  @test Term(1) == Lit(Symbol("1"))
+  @test Term(a) == Var(:a)
+  @test Term(c) == Var(:c)
+  @test Term(t) == Var(:t)
+  @test Term(∂ₜ(u)) == Tan(Var(:u))
+  @test_broken Term(∂ₜ(u)) == Term(DerivOp(u))
+
+  @test Term(★(ω)) == App1(:★₁, Var(:ω))
+  @test Term(★(η)) == App1(:★₀⁻¹, Var(:η))
+
+  # test binary operator conversion to decaexpr
+  @test Term(a + b) == Plus(Term[Var(:a), Var(:b)])
+
+  # TODO: Currently parses as addition
+  @test_broken Term(a - b) == App2(:-, Var(:a), Var(:b))
+  @test Term(a * b) == Mult(Term[Var(:a), Var(:b)])
+  @test Term(ω ∧ du) == App2(:∧₁₁, Var(:ω), Var(:du))
+
+  @test Term(ω + du + d(u)) == Plus(Term[App1(:d₀, Var(:u)), Var(:du), Var(:ω)])
+
+  let
+    @syms f(x, y, z)
+    @test_throws "was unable to convert" Term(f(a, b, u))
+  end
 
 end
+
 
 # this is not nabla but "bizarro Δ"
 del_expand_0, del_expand_1 = @operator ∇(S)::DECQuantity begin
