@@ -1,3 +1,26 @@
+abstract type AbstractSDRewriteRule end
+
+struct Op1SDRule <: AbstractSDRewriteRule
+  LHS::Union{Symbol, SummationDecapode}
+  RHS::Union{Symbol, SummationDecapode}
+end
+
+struct Op2SDRule <: AbstractSDRewriteRule
+  LHS::Union{Symbol, SummationDecapode}
+  RHS::Union{Symbol, SummationDecapode}
+  proj1::Int
+  proj2::Int
+end
+
+function Op2SDRule(LHS::Union{Symbol, SummationDecapode}, RHS::Union{Symbol, SummationDecapode})
+  p1s = incident(RHS, :p1, :name)
+  p2s = incident(RHS, :p2, :name)
+  if length(p1s) != 1 || length(p2s) != 1
+    error("proj1 and proj2 to use were not given, but unique distinguished variables p1 and p2 were not found. Found p1: $(p1s) and p2: $(p2s).")
+  end
+  Op2SDRule(LHS, RHS, only(p1s), only(p2s))
+end
+
 # Opening up Op1s
 # --------------
 
@@ -8,12 +31,18 @@ function validate_op1_match(d::SummationDecapode, LHS::SummationDecapode)
   end
 end
 
+validate_op1_match(d::SummationDecapode, r::Op1SDRule) =
+  validate_op1_match(d, r.LHS)
+
 # Validate whether RHS represents a valid replacement for an op1.
 function validate_op1_replacement(d::SummationDecapode, LHS::Symbol, RHS::SummationDecapode)
   if length(infer_states(RHS)) != 1 || length(infer_terminals(RHS)) != 1
     error("The replacement for $(LHS) must have a single input and a single output, but found inputs: $(RHS[infer_states(RHS), :name]) and outputs $(RHS[infer_terminals(RHS), :name])")
   end
 end
+
+validate_op1_replacement(d::SummationDecapode, r::Op1SDRule) =
+  validate_op1_replacement(d, r.LHS, r.RHS)
 
 """    function replace_op1!(d::SummationDecapode, LHS::Symbol, RHS::SummationDecapode)
 
@@ -81,6 +110,19 @@ function replace_op1!(d::SummationDecapode, LHS::Symbol, RHS::Symbol)
   LHS_op1
 end
 
+"""    function replace_op1!(d::SummationDecapode, r::Op1SDRule)
+
+Given a Decapode, d, replace at most one instance of the left-hand-side unary operator with those of the right-hand-side.
+
+Return the index of the replaced unary operator, 0 if no match was found.
+See also: [`replace_op2!`](@ref), [`replace_all_op1s!`](@ref)
+"""
+replace_op1!(d::SummationDecapode, r::Op1SDRule) =
+  replace_op1!(d, r.LHS, r.RHS)
+
+apply_rule!(d::SummationDecapode, r::Op1SDRule) =
+  replace_op1!(d, r)
+
 """    function replace_all_op1s!(d::SummationDecapode, LHS::Union{Symbol, SummationDecapode}, RHS::Union{Symbol, SummationDecapode})
 
 Given a Decapode, d, replace all instances of the left-hand-side unary operator with those of the right-hand-side.
@@ -97,6 +139,17 @@ function replace_all_op1s!(d::SummationDecapode, LHS::Union{Symbol, SummationDec
   any_replaced
 end
 
+"""    function replace_all_op1s!(d::SummationDecapode, r::Op1SDRule)
+
+Given a Decapode, d, replace all instances of the left-hand-side unary operator with those of the right-hand-side.
+
+Return true if any replacements were made, otherwise false.
+
+See also: [`replace_op1!`](@ref), [`replace_all_op2s!`](@ref)
+"""
+replace_all_op1s!(d::SummationDecapode, r::Op1SDRule) =
+  replace_all_op1s!(d, r.LHS, r.RHS)
+
 # Opening up Op2s
 # --------------
 
@@ -107,6 +160,9 @@ function validate_op2_match(d::SummationDecapode, LHS::SummationDecapode)
   end
 end
 
+validate_op2_match(d::SummationDecapode, r::Op2SDRule) =
+  validate_op2_match(d, r.LHS)
+
 # Validate whether RHS represents a valid replacement for an op2.
 function validate_op2_replacement(d::SummationDecapode, LHS::Symbol, RHS::SummationDecapode, proj1::Int, proj2::Int)
   if length(infer_states(RHS)) != 2 || length(infer_terminals(RHS)) != 1
@@ -116,6 +172,9 @@ function validate_op2_replacement(d::SummationDecapode, LHS::Symbol, RHS::Summat
     error("The projections of the RHS of this replacement are not state variables. The projections are $(RHS[[proj1,proj2], :op2]) but the state variables are $(RHS[infer_states(RHS), :op2]).")
   end
 end
+
+validate_op2_replacement(d::SummationDecapode, r::Op2SDRule) =
+  validate_op2_replacement(d, r.LHS, r.RHS, r.proj1, r.proj2)
 
 """    function replace_op2!(d::SummationDecapode, LHS::Symbol, RHS::SummationDecapode, proj1::Int, proj2::Int)
 
@@ -202,6 +261,12 @@ end
 replace_op2!(d::SummationDecapode, LHS::Symbol, RHS::Symbol, proj1, proj2) =
   replace_op2!(d, LHS, RHS)
 
+replace_op2!(d::SummationDecapode, r::Op2SDRule) =
+  replace_op2!(d, r.LHS, r.RHS, r.proj1, r.proj2)
+
+apply_rule!(d::SummationDecapode, r::Op2SDRule) =
+  replace_op2!(d, r)
+
 """    function replace_all_op2s!(d::SummationDecapode, LHS::Union{Symbol, SummationDecapode}, RHS::Union{Symbol, SummationDecapode}, proj1::Int, proj2::Int)
 
 Given a Decapode, d, replace all instances of the left-hand-side binary operator with those of the right-hand-side.
@@ -244,4 +309,10 @@ function replace_all_op2s!(d::SummationDecapode, LHS::Union{Symbol, SummationDec
   end
   any_replaced
 end
+
+replace_all_op2s!(d::SummationDecapode, r::Op2SDRule) =
+  replace_all_op2s!(d, r.LHS, r.RHS, r.proj1, r.proj2)
+
+rewrite!(d::SummationDecapode, rules::AbstractVector{AbstractSDRewriteRule}) =
+  foreach(r -> apply_rule!(d,r), rules)
 
