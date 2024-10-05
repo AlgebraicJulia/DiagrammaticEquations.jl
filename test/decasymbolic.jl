@@ -47,6 +47,22 @@ u3,   = @syms u3::PrimalForm{0, :X, 3}
 
     # @test_throws ThDEC.SortError ThDEC.♯(u)
     @test symtype(Δ(u) + Δ(u)) == PrimalForm{0, :X, 2}
+
+    @test symtype(-(ϐ)) == InferredType
+    @test symtype(d(ϐ)) == InferredType
+    @test symtype(★(ϐ)) == InferredType
+    @test symtype(Δ(ϐ)) == InferredType
+
+    @test symtype(ϐ + ϐ) == InferredType
+    @test symtype(ϐ + u) == InferredType
+    @test_throws OperatorError symtype(u + du + ϐ)
+    # The order of the addition counts when type checking, probably applies
+    # to other operations as well
+    @test_broken (try symtype(ϐ + u + du) catch e; e; end) isa Exception
+
+    @test symtype(ϐ - u) == InferredType
+    @test symtype(ω * ϐ) == InferredType
+    @test symtype(ϐ ∧ ω) == InferredType
 end
 
 @testset "Type Information" begin
@@ -138,6 +154,9 @@ end
 
   @test Term(★(ω)) == App1(:★₁, Var(:ω))
   @test Term(★(η)) == App1(:★₀⁻¹, Var(:η))
+
+  # The symbolics no longer captures ∘
+  @test Term(∘(d, d)(u)) == App1(:d₁, App1(:d₀, Var(:u)))
 
   # test binary operator conversion to decaexpr
   @test Term(a + b) == Plus(Term[Var(:a), Var(:b)])
@@ -239,16 +258,57 @@ end
 
 @testset "Conversion" begin
 
-    Exp = @decapode begin
+    roundtrip(d::SummationDecapode) = SummationDecapode(DecaExpr(SymbolicContext(Term(d))))
+
+    just_vars = @decapode begin
+      u::Form0
+      v::Form0
+    end
+    @test just_vars == roundtrip(just_vars)
+
+    with_tan = @decapode begin
         u::Form0
         v::Form0
         ∂ₜ(v) == u
     end
-    context = SymbolicContext(Term(Exp))
-    Exp′ = SummationDecapode(DecaExpr(context))
+    @test with_tan == roundtrip(with_tan)
 
-    # does roundtripping work
-    @test Exp == Exp′
+    with_op2 = @decapode begin
+      u::Form0
+      v::Form1
+      w::Form1
+
+      w == ∧₀₁(u, v)
+    end
+    @test with_op2 == roundtrip(with_op2)
+
+    with_mult = @decapode begin
+      u::Form1
+      v::Form1
+
+      v == u * 2
+    end
+    @test with_mult == roundtrip(with_mult)
+
+    with_circ = @decapode begin
+      u::Form0
+      v::Form2
+      v == ∘(d₁, d₀)(u)
+    end
+    with_circ_expanded = @decapode begin
+      u::Form0
+      v::Form2
+      v == d₁(d₀(u))
+    end
+    @test with_circ_expanded == roundtrip(with_circ)
+
+    with_infers = @decapode begin
+      v::Form1
+
+      w == ∧(v, u)
+    end
+    # Base.nameof doesn't yet support taking InferredTypes
+    @test_broken with_infers == roundtrip(with_infers)
 
     Heat = @decapode begin
         u::Form0
@@ -257,10 +317,7 @@ end
         ∂ₜ(v) == Δ(u)*κ
     end
     infer_types!(Heat)
-    context = SymbolicContext(Term(Heat))
-    Heat′ = SummationDecapode(DecaExpr(context))
-
-    @test Heat == Heat′
+    @test Heat == roundtrip(Heat)
 
     TumorInvasion = @decapode begin
         (C,fC)::Form0

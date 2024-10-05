@@ -88,8 +88,10 @@ export PrimalVF
 const DualVF{s,n} = VField{true,s,n}
 export DualVF
 
-Base.nameof(u::Type{<:PrimalForm}) = Symbol("Form"*"$(dim(u))")
-Base.nameof(u::Type{<:DualForm}) = Symbol("DualForm"*"$(dim(u))")
+Base.nameof(u::Type{<:PrimalForm}) = Symbol("Form$(dim(u))")
+Base.nameof(u::Type{<:DualForm}) = Symbol("DualForm$(dim(u))")
+
+Base.show(io::IO, ω::Type{<:Form}) = print(io, "$(Base.nameof(ω)) on $(space(ω))")
 
 # ACTIVE PATTERNS
 
@@ -235,6 +237,8 @@ end
     end
 end
 
+@alias (∧₀₀, ∧₀₁, ∧₁₀, ∧₁₁, ∧₀₂, ∧₂₀) => ∧
+
 @operator ∧(S1, S2)::DECQuantity begin
     @match (S1, S2) begin
         PatInferredTypes(_) => InferredType
@@ -256,28 +260,21 @@ Base.nameof(s::Union{Literal,Type{Literal}}) = :Literal
 Base.nameof(s::Union{Const, Type{Const}}) = :Constant
 Base.nameof(s::Union{Parameter, Type{Parameter}}) = :Parameter
 Base.nameof(s::Union{Scalar, Type{Scalar}}) = :Scalar
+Base.nameof(s::Union{InferredType, Type{InferredType}}) = :infer
 
-function Base.nameof(f::Form; with_dim_parameter=false)
-    dual = isdual(f) ? "Dual" : ""
-    formname = Symbol("$(dual)Form$(dim(f))")
-    if with_dim_parameter
-        return Expr(:curly, formname, dim(space(f)))
-    else
-        return formname
-    end
-end
+# TODO: Remove me? Not sure if we ever fall into this case
+# function Base.nameof(f::Form; with_dim_parameter=false)
+#     dual = isdual(f) ? "Dual" : ""
+#     formname = Symbol("$(dual)Form$(dim(f))")
+#     if with_dim_parameter
+#         return Expr(:curly, formname, dim(space(f)))
+#     else
+#         return formname
+#     end
+# end
 
-# show methods
 # TODO: Remove me? Not being used anywhere
-show_duality(ω::Form) = isdual(ω) ? "dual" : "primal"
-
-function Base.show(io::IO, ω::Form)
-  if isdual(ω)
-    print(io, "DualForm($(dim(ω))) on $(space(ω))")
-  else
-    print(io, "PrimalForm($(dim(ω))) on $(space(ω))")
-  end
-end
+# show_duality(ω::Form) = isdual(ω) ? "dual" : "primal"
 
 sub_dim(s) = as_sub(dim(s))
 
@@ -301,6 +298,7 @@ Base.nameof(::typeof(∂ₜ), s) = Symbol("∂ₜ($(nameof(s)))")
 #TODO: Add an option to output d for dual forms, typically d₀ -> dual_d₀
 Base.nameof(::typeof(d), s) = Symbol("d$(sub_dim(s))")
 
+#TODO: Add subtypes for the Laplacian
 # Base.nameof(::typeof(Δ), s) = Symbol("Δ$(sub_dim(s))")
 Base.nameof(::typeof(Δ), s) = :Δ
 
@@ -323,8 +321,8 @@ function SymbolicUtils.symtype(::Type{<:Quantity}, qty::Symbol, space::Symbol, d
         :DualForm0 => DualForm{0, space, dim}
         :DualForm1 => DualForm{1, space, dim}
         :DualForm2 => DualForm{2, space, dim}
-        :Infer => InferredType
-        _ => error("Received $qty")
+        :infer => InferredType
+        _ => error("Received $qty which is not a valid type for Decapodes")
     end
 end
 
