@@ -9,5 +9,7 @@ steps:
       curl -s https://raw.githubusercontent.com/AlgebraicJulia/.github/buildkite/buildkite/pipeline.yml | buildkite-agent pipeline upload
 
   - label: ":wave: Testing that we may edit the pipeline!"
+    command: |
+      echo "hello!"
 
   - wait
