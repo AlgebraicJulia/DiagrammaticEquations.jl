@@ -262,20 +262,6 @@ Base.nameof(s::Union{Parameter, Type{Parameter}}) = :Parameter
 Base.nameof(s::Union{Scalar, Type{Scalar}}) = :Scalar
 Base.nameof(s::Union{InferredType, Type{InferredType}}) = :infer
 
-# TODO: Remove me? Not sure if we ever fall into this case
-# function Base.nameof(f::Form; with_dim_parameter=false)
-#     dual = isdual(f) ? "Dual" : ""
-#     formname = Symbol("$(dual)Form$(dim(f))")
-#     if with_dim_parameter
-#         return Expr(:curly, formname, dim(space(f)))
-#     else
-#         return formname
-#     end
-# end
-
-# TODO: Remove me? Not being used anywhere
-# show_duality(ω::Form) = isdual(ω) ? "dual" : "primal"
-
 sub_dim(s) = as_sub(dim(s))
 
 Base.nameof(::typeof(-), s1, s2) = Symbol("$(sub_dim(s1))-$(sub_dim(s2))")
@@ -283,11 +269,6 @@ Base.nameof(::typeof(-), s1, s2) = Symbol("$(sub_dim(s1))-$(sub_dim(s2))")
 const SUBSCRIPT_DIGIT_0 = '₀'
 
 as_sub(n::Int) = join(map(d -> SUBSCRIPT_DIGIT_0 + d, digits(n)))
-
-# TODO: Do we want both nameof's for wedges? This one belows expects different args
-function Base.nameof(::typeof(∧), s1::B1, s2::B2) where {S1,S2,B1<:BasicSymbolic{S1}, B2<:BasicSymbolic{S2}}
-    Symbol("∧$(sub_dim(symtype(s1)))$(sub_dim(symtype(s2)))")
-end
 
 function Base.nameof(::typeof(∧), s1, s2)
     Symbol("∧$(sub_dim(s1))$(sub_dim(s2))")
