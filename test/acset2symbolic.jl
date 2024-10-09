@@ -96,7 +96,7 @@ using Catlab
     c_exp == ∂ₜ(c_exp)
   end
 
-  @test_broken repeated_vars == symbolic_rewriting(self_changing)
+  @test self_changing == symbolic_rewriting(self_changing)
 
   literal = @decapode begin
     A::Form0

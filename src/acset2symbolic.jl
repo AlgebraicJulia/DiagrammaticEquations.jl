@@ -43,11 +43,13 @@ end
 # e.g. ∂ₜ(G) == κ*u becomes ∂ₜ(G) == u*κ
 function merge_equations(d::SummationDecapode)
   eqn_lookup, terminal_eqns = Dict(), SymEqSym[]
+  deriv_op_tgts = d[incident(d, DerivOp, :op1), [:tgt, :name]] # Patches over issue #77
+  terminal_vars = Set{Symbol}(vcat(infer_terminal_names(d), deriv_op_tgts))
 
   foreach(to_symbolics(d)) do x
     sub = SymbolicUtils.substitute(x.rhs, eqn_lookup)
     push!(eqn_lookup, (x.lhs => sub))
-    if x.lhs.name in infer_terminal_names(d)
+    if x.lhs.name in terminal_vars
       push!(terminal_eqns, SymEqSym(x.lhs, sub))
     end
   end
