@@ -8,6 +8,11 @@ include("aqua.jl")
   include("core.jl")
 end
 
+@testset "Querying" begin
+  include("query.jl")
+  include("deca_query.jl")
+end
+
 @testset "Composition" begin
   include("composition.jl")
 end

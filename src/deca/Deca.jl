@@ -10,6 +10,7 @@ export normalize_unicode, varname, infer_types!, resolve_overloads!, typename, s
 
 include("deca_acset.jl")
 include("deca_visualization.jl")
+include("deca_query.jl")
 
 """    function recursive_delete_parents!(d::SummationDecapode, to_delete::Vector{Int64})
 
