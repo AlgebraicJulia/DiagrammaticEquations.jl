@@ -51,8 +51,8 @@ function parse_decapode(expr::Expr)
     end
     DecaExpr(judges, eqns)
 end
+
 # to_Decapode helper functions
-### TODO - Matt: we need to generalize this
 reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
   let ! = reduce_term!
     @match t begin

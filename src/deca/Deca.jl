@@ -4,12 +4,17 @@ using DataStructures
 using ..DiagrammaticEquations
 using Catlab
 
+using Reexport
+
 import ..infer_types!, ..resolve_overloads!
 
 export normalize_unicode, varname, infer_types!, resolve_overloads!, typename, spacename, recursive_delete_parents, recursive_delete_parents!, unicode!, op1_res_rules_1D, op2_res_rules_1D, op1_res_rules_2D, op2_res_rules_2D, op1_inf_rules_1D, op2_inf_rules_1D, op1_inf_rules_2D, op2_inf_rules_2D, vec_to_dec!
 
 include("deca_acset.jl")
 include("deca_visualization.jl")
+include("ThDEC.jl")
+
+@reexport using .ThDEC
 
 """    function recursive_delete_parents!(d::SummationDecapode, to_delete::Vector{Int64})
 
