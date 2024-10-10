@@ -102,10 +102,9 @@ end
   @test nameof(symtype(ω)) == :Form1
   @test nameof(symtype(η)) == :DualForm2
 
-  # TODO: Do we want this style of typed subtraction?
-  @test nameof(-, symtype(u), symtype(u)) == Symbol("₀-₀")
-  # TODO: This breaks since this expects the types to have a `dim` function
-  @test_broken nameof(-, symtype(a), symtype(b)) == Symbol("-")
+  @test nameof(-, symtype(u)) == Symbol("-")
+  @test nameof(-, symtype(u), symtype(u)) == Symbol("-")
+  @test nameof(-, symtype(a), symtype(b)) == Symbol("-")
 
   @test nameof(∧, symtype(u), symtype(u)) == Symbol("∧₀₀")
   @test nameof(∧, symtype(u), symtype(ω)) == Symbol("∧₀₁")
@@ -114,15 +113,14 @@ end
   # TODO: Do we need a special designation for wedges with duals in them?
   @test nameof(∧, symtype(ω), symtype(η)) == Symbol("∧₁₂")
 
-  # TODO: Why is this being named as such?
-  @test nameof(∂ₜ, symtype(u)) == Symbol("∂ₜ(Form0)")
-  @test nameof(∂ₜ, symtype(d(u))) == Symbol("∂ₜ(Form1)")
+  @test nameof(∂ₜ, symtype(u)) == Symbol("∂ₜ")
+  @test nameof(∂ₜ, symtype(d(u))) == Symbol("∂ₜ")
 
   @test nameof(d, symtype(u)) == Symbol("d₀")
-  @test_broken nameof(d, symtype(η)) == Symbol("dual_d₂")
+  @test nameof(d, symtype(η)) == Symbol("dual_d₂")
 
-  @test_broken nameof(Δ, symtype(u)) == Symbol("Δ₀")
-  @test_broken nameof(Δ, symtype(ω)) == Symbol("Δ₁")
+  @test nameof(Δ, symtype(u)) == Symbol("Δ₀")
+  @test nameof(Δ, symtype(ω)) == Symbol("Δ₁")
 
   @test nameof(★, symtype(u)) == Symbol("★₀")
   @test nameof(★, symtype(ω)) == Symbol("★₁")
@@ -308,13 +306,13 @@ end
       w == ∧(v, u)
     end
     # Base.nameof doesn't yet support taking InferredTypes
-    @test_broken with_infers == roundtrip(with_infers)
+    @test with_infers == roundtrip(with_infers)
 
     Heat = @decapode begin
         u::Form0
         v::Form0
         κ::Constant
-        ∂ₜ(v) == Δ(u)*κ
+        ∂ₜ(v) == Δ₀(u)*κ
     end
     infer_types!(Heat)
     @test Heat == roundtrip(Heat)

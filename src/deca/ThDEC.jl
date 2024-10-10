@@ -142,6 +142,11 @@ export PatScalar
 end
 export PatVFParams
 
+isForm(x) = @match symtype(x) begin
+    PatFormParams([_,_,_,_]) => true
+    _ => false
+end
+
 isDualForm(x) = @match symtype(x) begin
     PatFormParams([_,d,_,_]) => d
     _ => false
@@ -262,26 +267,27 @@ Base.nameof(s::Union{Parameter, Type{Parameter}}) = :Parameter
 Base.nameof(s::Union{Scalar, Type{Scalar}}) = :Scalar
 Base.nameof(s::Union{InferredType, Type{InferredType}}) = :infer
 
-sub_dim(s) = as_sub(dim(s))
 
-Base.nameof(::typeof(-), s1, s2) = Symbol("$(sub_dim(s1))-$(sub_dim(s2))")
+Base.nameof(::typeof(-), args...) = Symbol("-")
 
 const SUBSCRIPT_DIGIT_0 = '₀'
 
 as_sub(n::Int) = join(map(d -> SUBSCRIPT_DIGIT_0 + d, digits(n)))
+sub_dim(args...) = all(isForm.(args)) ? join(as_sub.(dim.(args))) : ""
 
-function Base.nameof(::typeof(∧), s1, s2)
-    Symbol("∧$(sub_dim(s1))$(sub_dim(s2))")
+Base.nameof(::typeof(∧), s1, s2) = Symbol("∧$(sub_dim(s1, s2))")
+
+Base.nameof(::typeof(∂ₜ), s) = Symbol("∂ₜ")
+
+function Base.nameof(::typeof(d), s)
+  dual = isdual(s) ? "dual_" : ""
+  Symbol("$(dual)d$(sub_dim(s))")
 end
 
-Base.nameof(::typeof(∂ₜ), s) = Symbol("∂ₜ($(nameof(s)))")
-
-#TODO: Add an option to output d for dual forms, typically d₀ -> dual_d₀
-Base.nameof(::typeof(d), s) = Symbol("d$(sub_dim(s))")
-
-#TODO: Add subtypes for the Laplacian
-# Base.nameof(::typeof(Δ), s) = Symbol("Δ$(sub_dim(s))")
-Base.nameof(::typeof(Δ), s) = :Δ
+#TODO: Add naming for dual
+function Base.nameof(::typeof(Δ), s)
+  Symbol("Δ$(sub_dim(s))")
+end
 
 function Base.nameof(::typeof(★), s)
     inv = isdual(s) ? "⁻¹" : ""
