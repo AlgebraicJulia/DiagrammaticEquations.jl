@@ -38,11 +38,13 @@ using Catlab.Theories
 import Catlab.Theories: otimes, oplus, compose, ⊗, ⊕, ⋅, associate, associate_unit, Ob, Hom, dom, codom
 using Catlab.Programs
 using Catlab.CategoricalAlgebra
+import Catlab.CategoricalAlgebra: ∧
 using Catlab.WiringDiagrams
 using Catlab.WiringDiagrams.DirectedWiringDiagrams
 using Catlab.ACSetInterface
 using MLStyle
 import Unicode
+using Reexport
 
 ## TODO:
 ## generate schema from a _theory_
@@ -62,9 +64,15 @@ include("rewrite.jl")
 include("pretty.jl")
 include("colanguage.jl")
 include("openoperators.jl")
+include("symbolictheoryutils.jl")
+include("graph_traversal.jl")
 include("deca/Deca.jl")
 include("learn/Learn.jl")
+include("SymbolicUtilsInterop.jl")
 
-using .Deca
+@reexport using .Deca
+@reexport using .SymbolicUtilsInterop
+
+include("acset2symbolic.jl")
 
 end
