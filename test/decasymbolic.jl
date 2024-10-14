@@ -334,3 +334,14 @@ end
     # Sum is (1, 6), (2, 10)
 
 end
+
+@testset "Printing" begin
+  @syms x::PrimalForm{1,:X,2}
+  @syms y::PrimalForm{1,:X,2}
+
+  buffer = IOBuffer()
+  print(buffer, Δ(x) + 2Δ(y))
+
+  res = String(take!(buffer))
+  @test res == "2Δ₁(y) + Δ₁(x)"
+end

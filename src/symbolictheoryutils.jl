@@ -1,7 +1,9 @@
 using MLStyle
 using SymbolicUtils
-using SymbolicUtils: Symbolic, BasicSymbolic, FnType, Sym, symtype
+using SymbolicUtils: Symbolic, BasicSymbolic, FnType, Sym, symtype, issym
 import SymbolicUtils: promote_symtype
+import SymbolicUtils.show_call
+import Base: nameof
 
 function rules end
 export rules
@@ -171,3 +173,35 @@ export @alias
 
 alias(x) = error("$x has no aliases")
 export alias
+
+# XXX: Needed to avoid interfence with regular use of `show_calls`
+nameof(f, arg1, args...) = iscall(f) ? Symbol(repr(f)) : nameof(f)
+
+# TODO: Probable piracy here
+function SymbolicUtils.show_call(io, f, args)
+  # replacing this version of the fname to include subscripts for DEC operators
+  # fname = iscall(f) ? Symbol(repr(f)) : nameof(f)
+  fname = nameof(f, symtype.(args)...)
+  len_args = length(args)
+  if Base.isunaryoperator(fname) && len_args == 1
+      print(io, "$fname")
+      print_arg(io, first(args), paren=true)
+  elseif Base.isbinaryoperator(fname) && len_args > 1
+      for (i, t) in enumerate(args)
+          i != 1 && print(io, " $fname ")
+          print_arg(io, t, paren=true)
+      end
+  else
+      if issym(f)
+          Base.show_unquoted(io, nameof(f))
+      else
+          Base.show_unquoted(io, fname)
+      end
+      print(io, "(")
+      for i=1:len_args
+          print(io, args[i])
+          i != len_args && print(io, ", ")
+      end
+      print(io, ")")
+  end
+end
