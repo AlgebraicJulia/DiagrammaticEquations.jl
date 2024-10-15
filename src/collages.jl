@@ -32,15 +32,15 @@ function collate(equations, boundaries, uwd, symbols)
     # Add a new variable and transfer the children of the original variable to it.
     b_var = add_part!(f, :Var, type=f[var, :type], name=Symbol("r$(b)_" * string(f[var, :name])))
     transfer_children!(f, var, b_var)
-    # Transfer ∂ₜ morphisms back, if any.
-    tangent_op1s = filter(x -> f[x, :op1]==:∂ₜ, incident(f, b_var, :src))
-    if !isempty(tangent_op1s)
-      f[only(tangent_op1s), :src] = var
+    # Transfer ∂ₜ morphisms back to the original variable, if any.
+    transferred_partials = filter(x -> f[x, :op1]==:∂ₜ, incident(f, b_var, :src))
+    if !isempty(transferred_partials)
+      f[only(transferred_partials), :src] = var
     end
-    # Transfer ∂ₜ morphisms forward, if any.
-    tangent_op1s = filter(x -> f[x, :op1]==:∂ₜ, incident(f, var, :tgt))
-    if !isempty(tangent_op1s)
-      f[tangent_op1s, :tgt] = b_var
+    # Transfer ∂ₜ morphisms to the "masked"/ bounded variable, if any.
+    untransferred_partials = filter(x -> f[x, :op1]==:∂ₜ, incident(f, var, :tgt))
+    if !isempty(untransferred_partials)
+      f[untransferred_partials, :tgt] = b_var
     end
     # Insert the "masking" operation.
     s_var = add_part!(f, :Var, type=boundaries[only(incident(boundaries, bn, :name)), :type], name=bn)
