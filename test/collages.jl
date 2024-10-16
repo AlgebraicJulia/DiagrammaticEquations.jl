@@ -24,10 +24,10 @@ using Catlab
 
 
 # Test simple boundary masks.
-DiffusionDynamics = @decapode begin
+DiffusionDynamics = infer_types!(@decapode begin
   K::Form0
   ∂ₜ(K) == ∘(d,⋆,d,⋆)(K)
-end
+end)
 DiffusionBoundaries = @decapode begin
   (Kb1, Kb2, Null)::Form0
 end
@@ -61,16 +61,16 @@ DiffusionCollage = DiagrammaticEquations.collate(
   incl = [2]
   op1 = Any[:∂ₜ, [:d, :⋆, :d, :⋆]]
   op2 = [:rb1_leftwall, :rb2_rightwall, :rb3]
-  type = [:Form0, :infer, :Form0, :Form0, :Form0, :Form0, :infer, :Form0]
+  type = [:Form0, :Form0, :Form0, :Form0, :Form0, :Form0, :Form0, :Form0]
   name = [:K, :K̇, :r1_K, :Kb1, :r2_K, :Kb2, :r3_K̇, :Null]
 end
 
 # Test boundary condition applications on intermediate variables.
-IntermediateDynamics = @decapode begin
+IntermediateDynamics = infer_types!(@decapode begin
   K::Form0
   J == Δ(K)
   ∂ₜ(K) == Δ(J)
-end
+end)
 IntermediateBoundaries = @decapode begin
   (Jb1)::Form0
 end
@@ -98,16 +98,16 @@ IntermediateCollage = DiagrammaticEquations.collate(
   incl = [3]
   op1 = [:Δ, :∂ₜ, :Δ]
   op2 = [:rb1_leftwall]
-  type = [:Form0, :infer, :infer, :infer, :Form0]
+  type = [:Form0, :Form0, :Form0, :Form0, :Form0]
   name = [:K, :J, :K̇, :r1_J, :Jb1]
 end
 
 # Test twice-applied boundary condition applications on intermediate variables.
-TwiceDynamics = @decapode begin
+TwiceDynamics = infer_types!(@decapode begin
   K::Form0
   J == Δ(K)
   ∂ₜ(K) == Δ(J)
-end
+end)
 TwiceBoundaries = @decapode begin
   (Jb1, Jb2)::Form0
 end
@@ -137,7 +137,7 @@ TwiceCollage = DiagrammaticEquations.collate(
   incl  = [3]
   op1 = [:Δ, :∂ₜ, :Δ]
   op2 = [:rb1_leftwall, :rb2_rightwall]
-  type = [:Form0, :infer, :infer, :infer, :Form0, :infer, :Form0]
+  type = [:Form0, :Form0, :Form0, :Form0, :Form0, :Form0, :Form0]
   name = [:K, :J, :K̇, :r1_J, :Jb1, :r2_J, :Jb2]
 end
 
