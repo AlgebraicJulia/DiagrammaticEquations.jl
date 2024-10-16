@@ -12,28 +12,36 @@ using Catlab
 
 # TODO: Add test with empty boundary Decapode.
 
+# Note: Since the order does not matter in which rb1 and rb2 are applied, it
+# seems informal to state that one goes before the other.
+# It might be better to provide a semantics for incident edges a la:
+#Diffusion = @Decapode begin
+#  C::Form0
+#  ∂ₜ(C) == rb3(∘(d,⋆,d,⋆)(rb1(C)))
+#  ∂ₜ(C) == rb3(∘(d,⋆,d,⋆)(rb2(C)))
+#end
+# Such a technique would preserve the technical definition of "collage".
+
+
 # Test simple boundary masks.
-DiffusionDynamics = @decapode begin
+DiffusionDynamics = infer_types!(@decapode begin
   K::Form0
   ∂ₜ(K) == ∘(d,⋆,d,⋆)(K)
-end
+end)
 DiffusionBoundaries = @decapode begin
   (Kb1, Kb2, Null)::Form0
 end
-
 DiffusionMorphism = @relation () begin
   rb1_leftwall(C, Cb1)
   rb2_rightwall(C, Cb2)
   rb3(Ċ, Zero)
 end
-
 DiffusionSymbols = Dict(
   :C => :K,
   :Ċ => :K̇,
   :Cb1 => :Kb1,
   :Cb2 => :Kb2,
   :Zero => :Null)
-
 DiffusionCollage = DiagrammaticEquations.collate(
   DiffusionDynamics,
   DiffusionBoundaries,
@@ -45,30 +53,91 @@ DiffusionCollage = DiagrammaticEquations.collate(
   TVar = 1
   Op1 = 2
   Op2 = 3
-  src  = [5, 1]
-  tgt  = [2, 2]
-  proj1  = [3, 5, 7]
-  proj2  = [4, 6, 8]
-  res  = [1, 3, 2]
-  incl  = [2]
-  op1  = Any[:∂ₜ, [:d, :⋆, :d, :⋆]]
-  op2  = [:rb1_leftwall, :rb2_rightwall, :rb3]
-  type  = [:Form0, :infer, :Form0, :Form0, :Form0, :Form0, :infer, :Form0]
-  name  = [:r1_K, :r3_K̇, :r2_K, :Kb1, :K, :Kb2, :K̇, :Null]
+  src = [1, 3]
+  tgt = [7, 2]
+  proj1 = [5, 1, 2]
+  proj2 = [4, 6, 8]
+  res = [3, 5, 7]
+  incl = [2]
+  op1 = Any[:∂ₜ, [:d, :⋆, :d, :⋆]]
+  op2 = [:rb1_leftwall, :rb2_rightwall, :rb3]
+  type = [:Form0, :Form0, :Form0, :Form0, :Form0, :Form0, :Form0, :Form0]
+  name = [:K, :K̇, :r1_K, :Kb1, :r2_K, :Kb2, :r3_K̇, :Null]
 end
 
-# Note: Since the order does not matter in which rb1 and rb2 are applied, it
-# seems informal to state that one goes before the other.
-# It might be better to provide a semantics for incident edges a la:
-#Diffusion = @Decapode begin
-#  C::Form0
-#  ∂ₜ(C) == rb3(∘(d,⋆,d,⋆)(rb1(C)))
-#  ∂ₜ(C) == rb3(∘(d,⋆,d,⋆)(rb2(C)))
-#end
-# Such a technique would preserve the technical definition of "collage".
+# Test boundary condition applications on intermediate variables.
+IntermediateDynamics = infer_types!(@decapode begin
+  K::Form0
+  J == Δ(K)
+  ∂ₜ(K) == Δ(J)
+end)
+IntermediateBoundaries = @decapode begin
+  (Jb1)::Form0
+end
+IntermediateMorphism = @relation () begin
+  rb1_leftwall(C, Cb1)
+end
+IntermediateSymbols = Dict(
+  :C => :J,
+  :Cb1 => :Jb1)
+IntermediateCollage = DiagrammaticEquations.collate(
+  IntermediateDynamics,
+  IntermediateBoundaries,
+  IntermediateMorphism,
+  IntermediateSymbols)
+@test IntermediateCollage == @acset SummationDecapode{Any, Any, Symbol} begin
+  Var = 5
+  TVar = 1
+  Op1 = 3
+  Op2 = 1
+  src = [1, 1, 4]
+  tgt = [2, 3, 3]
+  proj1 = [2]
+  proj2 = [5]
+  res = [4]
+  incl = [3]
+  op1 = [:Δ, :∂ₜ, :Δ]
+  op2 = [:rb1_leftwall]
+  type = [:Form0, :Form0, :Form0, :Form0, :Form0]
+  name = [:K, :J, :K̇, :r1_J, :Jb1]
+end
 
-# Test gensim on a collage.
-c = Collage(DiffusionDynamics, DiffusionBoundaries,
-  DiffusionMorphism, DiffusionSymbols)
+# Test twice-applied boundary condition applications on intermediate variables.
+TwiceDynamics = infer_types!(@decapode begin
+  K::Form0
+  J == Δ(K)
+  ∂ₜ(K) == Δ(J)
+end)
+TwiceBoundaries = @decapode begin
+  (Jb1, Jb2)::Form0
+end
+TwiceMorphism = @relation () begin
+  rb1_leftwall(C, Cb1)
+  rb2_rightwall(C, Cb2)
+end
+TwiceSymbols = Dict(
+  :C => :J,
+  :Cb1 => :Jb1,
+  :Cb2 => :Jb2)
+TwiceCollage = DiagrammaticEquations.collate(
+  TwiceDynamics,
+  TwiceBoundaries,
+  TwiceMorphism,
+  TwiceSymbols)
+@test TwiceCollage == @acset SummationDecapode{Any, Any, Symbol} begin
+  Var = 7
+  TVar = 1
+  Op1 = 3
+  Op2 = 2
+  src = [1, 1, 4]
+  tgt = [2, 3, 3]
+  proj1 = [6, 2]
+  proj2 = [5, 7]
+  res = [4, 6]
+  incl  = [3]
+  op1 = [:Δ, :∂ₜ, :Δ]
+  op2 = [:rb1_leftwall, :rb2_rightwall]
+  type = [:Form0, :Form0, :Form0, :Form0, :Form0, :Form0, :Form0]
+  name = [:K, :J, :K̇, :r1_J, :Jb1, :r2_J, :Jb2]
+end
 
-# @test gensim(c) == gensim(DiffusionCollage)
