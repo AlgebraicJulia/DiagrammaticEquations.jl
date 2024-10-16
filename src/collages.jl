@@ -8,9 +8,6 @@ end
 collate(c::Collage) = collate(c.src, c.tgt, c.uwd, c.symbols)
 
 # TODO: This is assuming only "restriction"-type morphisms.
-# TODO: Throw an error if the user tries to use a boundary value differential
-# form that is of a different type of the thing that we are applying the bound
-# to. i.e. Form1 but target is a Form0.
 """    function collate(equations, boundaries, uwd, symbols)
 
 Create a collage of two Decapodes that simulates with boundary conditions.
@@ -29,6 +26,11 @@ function collate(equations, boundaries, uwd, symbols)
     en = symbols[en_key]
     bn = symbols[bn_key]
     var = only(incident(f, en, :name))
+    en_type = equations[only(incident(equations, en)), :type]
+    bn_type = boundaries[only(incident(boundaries, bn)), :type]
+    if en_type != bn_type
+      error("Cannot use $(string(bn)) of type $(string(bn_type)) to bound $(string(en)) of type $(string(en_type)).")
+    end
     # Add a new variable and transfer the children of the original variable to it.
     b_var = add_part!(f, :Var, type=f[var, :type], name=Symbol("r$(b)_" * string(f[var, :name])))
     transfer_children!(f, var, b_var)
