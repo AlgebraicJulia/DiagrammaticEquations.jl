@@ -43,7 +43,15 @@ function collate(equations, boundaries, uwd, symbols)
       f[untransferred_partials, :tgt] = b_var
     end
     # Insert the "masking" operation.
-    s_var = add_part!(f, :Var, type=boundaries[only(incident(boundaries, bn, :name)), :type], name=bn)
+    gettype(xs, n) = xs[only(incident(xs, n, :name)), :type]
+    newtype = @match (gettype(equations, en), gettype(boundaries, bn)) begin
+        (:infer, _) => :infer
+        (_, :infer) => :infer
+        (:Form0, :Constant) => :Form0
+        (x, y) && if x == y end => x
+        (x, y) => error("Type mismatch between $x and $y")
+    end
+    s_var = add_part!(f, :Var, type=newtype, name=bn)
     add_part!(f, :Op2, proj1=var, proj2=s_var, res=b_var, op2=uwd[b, :name])
   end
 
