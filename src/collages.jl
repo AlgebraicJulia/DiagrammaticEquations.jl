@@ -8,15 +8,15 @@ end
 collate(c::Collage) = collate(c.src, c.tgt, c.uwd, c.symbols)
 
 # TODO: This is assuming only "restriction"-type morphisms.
-"""    function collate(equations, boundaries, uwd, symbols; steadystates::Vector{Symbol})
+"""    function collate(equations, boundaries, uwd, symbols; restrictions::Vector{Symbol})
 
 Create a collage of two Decapodes that simulates with boundary conditions.
 
-Passing a list of symbols into `steadystates` specifies a list of boundary variables that will be restricted.
+Passing a list of symbols into `restrictions` specifies a list of boundary variables that will be restricted.
 
 """
 function collate(equations, boundaries, uwd, symbols; 
-        steadystates::Vector{Symbol}=Vector{Symbol}())
+        restrictions::Dict{Symbol,Symbol}=Dict{Symbol,Symbol}())
   f = SummationDecapode{Any, Any, Symbol}()
   copy_parts!(f, equations, (:Var, :TVar, :Op1, :Op2, :Σ, :Summand))
   for b in boxes(uwd)
@@ -55,8 +55,8 @@ function collate(equations, boundaries, uwd, symbols;
     s_var = add_part!(f, :Var, type=newtype, name=bn)
     add_part!(f, :Op2, proj1=var, proj2=s_var, res=b_var, op2=uwd[b, :name])
 
-    if bn ∈ steadystates
-        add_part!(f, :Op1, src=var, tgt=s_var, op1=Symbol("restrict_" * string(bn)))
+    if bn ∈ keys(restrictions)
+        add_part!(f, :Op1, src=only(incident(equations, restrictions[bn], :name)), tgt=s_var, op1=Symbol("restrict_" * string(bn)))
     end
   end
 
