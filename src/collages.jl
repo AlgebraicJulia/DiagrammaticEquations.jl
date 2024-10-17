@@ -29,9 +29,6 @@ function collate(equations, boundaries, uwd, symbols;
     var = only(incident(f, en, :name))
     en_type = equations[only(incident(equations, en, :name)), :type]
     bn_type = boundaries[only(incident(boundaries, bn, :name)), :type]
-    # if en_type != bn_type
-    #   error("Cannot use $(string(bn)) of type $(string(bn_type)) to bound $(string(en)) of type $(string(en_type)).")
-    # end
     # Add a new variable and transfer the children of the original variable to it.
     b_var = add_part!(f, :Var, type=f[var, :type], name=Symbol("r$(b)_" * string(f[var, :name])))
     transfer_children!(f, var, b_var)
