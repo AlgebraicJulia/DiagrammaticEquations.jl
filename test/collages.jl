@@ -182,5 +182,6 @@ DiffusionCollage = DiagrammaticEquations.collate(
   op2 = [:rb1_leftwall, :rb2_rightwall, :rb3]
   type = [:Form0, :Form0, :Form0, :Form0, :Form0, :Form0, :Form0, :Form0]
   name = [:K, :K̇, :r1_K, :Kb1, :r2_K, :Kb2, :r3_K̇, :Null]
+
 end
 
