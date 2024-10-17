@@ -141,7 +141,7 @@ TwiceCollage = DiagrammaticEquations.collate(
   name = [:K, :J, :K̇, :r1_J, :Jb1, :r2_J, :Jb2]
 end
 
-# Test that `steadystates` .
+# Test that `steadystates` adds the correct restriction edges
 DiffusionDynamics = infer_types!(@decapode begin
   K::Form0
   ∂ₜ(K) == ∘(d,⋆,d,⋆)(K)
@@ -165,7 +165,7 @@ DiffusionCollage = DiagrammaticEquations.collate(
   DiffusionBoundaries,
   DiffusionMorphism,
   DiffusionSymbols;
-  steadystates=Dict(:K => :Kb1))
+  steadystates=[:Kb1])
 
 @test DiffusionCollage == @acset SummationDecapode{Any, Any, Symbol} begin
   Var = 8

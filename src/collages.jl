@@ -8,13 +8,15 @@ end
 collate(c::Collage) = collate(c.src, c.tgt, c.uwd, c.symbols)
 
 # TODO: This is assuming only "restriction"-type morphisms.
-"""    function collate(equations, boundaries, uwd, symbols)
+"""    function collate(equations, boundaries, uwd, symbols; steadystates::Vector{Symbol})
 
 Create a collage of two Decapodes that simulates with boundary conditions.
-```
+
+Passing a list of symbols into `steadystates` specifies a list of boundary variables that will be restricted.
+
 """
 function collate(equations, boundaries, uwd, symbols; 
-        steadystates::Dict{Symbol,Symbol}=Dict{Symbol,Symbol}())
+        steadystates::Vector{Symbol}=Vector{Symbol}())
   f = SummationDecapode{Any, Any, Symbol}()
   copy_parts!(f, equations, (:Var, :TVar, :Op1, :Op2, :Σ, :Summand))
   for b in boxes(uwd)
@@ -29,9 +31,6 @@ function collate(equations, boundaries, uwd, symbols;
     var = only(incident(f, en, :name))
     en_type = equations[only(incident(equations, en, :name)), :type]
     bn_type = boundaries[only(incident(boundaries, bn, :name)), :type]
-    # if en_type != bn_type
-    #   error("Cannot use $(string(bn)) of type $(string(bn_type)) to bound $(string(en)) of type $(string(en_type)).")
-    # end
     # Add a new variable and transfer the children of the original variable to it.
     b_var = add_part!(f, :Var, type=f[var, :type], name=Symbol("r$(b)_" * string(f[var, :name])))
     transfer_children!(f, var, b_var)
@@ -48,16 +47,15 @@ function collate(equations, boundaries, uwd, symbols;
     # Insert the "masking" operation.
     gettype(xs, n) = xs[only(incident(xs, n, :name)), :type]
     newtype = @match (gettype(equations, en), gettype(boundaries, bn)) begin
-        (:infer, _) => :infer
-        (_, :infer) => :infer
-        (_, :Constant) => :Constant
+        (:infer, x) || (x, :infer) => x
+        (x, :Constant) || (:Constant, x) => x
         (x, y) && if x == y end => x
-        (x, y) => error("Type mismatch between $x and $y")
+        _ => error("Cannot use $(string(bn)) of type $(string(bn_type)) to bound $(string(en)) of type $(string(en_type)).")
     end
     s_var = add_part!(f, :Var, type=newtype, name=bn)
     add_part!(f, :Op2, proj1=var, proj2=s_var, res=b_var, op2=uwd[b, :name])
 
-    if bn ∈ values(steadystates)
+    if bn ∈ steadystates
         add_part!(f, :Op1, src=var, tgt=s_var, op1=Symbol("restrict_" * string(bn)))
     end
   end
