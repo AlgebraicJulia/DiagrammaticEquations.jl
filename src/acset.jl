@@ -6,6 +6,8 @@ using ACSets.InterTypes
 @intertypes "decapodeacset.it" module decapodeacset end
 
 using .decapodeacset
+# TODO: Move this export to main file
+export Operator, same_type_rules_op
 
 # Transferring pointers
 # --------------------
@@ -362,7 +364,7 @@ function find_chains(d::SummationDecapode;
 
   filter!(x -> passes_white_list(d[x, :op1]), chain_starts)
   filter!(x -> passes_black_list(d[x, :op1]), chain_starts)
-  
+
   s = Stack{Int64}()
   foreach(x -> push!(s, x), chain_starts)
   while !isempty(s)
@@ -440,6 +442,37 @@ function filterfor_ec_types(types::AbstractVector{Symbol})
   filter(conditions, types)
 end
 
+struct Operator{T}
+  res_type::T
+  src_types::AbstractVector{T}
+  op_name::Symbol
+  aliases::AbstractVector{Symbol}
+
+  function Operator{T}(res_type::T, src_types::AbstractVector{T}, op_name, aliases = Symbol[]) where T
+    new(res_type, src_types, op_name, aliases)
+  end
+
+  function Operator{T}(res_type::T, src_type::T, op_name, aliases = Symbol[]) where T
+    new(res_type, T[src_type], op_name, aliases)
+  end
+
+  function Operator{T}(op1_res_rule::NamedTuple{(:src_type, :tgt_type, :resolved_name, :op), Tuple{T, T, Symbol, Symbol}}) where T
+    new(op1_res_rule.tgt_type, T[op1_res_rule.src_type], op1_res_rule.resolved_name, Symbol[op1_res_rule.op])
+  end
+
+  function Operator{T}(op2_res_rule::NamedTuple{(:proj1_type, :proj2_type, :res_type, :resolved_name, :op), Tuple{T, T, T, Symbol, Symbol}}) where T
+    new(op2_res_rule.res_type, T[op2_res_rule.proj1_type, op2_res_rule.proj2_type], op2_res_rule.resolved_name, Symbol[op2_res_rule.op])
+  end
+end
+
+function same_type_rules_op(op_name::Symbol, types::AbstractVector{Symbol}, arity::Int, g_aliases::AbstractVector{Symbol} = Symbol[], sp_aliases::AbstractVector = Symbol[])
+  @assert isempty(sp_aliases) || length(types) == length(sp_aliases)
+  map(1:length(types)) do i
+    aliases = isempty(sp_aliases) ? g_aliases : vcat(g_aliases, sp_aliases[i])
+    Operator{Symbol}(types[i], repeat([types[i]], arity), op_name, aliases)
+  end
+end
+
 function infer_sum_types!(d::SummationDecapode, Σ_idx::Int)
   # Note that we are not doing any type checking here for users!
   # i.e. We are not checking the underlying types of Constant or Parameter
@@ -466,36 +499,29 @@ function infer_sum_types!(d::SummationDecapode, Σ_idx::Int)
   return applied
 end
 
-function apply_inference_rule_op1!(d::SummationDecapode, op1_id, rule)
-  score_src = (rule.src_type == d[d[op1_id, :src], :type])
-  score_tgt = (rule.tgt_type == d[d[op1_id, :tgt], :type])
+function apply_inference_rule!(d::SummationDecapode, op_id, rule, edge_val)
 
-  check_op = (d[op1_id, :op1] in rule.op_names)
-  if(check_op && (score_src + score_tgt == 1))
-    mod_src = safe_modifytype!(d, d[op1_id, :src], rule.src_type)
-    mod_tgt = safe_modifytype!(d, d[op1_id, :tgt], rule.tgt_type)
-    return mod_src || mod_tgt
+  inputs = edge_inputs(d, op_id, edge_val)
+  output = edge_output(d, op_id, edge_val)
+
+  score_src = sum(rule.src_types .== d[inputs, :type])
+  score_tgt = (rule.res_type == d[output, :type])
+
+  dop_name = edge_function(d, op_id, edge_val)
+
+  check_op = (dop_name == rule.op_name || dop_name in rule.aliases)
+  max_score = length(inputs) + length(output)
+  if(check_op && (score_src + score_tgt == max_score - 1))
+    mod_srcs = false
+    for (in, type) in zip(inputs, rule.src_types)
+      mod_srcs |= safe_modifytype!(d, in, type)
+    end
+    mod_tgt = safe_modifytype!(d, output, rule.res_type)
+    return mod_srcs || mod_tgt
   end
 
   return false
 end
-
-function apply_inference_rule_op2!(d::SummationDecapode, op2_id, rule)
-  score_proj1 = (rule.proj1_type == d[d[op2_id, :proj1], :type])
-  score_proj2 = (rule.proj2_type == d[d[op2_id, :proj2], :type])
-  score_res = (rule.res_type == d[d[op2_id, :res], :type])
-
-  check_op = (d[op2_id, :op2] in rule.op_names)
-  if check_op && (score_proj1 + score_proj2 + score_res == 2)
-    mod_proj1 = safe_modifytype!(d, d[op2_id, :proj1], rule.proj1_type)
-    mod_proj2 = safe_modifytype!(d, d[op2_id, :proj2], rule.proj2_type)
-    mod_res   = safe_modifytype!(d, d[op2_id, :res], rule.res_type)
-    return mod_proj1 || mod_proj2 || mod_res
-  end
-
-  return false
-end
-
 
 # TODO: Although the big-O complexity is the same, it might be more efficent on
 # average to iterate over edges then rules, instead of rules then edges. This
@@ -506,7 +532,7 @@ end
 
 Infer types of Vars given rules wherein one type is known and the other not.
 """
-function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :op_names), Tuple{Symbol, Symbol, Vector{Symbol}}}}, op2_rules::Vector{NamedTuple{(:proj1_type, :proj2_type, :res_type, :op_names), Tuple{Symbol, Symbol, Symbol, Vector{Symbol}}}})
+function infer_types!(d::SummationDecapode, type_rules::AbstractVector{Operator{Symbol}})
 
   # This is an optimization so we do not "visit" a row which has no infer types.
   # It could be deleted if found to be not worth maintainability tradeoff.
@@ -519,28 +545,23 @@ function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_t
   types_known_op2[incident(d, :infer, [:proj2, :type])] .= false
   types_known_op2[incident(d, :infer, [:res, :type])] .= false
 
+  types_known = Dict{Symbol, Vector{Bool}}(:Op1 => types_known_op1, :Op2 => types_known_op2)
+
   while true
     applied = false
 
-    for rule in op1_rules
-      for op1_idx in parts(d, :Op1)
-        types_known_op1[op1_idx] && continue
 
-        this_applied = apply_inference_rule_op1!(d, op1_idx, rule)
+    for table in [:Op1, :Op2]
+      for op_idx in parts(d, table)
+        types_known[table][op_idx] && continue
 
-        types_known_op1[op1_idx] = this_applied
-        applied |= this_applied
-      end
-    end
+        for rule in type_rules
+          this_applied = apply_inference_rule!(d, op_idx, rule, Val(table))
 
-    for rule in op2_rules
-      for op2_idx in parts(d, :Op2)
-        types_known_op2[op2_idx] && continue
+          types_known[table][op_idx] = this_applied
+          applied |= this_applied
+        end
 
-        this_applied = apply_inference_rule_op2!(d, op2_idx, rule)
-
-        types_known_op2[op2_idx] = this_applied
-        applied |= this_applied
       end
     end
 

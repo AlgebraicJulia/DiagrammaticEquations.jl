@@ -5,27 +5,9 @@ using MLStyle
 using Base.Iterators
 
 using DiagrammaticEquations
-import DiagrammaticEquations: Judgement, filterfor_ec_types
+using DiagrammaticEquations.Deca
 
 @testset "Parsing" begin
-
-  # @present DiffusionSpace2D(FreeExtCalc2D) begin
-  #   X::Space
-  #   k::Hom(Form1(X), Form1(X)) # diffusivity of space, usually constant (scalar multiplication)
-  #   proj₁_⁰⁰₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
-  #   proj₂_⁰⁰₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
-  #   sum₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
-  #   prod₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
-  # end
-
-
-  # Diffusion = @decapode DiffusionSpace2D begin
-  #     (C, Ċ₁, Ċ₂)::Form0{X}
-  #     Ċ₁ == ⋆₀⁻¹{X}(dual_d₁{X}(⋆₁{X}(k(d₀{X}(C)))))
-  #     Ċ₂ == ⋆₀⁻¹{X}(dual_d₁{X}(⋆₁{X}(d₀{X}(C))))
-  #     ∂ₜ{Form0{X}}(C) == Ċ₁ + Ċ₂
-  # end
-
   # Tests
   #######
 
@@ -754,7 +736,7 @@ end
       ḣ == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
     end
 
-    infer_types!(d, op1_inf_rules_1D, op2_inf_rules_1D)
+    infer_types!(d, Operator{Symbol}.(vcat(op1_res_rules_1D, op2_res_rules_1D)))
     @test d[18, :type] != :Constant
   end
 
@@ -770,7 +752,7 @@ end
     end
 
     d = expand_operators(d)
-    infer_types!(d, op1_inf_rules_1D, op2_inf_rules_1D)
+    infer_types!(d, Operator{Symbol}.(vcat(op1_res_rules_1D, op2_res_rules_1D)))
 
     @test d[8, :type] != :Literal
   end

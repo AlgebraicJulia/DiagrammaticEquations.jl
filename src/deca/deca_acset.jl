@@ -22,6 +22,7 @@ op1_inf_rules_1D = [
   # Rules for Δ
   (src_type = :Form0, tgt_type = :Form0, op_names = [:Δ, :Δ₀, :lapl]),
   (src_type = :Form1, tgt_type = :Form1, op_names = [:Δ, :Δ₁, :lapl]),
+  (src_type = :Form2, tgt_type = :Form2, op_names = [:Δ, :Δ₂, :lapl]),
 
   # Rules for δ
   (src_type = :Form1, tgt_type = :Form0, op_names = [:δ, :δ₁, :codif]),
@@ -295,7 +296,7 @@ op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
 # TODO: When SummationDecapodes are annotated with the degree of their space,
 # use dispatch to choose the correct set of rules.
 infer_types!(d::SummationDecapode) =
-  infer_types!(d, op1_inf_rules_2D, op2_inf_rules_2D)
+  infer_types!(d, Operator{Symbol}.(vcat(op1_res_rules_2D, op2_res_rules_2D)))
 
 
 ascii_to_unicode_op1 = Pair{Symbol, Any}[
@@ -358,4 +359,4 @@ end
 Resolve function overloads based on types of src and tgt.
 """
 resolve_overloads!(d::SummationDecapode) =
-  resolve_overloads!(d, op1_res_rules_2D, op2_res_rules_2D)
+  resolve_overloads!(d, Operator{Symbol}.(vcat(op1_res_rules_2D, op2_res_rules_2D)))
