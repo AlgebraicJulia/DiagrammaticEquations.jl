@@ -1016,23 +1016,16 @@ end
                   Open(NavierStokes, [:M, :ρ, :p, :T])])
   HeatXfer = apex(heatXfer_cospan)
 
-  bespoke_op1_inf_rules = [
-  # Rules for avg.
-  (src_type = :Form0, tgt_type = :Form1, op_names = [:avg]),
-  # Rules for R₀.
-  (src_type = :Form0, tgt_type = :Form0, op_names = [:R₀])]
+  bespoke_op1_inf_rules = [Operator{Symbol}(:Form1, :Form0, :avg), Operator{Symbol}(:Form0, :Form0, :R₀)]
+  # # Rules for avg.
+  # (src_type = :Form0, tgt_type = :Form1, op_names = [:avg]),
+  # # Rules for R₀.
+  # (src_type = :Form0, tgt_type = :Form0, op_names = [:R₀])]
 
-  #= bespoke_op2_inf_rules = [
-  (proj1_type = :Parameter, proj2_type = :Form0, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
-  (proj1_type = :Parameter, proj2_type = :Form1, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
-  (proj1_type = :Parameter, proj2_type = :Form2, res_type = :Form2, op_names = [:/, :./, :*, :.*]),
+  inf_rules = vcat(bespoke_op1_inf_rules, Operator{Symbol}.(vcat(op1_res_rules_2D,
+  op2_res_rules_2D)))
 
-  (proj1_type = :Form0, proj2_type = :Parameter, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
-  (proj1_type = :Form1, proj2_type = :Parameter, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
-  (proj1_type = :Form2, proj2_type = :Parameter, res_type = :Form2, op_names = [:/, :./, :*, :.*])] =#
-
-  infer_types!(HeatXfer, vcat(bespoke_op1_inf_rules, op1_inf_rules_2D),
-    op2_inf_rules_2D)
+  infer_types!(HeatXfer, inf_rules)
 
   names_types_hx = zip(HeatXfer[:name], HeatXfer[:type])
 
@@ -1047,8 +1040,8 @@ end
   (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm2, resolved_name = :L₀, op = :L),
   (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form1, resolved_name = :L₁′, op = :L)]
 
-  resolve_overloads!(HeatXfer, op1_res_rules_2D,
-    vcat(bespoke_op2_res_rules, op2_res_rules_2D))
+  resolve_overloads!(HeatXfer,
+  Operator{Symbol}.(vcat(bespoke_op2_res_rules, op1_res_rules_2D, op2_res_rules_2D)))
 
   op1s_hx = HeatXfer[:op1]
   op1s_expected_hx = [:d₀, :⋆₁, :dual_d₁, :⋆₀⁻¹, :avg, :R₀, :⋆₀, :⋆₀⁻¹, :neg, :∂ₜ, :avg, :⋆₁, :neg, :avg, :Δ₁, :δ₁, :d₀, :⋆₁, :d₀, :avg, :d₀, :neg, :avg, :∂ₜ, :⋆₀, :⋆₀⁻¹, :neg, :∂ₜ]

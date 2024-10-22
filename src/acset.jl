@@ -575,31 +575,36 @@ function infer_types!(d::SummationDecapode, type_rules::AbstractVector{Operator{
   d
 end
 
+function apply_overloading_rule!(d::SummationDecapode, op_id, rule, edge_val)
+
+  inputs = edge_inputs(d, op_id, edge_val)
+  output = edge_output(d, op_id, edge_val)
+
+  score_src = sum(rule.src_types .== d[inputs, :type])
+  score_tgt = (rule.res_type == d[output, :type])
+
+  dop_name = edge_function(d, op_id, edge_val)
+
+  check_op = dop_name in rule.aliases
+  max_score = length(inputs) + length(output)
+  if(check_op && (score_src + score_tgt == max_score))
+    set_edge_label(d, op_id, rule.op_name, edge_val)
+    return true
+  end
+
+  return false
+end
 
 
 """    function resolve_overloads!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :resolved_name, :op), NTuple{4, Symbol}}})
 
 Resolve function overloads based on types of src and tgt.
 """
-function resolve_overloads!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :resolved_name, :op), NTuple{4, Symbol}}}, op2_rules::Vector{NamedTuple{(:proj1_type, :proj2_type, :res_type, :resolved_name, :op), NTuple{5, Symbol}}})
-  for op1_idx in parts(d, :Op1)
-    src = d[:src][op1_idx]; tgt = d[:tgt][op1_idx]; op1 = d[:op1][op1_idx]
-    src_type = d[:type][src]; tgt_type = d[:type][tgt]
-    for rule in op1_rules
-      if op1 == rule[:op] && src_type == rule[:src_type] && tgt_type == rule[:tgt_type]
-        d[op1_idx, :op1] = rule[:resolved_name]
-        break
-      end
-    end
-  end
-
-  for op2_idx in parts(d, :Op2)
-    proj1 = d[:proj1][op2_idx]; proj2 = d[:proj2][op2_idx]; res = d[:res][op2_idx]; op2 = d[:op2][op2_idx]
-    proj1_type = d[:type][proj1]; proj2_type = d[:type][proj2]; res_type = d[:type][res]
-    for rule in op2_rules
-      if op2 == rule[:op] && proj1_type == rule[:proj1_type] && proj2_type == rule[:proj2_type] && res_type == rule[:res_type]
-        d[op2_idx, :op2] = rule[:resolved_name]
-        break
+function resolve_overloads!(d::SummationDecapode, resolve_rules::AbstractVector{Operator{Symbol}})
+  for rule in resolve_rules
+    for table in [:Op1, :Op2]
+      for op_idx in parts(d, table)
+        apply_overloading_rule!(d, op_idx, rule, Val(table))
       end
     end
   end
