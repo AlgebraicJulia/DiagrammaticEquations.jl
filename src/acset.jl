@@ -7,7 +7,7 @@ using ACSets.InterTypes
 
 using .decapodeacset
 # TODO: Move this export to main file
-export Operator, same_type_rules_op
+export Operator, same_type_rules_op, arthimetic_operators, infer_resolve!
 
 # Transferring pointers
 # --------------------
@@ -455,14 +455,6 @@ struct Operator{T}
   function Operator{T}(res_type::T, src_type::T, op_name, aliases = Symbol[]) where T
     new(res_type, T[src_type], op_name, aliases)
   end
-
-  function Operator{T}(op1_res_rule::NamedTuple{(:src_type, :tgt_type, :resolved_name, :op), Tuple{T, T, Symbol, Symbol}}) where T
-    new(op1_res_rule.tgt_type, T[op1_res_rule.src_type], op1_res_rule.resolved_name, Symbol[op1_res_rule.op])
-  end
-
-  function Operator{T}(op2_res_rule::NamedTuple{(:proj1_type, :proj2_type, :res_type, :resolved_name, :op), Tuple{T, T, T, Symbol, Symbol}}) where T
-    new(op2_res_rule.res_type, T[op2_res_rule.proj1_type, op2_res_rule.proj2_type], op2_res_rule.resolved_name, Symbol[op2_res_rule.op])
-  end
 end
 
 function same_type_rules_op(op_name::Symbol, types::AbstractVector{Symbol}, arity::Int, g_aliases::AbstractVector{Symbol} = Symbol[], sp_aliases::AbstractVector = Symbol[])
@@ -471,6 +463,23 @@ function same_type_rules_op(op_name::Symbol, types::AbstractVector{Symbol}, arit
     aliases = isempty(sp_aliases) ? g_aliases : vcat(g_aliases, sp_aliases[i])
     Operator{Symbol}(types[i], repeat([types[i]], arity), op_name, aliases)
   end
+end
+
+function arthimetic_operators(op_name::Symbol, broadcasted::Bool, arity::Int = 2)
+  @match (broadcasted, arity) begin
+    (true, 2) => bin_broad_arith_ops(op_name)
+    _ => error("This type of arthimetic operator is not yet supported or may not be valid.")
+  end
+end
+
+function bin_broad_arith_ops(op_name)
+  all_ops = map(t -> Operator{Symbol}(t, [t, t], op_name), FORM_TYPES)
+  for type in vcat(USER_TYPES, NUMBER_TYPES)
+    append!(all_ops, map(t -> Operator{Symbol}(t, [t, type], op_name), FORM_TYPES))
+    append!(all_ops, map(t -> Operator{Symbol}(t, [type, t], op_name), FORM_TYPES))
+  end
+
+  all_ops
 end
 
 function infer_sum_types!(d::SummationDecapode, Σ_idx::Int)
@@ -608,6 +617,13 @@ function resolve_overloads!(d::SummationDecapode, resolve_rules::AbstractVector{
       end
     end
   end
+
+  d
+end
+
+function infer_resolve!(d::SummationDecapode, operators::AbstractVector{Operator{Symbol}})
+  infer_types!(d, operators)
+  resolve_overloads!(d, operators)
 
   d
 end
