@@ -455,6 +455,10 @@ struct Operator{T}
   function Operator{T}(res_type::T, src_type::T, op_name, aliases = Symbol[]) where T
     new(res_type, T[src_type], op_name, aliases)
   end
+
+  function Operator(res_type::Symbol, src_type::Union{Symbol, AbstractVector{Symbol}}, op_name, aliases = Symbol[])
+    Operator{Symbol}(res_type, src_type, op_name, aliases)
+  end
 end
 
 function same_type_rules_op(op_name::Symbol, types::AbstractVector{Symbol}, arity::Int, g_aliases::AbstractVector{Symbol} = Symbol[], sp_aliases::AbstractVector = Symbol[])
