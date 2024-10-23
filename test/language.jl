@@ -410,16 +410,17 @@ end
   @test isempty(filterfor_ec_types([:Literal, :Constant, :Parameter, :infer]))
 end
 
-@testset "Type Inference" begin
-  # Warning, this testing depends on the fact that varname, form information is
-  # unique within a decapode even though this is not enforced
-  function get_name_type_pair(d::SummationDecapode)
-    Set(zip(d[:name], d[:type]))
-  end
+# Warning, this testing depends on the fact that varname, form information is
+# unique within a decapode even though this is not enforced
+function get_name_type_pair(d::SummationDecapode)
+  Set(zip(d[:name], d[:type]))
+end
 
-  function test_nametype_equality(d::SummationDecapode, names_types_expected)
-    issetequal(get_name_type_pair(d), names_types_expected)
-  end
+function test_nametype_equality(d::SummationDecapode, names_types_expected)
+  issetequal(get_name_type_pair(d), names_types_expected)
+end
+
+@testset "Type Inference" begin
 
   # The type of the tgt of ∂ₜ is inferred.
   Test1 = quote
@@ -736,7 +737,7 @@ end
       ḣ == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
     end
 
-    infer_types!(d, Operator{Symbol}.(vcat(op1_res_rules_1D, op2_res_rules_1D)))
+    infer_types!(d, dim = 1)
     @test d[18, :type] != :Constant
   end
 
@@ -752,7 +753,7 @@ end
     end
 
     d = expand_operators(d)
-    infer_types!(d, Operator{Symbol}.(vcat(op1_res_rules_1D, op2_res_rules_1D)))
+    infer_types!(d, dim = 1)
 
     @test d[8, :type] != :Literal
   end
@@ -956,6 +957,24 @@ end
 end
 
 @testset "Type Inference and Overloading Resolution Integration" begin
+
+  start_just_op1s = @decapode begin
+    B::Form0
+    A == d(d(B))
+  end
+
+  infer_resolve!(start_just_op1s)
+  @test get_name_type_pair(start_just_op1s) == Set([(Symbol("•1"), :Form1), (:B, :Form0), (:A, :Form2)])
+  @test start_just_op1s[:op1] == [:d₀, :d₁]
+
+  end_just_op1s = @decapode begin
+    A::Form2
+    A == d(d(B))
+  end
+  infer_resolve!(end_just_op1s)
+  @test get_name_type_pair(end_just_op1s) == Set([(Symbol("•1"), :Form1), (:B, :Form0), (:A, :Form2)])
+  @test end_just_op1s[:op1] == [:d₀, :d₁]
+
   # Momentum-formulation of Navier Stokes on sphere
   DiffusionExprBody = quote
     (T, Ṫ)::Form0{X}
@@ -1022,8 +1041,7 @@ end
   # # Rules for R₀.
   # (src_type = :Form0, tgt_type = :Form0, op_names = [:R₀])]
 
-  inf_rules = vcat(bespoke_op1_inf_rules, Operator{Symbol}.(vcat(op1_res_rules_2D,
-  op2_res_rules_2D)))
+  inf_rules = vcat(bespoke_op1_inf_rules, vcat(op1_res_rules_2D, op2_res_rules_2D))
 
   infer_types!(HeatXfer, inf_rules)
 
@@ -1078,7 +1096,7 @@ end
       summand = [3, 17]
       summation = [1, 1]
       sum = [5]
-      op1 = [:∂ₜ, :d₀, :d₀, :♯ᵖᵖ, :mag, :⋆₁, :dual_d₁, :⋆₀⁻¹]
+      op1 = [:∂ₜ, :d₀, :d₀, :♯ᵖᵖ, :norm, :⋆₁, :dual_d₁, :⋆₀⁻¹]
       op2 = [:*, :-, :^, :∧₁₀, :^, :∧₁₀]
       type = [:Form0, :Form1, :Constant, :Form0, :infer, :Form1, :Form1, :Form1, :Form1, :Form0, :Form0, :PVF, :Form1, :infer, :Literal, :Form0, :Literal, :DualForm1, :DualForm2]
       name = [:h, :Γ, :n, :ḣ, :sum_1, Symbol("•2"), Symbol("•3"), Symbol("•4"), Symbol("•5"), Symbol("•6"), Symbol("•7"), Symbol("•8"), Symbol("•9"), Symbol("•10"), Symbol("1"), Symbol("•11"), Symbol("2"), Symbol("•_6_1"), Symbol("•_6_2")]
