@@ -7,7 +7,7 @@ using ACSets.InterTypes
 
 using .decapodeacset
 # TODO: Move this export to main file
-export Operator, same_type_rules_op, arthimetic_operators, infer_resolve!
+export Operator, same_type_rules_op, arthimetic_operators, infer_resolve!, type_check
 
 # Transferring pointers
 # --------------------
@@ -632,6 +632,41 @@ function infer_resolve!(d::SummationDecapode, operators::AbstractVector{Operator
   d
 end
 
+function apply_type_checking_rule(d::SummationDecapode, op_id, rule, edge_val)
+  inputs = edge_inputs(d, op_id, edge_val)
+  output = edge_output(d, op_id, edge_val)
+
+  score_src = sum(rule.src_types .== d[inputs, :type])
+  score_tgt = (rule.res_type == d[output, :type])
+
+  dop_name = edge_function(d, op_id, edge_val)
+
+  check_op = dop_name == rule.op_name
+  max_score = length(inputs) + length(output)
+
+  check_op || return true # Name doesn't match, rule doesn't apply
+
+  score_src + score_tgt == max_score && return true # All types match, test works
+
+  return false
+end
+
+function type_check(d::SummationDecapode, resolve_rules::AbstractVector{Operator{Symbol}})
+  for rule in resolve_rules
+    for table in [:Op1, :Op2]
+      for op_idx in parts(d, table)
+        check_passed = apply_type_checking_rule(d, op_idx, rule, Val(table))
+        if !check_passed
+          println("$(edge_function(d, op_idx, Val(table))) at $op_idx in table $table is not typed properly")
+          println("$(rule)")
+          return false
+        end
+      end
+    end
+  end
+
+  true
+end
 
 function replace_names!(d::SummationDecapode, op1_repls::Vector{Pair{Symbol, Any}}, op2_repls::Vector{Pair{Symbol, Symbol}})
   for (orig,repl) in op1_repls
