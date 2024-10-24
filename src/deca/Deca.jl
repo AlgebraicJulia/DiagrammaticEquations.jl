@@ -8,7 +8,9 @@ using Reexport
 
 import ..infer_types!, ..resolve_overloads!, ..infer_resolve!
 
-export normalize_unicode, varname, infer_types!, resolve_overloads!, typename, spacename, recursive_delete_parents, recursive_delete_parents!, unicode!, op1_res_rules_1D, op2_res_rules_1D, op1_res_rules_2D, op2_res_rules_2D, op1_inf_rules_1D, op2_inf_rules_1D, op1_inf_rules_2D, op2_inf_rules_2D, vec_to_dec!
+export normalize_unicode, varname, infer_types!, resolve_overloads!,
+typename, spacename, recursive_delete_parents, recursive_delete_parents!, unicode!, vec_to_dec!,
+op1_operators, op1_1D_bound_operators, op1_2D_bound_operators, op2_operators
 
 include("deca_acset.jl")
 include("deca_visualization.jl")

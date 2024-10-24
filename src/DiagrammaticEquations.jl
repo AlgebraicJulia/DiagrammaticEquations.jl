@@ -7,8 +7,7 @@ using Catlab
 export
 DerivOp, append_dot, normalize_unicode, infer_states, infer_types!,
 # Deca
-op1_res_rules_1D, op2_res_rules_1D, op1_res_rules_2D, op2_res_rules_2D,
-op1_inf_rules_1D, op2_inf_rules_1D, op1_inf_rules_2D, op2_inf_rules_2D,
+op1_operators, op1_1D_bound_operators, op1_2D_bound_operators, op2_operators,
 recursive_delete_parents, spacename, varname, unicode!, vec_to_dec!,
 ## collages
 Collage, collate,
@@ -19,7 +18,6 @@ apex, @relation, # Re-exported from Catlab
 SchDecapode, SchNamedDecapode, AbstractDecapode, AbstractNamedDecapode, NamedDecapode, SummationDecapode,
 contract_operators!, contract_operators, add_constant!, add_parameter, fill_names!, dot_rename!, is_expanded, expand_operators, infer_state_names, infer_terminal_names, recognize_types,
 resolve_overloads!, replace_names!,
-apply_inference_rule_op1!, apply_inference_rule_op2!,
 transfer_parents!, transfer_children!,
 unique_lits!,
 ## language
