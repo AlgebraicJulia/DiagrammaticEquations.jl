@@ -7,10 +7,15 @@
 #SBATCH --time=00:15:00               # Time limit hrs:min:sec
 pwd; hostname; date
 
-module load julia
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 VERSION"
+    echo "Example: $0 1.10.0"
+    exit 1
+fi
 
-echo "Running Tests..."
-julia --project -e 'using Pkg; Pkg.status(); Pkg.test()'
+VERSION=$1
 
-echo "Building Documentation..."
+module load julia/$VERSION
+
+echo "Building documentation..."
 julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.status(); Pkg.instantiate(); include("docs/make.jl")'
