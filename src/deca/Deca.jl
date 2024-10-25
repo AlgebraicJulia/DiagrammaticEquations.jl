@@ -6,9 +6,9 @@ using Catlab
 
 using Reexport
 
-import ..infer_types!, ..resolve_overloads!, ..infer_resolve!
+import ..infer_types!, ..resolve_overloads!, ..type_check, ..infer_resolve!
 
-export normalize_unicode, varname, infer_types!, resolve_overloads!,
+export normalize_unicode, varname, infer_types!, resolve_overloads!, type_check, infer_resolve!,
 typename, spacename, recursive_delete_parents, recursive_delete_parents!, unicode!, vec_to_dec!,
 op1_operators, op1_1D_bound_operators, op1_2D_bound_operators, op2_operators
 

@@ -512,28 +512,60 @@ function infer_sum_types!(d::SummationDecapode, Σ_idx::Int)
   return applied
 end
 
-function apply_inference_rule!(d::SummationDecapode, op_id, rule, edge_val)
-
+function check_operator(d::SummationDecapode, op_id, rule, edge_val; check_name::Bool = false, check_aliases::Bool = false, ignore_infers::Bool = false, ignore_usertypes::Bool = false)
   inputs = edge_inputs(d, op_id, edge_val)
   output = edge_output(d, op_id, edge_val)
 
-  score_src = sum(rule.src_types .== d[inputs, :type])
-  score_tgt = (rule.res_type == d[output, :type])
+  max_score = length(inputs) + length(output)
+
+  rule_types = vcat(rule.src_types, rule.res_type)
+  deca_types = vcat(d[inputs, :type], d[output, :type])
+
+  score = sum(map(zip(rule_types, deca_types)) do (rule_t, deca_t)
+    if ignore_infers && deca_t in INFER_TYPES; return 1; end
+    if ignore_usertypes && deca_t in USER_TYPES; return 1; end
+    return rule_t == deca_t
+  end)
 
   dop_name = edge_function(d, op_id, edge_val)
 
-  check_op = (dop_name == rule.op_name || dop_name in rule.aliases)
-  max_score = length(inputs) + length(output)
-  if(check_op && (score_src + score_tgt == max_score - 1))
+  check_op = check_name ? dop_name == rule.op_name : false
+  check_op = check_op || (check_aliases ? dop_name in rule.aliases : check_op)
+
+  (check_op, max_score - score)
+end
+
+function apply_inference_rule!(d::SummationDecapode, op_id, rule, edge_val)
+
+  name_present, type_diff = check_operator(d, op_id, rule, edge_val; check_name = true, check_aliases = true)
+
+  if(name_present && type_diff == 1)
     mod_srcs = false
-    for (in, type) in zip(inputs, rule.src_types)
+    for (in, type) in zip(edge_inputs(d, op_id, edge_val), rule.src_types)
       mod_srcs |= safe_modifytype!(d, in, type)
     end
-    mod_tgt = safe_modifytype!(d, output, rule.res_type)
+    mod_tgt = safe_modifytype!(d, edge_output(d, op_id, edge_val), rule.res_type)
     return mod_srcs || mod_tgt
   end
 
   return false
+end
+
+function apply_overloading_rule!(d::SummationDecapode, op_id, rule, edge_val)
+
+  name_present, type_diff = check_operator(d, op_id, rule, edge_val; check_aliases = true)
+
+  if name_present && type_diff == 0
+    set_edge_label(d, op_id, rule.op_name, edge_val)
+    return true
+  end
+
+  return false
+end
+
+function apply_type_checking_rule(d::SummationDecapode, op_id, rule, edge_val)
+  name_present, type_diff = check_operator(d, op_id, rule, edge_val; check_name = true, ignore_infers = true, ignore_usertypes = true)
+  return name_present, type_diff == 0
 end
 
 # TODO: Although the big-O complexity is the same, it might be more efficent on
@@ -588,27 +620,6 @@ function infer_types!(d::SummationDecapode, type_rules::AbstractVector{Operator{
   d
 end
 
-function apply_overloading_rule!(d::SummationDecapode, op_id, rule, edge_val)
-
-  inputs = edge_inputs(d, op_id, edge_val)
-  output = edge_output(d, op_id, edge_val)
-
-  score_src = sum(rule.src_types .== d[inputs, :type])
-  score_tgt = (rule.res_type == d[output, :type])
-
-  dop_name = edge_function(d, op_id, edge_val)
-
-  check_op = dop_name in rule.aliases
-  max_score = length(inputs) + length(output)
-  if(check_op && (score_src + score_tgt == max_score))
-    set_edge_label(d, op_id, rule.op_name, edge_val)
-    return true
-  end
-
-  return false
-end
-
-
 """    function resolve_overloads!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :resolved_name, :op), NTuple{4, Symbol}}})
 
 Resolve function overloads based on types of src and tgt.
@@ -625,47 +636,41 @@ function resolve_overloads!(d::SummationDecapode, resolve_rules::AbstractVector{
   d
 end
 
-function infer_resolve!(d::SummationDecapode, operators::AbstractVector{Operator{Symbol}})
-  infer_types!(d, operators)
-  resolve_overloads!(d, operators)
+function type_check(d::SummationDecapode, type_rules::AbstractVector{Operator{Symbol}})
+  for table in [:Op1, :Op2]
+    for op_idx in parts(d, table)
 
-  d
-end
+      check_passed = true
+      for rule in type_rules
+        rule_applies, rule_checked = apply_type_checking_rule(d, op_idx, rule, Val(table))
 
-function apply_type_checking_rule(d::SummationDecapode, op_id, rule, edge_val)
-  inputs = edge_inputs(d, op_id, edge_val)
-  output = edge_output(d, op_id, edge_val)
+        rule_applies || continue
+        check_passed = false
 
-  score_src = sum(rule.src_types .== d[inputs, :type])
-  score_tgt = (rule.res_type == d[output, :type])
-
-  dop_name = edge_function(d, op_id, edge_val)
-
-  check_op = dop_name == rule.op_name
-  max_score = length(inputs) + length(output)
-
-  check_op || return true # Name doesn't match, rule doesn't apply
-
-  score_src + score_tgt == max_score && return true # All types match, test works
-
-  return false
-end
-
-function type_check(d::SummationDecapode, resolve_rules::AbstractVector{Operator{Symbol}})
-  for rule in resolve_rules
-    for table in [:Op1, :Op2]
-      for op_idx in parts(d, table)
-        check_passed = apply_type_checking_rule(d, op_idx, rule, Val(table))
-        if !check_passed
-          println("$(edge_function(d, op_idx, Val(table))) at $op_idx in table $table is not typed properly")
-          println("$(rule)")
-          return false
-        end
+        rule_checked || continue
+        check_passed = true
+        break
       end
+
+      # TODO: Change this to error
+      if !check_passed
+        error("$(edge_function(d, op_idx, Val(table))) at $op_idx in table $table is not typed properly")
+        # println("$(rule)")
+        return false
+      end
+
     end
   end
 
   true
+end
+
+function infer_resolve!(d::SummationDecapode, operators::AbstractVector{Operator{Symbol}})
+  infer_types!(d, operators)
+  resolve_overloads!(d, operators)
+  type_check(d, operators)
+
+  d
 end
 
 function replace_names!(d::SummationDecapode, op1_repls::Vector{Pair{Symbol, Any}}, op2_repls::Vector{Pair{Symbol, Symbol}})
