@@ -652,15 +652,12 @@ function type_check(d::SummationDecapode, type_rules::AbstractVector{Operator{Sy
         break
       end
 
-      # TODO: Change this to error
-      if !check_passed
-        error("$(edge_function(d, op_idx, Val(table))) at $op_idx in table $table is not typed properly")
-        # println("$(rule)")
-        return false
-      end
+      check_passed || return false
 
     end
   end
+
+  # TODO: Add summation type checking
 
   true
 end
