@@ -126,10 +126,14 @@ infer_types!(d::SummationDecapode; dim = 2) =
 resolve_overloads!(d::SummationDecapode; dim = 2) =
   resolve_overloads!(d, default_operators(dim))
 
+type_check(d::SummationDecapode; dim = 2) =
+  type_check(d, default_operators(dim))
+
 function infer_resolve!(d::SummationDecapode; dim = 2)
   operators = default_operators(dim)
   infer_types!(d, operators)
   resolve_overloads!(d, operators)
+  type_check(d, operators)
 
   d
 end

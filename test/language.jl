@@ -868,9 +868,9 @@ end
   test_nametype_equality(only_type_dec, only_type_dec_res)
 end
 
-@testset "Overloading Resolution" begin
+@testset "Overloading Resolution and Type Checking" begin
   # d overloading is resolved.
-  Test1 = quote
+  t1 = @decapode begin
     A::Form0{X}
     B::Form1{X}
     C::Form2{X}
@@ -882,15 +882,15 @@ end
     E == d(D)
     F == d(E)
   end
-  t1 = SummationDecapode(parse_decapode(Test1))
   resolve_overloads!(t1)
 
   op1s_1 = t1[:op1]
   op1s_expected_1 = [:d₀ , :d₁, :dual_d₀, :dual_d₁]
   @test op1s_1 == op1s_expected_1
+  @test type_check(t1)
 
   # ⋆ overloading is resolved.
-  Test2 = quote
+  t2 = @decapode begin
     C::Form0{X}
     D::DualForm2{X}
     E::Form1{X}
@@ -904,8 +904,8 @@ end
     G == ⋆(H)
     H == ⋆(G)
   end
-  t2 = SummationDecapode(parse_decapode(Test2))
   resolve_overloads!(t2)
+  @test type_check(t2)
 
   op1s_2 = t2[:op1]
   # Note: The Op1 table of the decapode created does not have the functions
@@ -914,7 +914,7 @@ end
   @test op1s_2 == op1s_expected_2
 
   # All overloading on the de Rahm complex is resolved.
-  Test3 = quote
+  t3 = @decapode begin
     A::Form0{X}
     B::Form1{X}
     C::Form2{X}
@@ -932,7 +932,6 @@ end
     D == ⋆(C)
     C == ⋆(D)
   end
-  t3 = SummationDecapode(parse_decapode(Test3))
   resolve_overloads!(t3)
 
   op1s_3 = t3[:op1]
@@ -940,8 +939,9 @@ end
   # listed in the order in which they appear in Test2.
   op1s_expected_3 = [:d₀ , :d₁, :dual_d₀, :dual_d₁, :⋆₀ , :⋆₀⁻¹ , :⋆₁ , :⋆₁⁻¹ , :⋆₂ , :⋆₂⁻¹]
   @test op1s_3 == op1s_expected_3
+  @test type_check(t3)
 
-  Test4 = quote
+  t4 = @decapode begin
     (A, C)::Form0{X}
     (B, D, E)::Form1{X}
 
@@ -955,13 +955,13 @@ end
     G == L(B, J)
     H == i(B, J)
   end
-  t4 = SummationDecapode(parse_decapode(Test4))
   resolve_overloads!(t4)
   op2s_4 = t4[:op2]
   op2s_expected_4 = [:∧₀₀ , :∧₀₁, :∧₁₀, :L₀, :L₁, :i₁]
   @test op2s_4 == op2s_expected_4
+  @test type_check(t4)
 
-  Test5 = quote
+  t5 = @decapode begin
     A::Form0{X}
     B::Form1{X}
     (C, D, E, F)::Form2{X}
@@ -975,11 +975,11 @@ end
     G == L(B, I)
     H == i(B, I)
   end
-  t5 = SummationDecapode(parse_decapode(Test5))
   resolve_overloads!(t5)
   op2s_5 = t5[:op2]
   op2s_expected_5 = [:∧₁₁, :∧₀₂, :∧₂₀, :L₂, :i₂]
   @test op2s_5 == op2s_expected_5
+  @test type_check(t5)
 
   op_not_in_rules = @decapode begin
     A::Form0
@@ -995,6 +995,7 @@ end
 
   @test op_not_in_rules == op_not_in_rules_res
   @test op_not_in_rules !== op_not_in_rules_res
+  @test type_check(op_not_in_rules)
 
   only_type_dec = @decapode begin
     A::Form0
@@ -1008,6 +1009,7 @@ end
 
   only_type_dec_res = Set([(:A, :Form0), (:B, :Form0), (:C, :Form1)])
   test_nametype_equality(only_type_dec, only_type_dec_res)
+  @test type_check(only_type_dec)
 end
 
 @testset "Type Inference and Overloading Resolution Integration" begin
@@ -1060,8 +1062,7 @@ end
       ∂ₜ(h) == ∘(⋆, d, ⋆)(Γ  * d(h) ∧ (mag(♯(d(h)))^(n-1)) ∧ (h^(n+2)))
     end
     d = expand_operators(d)
-    infer_types!(d)
-    resolve_overloads!(d)
+    infer_resolve!(d)
     @test_broken d == @acset SummationDecapode{Any, Any, Symbol} begin
       Var = 19
       TVar = 1
