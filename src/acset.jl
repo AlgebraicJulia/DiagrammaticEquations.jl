@@ -521,31 +521,34 @@ function check_operator(d::SummationDecapode, op_id, rule, edge_val; check_name:
   rule_types = vcat(rule.src_types, rule.res_type)
   deca_types = vcat(d[inputs, :type], d[output, :type])
 
-  score = sum(map(zip(rule_types, deca_types)) do (rule_t, deca_t)
-    if ignore_infers && deca_t in INFER_TYPES; return 1; end
-    if ignore_usertypes && deca_t in USER_TYPES; return 1; end
-    return rule_t == deca_t
-  end)
+  score = mapreduce(+, zip(rule_types, deca_types); init = 0) do (rule_t, deca_t)
+    if ignore_infers && deca_t in INFER_TYPES
+      return 1
+    elseif ignore_usertypes && deca_t in USER_TYPES
+      return 1
+    else
+      return rule_t == deca_t
+    end
+  end
 
   dop_name = edge_function(d, op_id, edge_val)
 
-  check_op = check_name ? dop_name == rule.op_name : false
-  check_op = check_op || (check_aliases ? dop_name in rule.aliases : check_op)
+  named = check_name && dop_name == rule.op_name
+  aliased = check_aliases && dop_name in rule.aliases
 
-  (check_op, max_score - score)
+  (named || aliased, max_score - score)
 end
 
 function apply_inference_rule!(d::SummationDecapode, op_id, rule, edge_val)
 
   name_present, type_diff = check_operator(d, op_id, rule, edge_val; check_name = true, check_aliases = true)
 
-  if(name_present && type_diff == 1)
-    mod_srcs = false
-    for (in, type) in zip(edge_inputs(d, op_id, edge_val), rule.src_types)
-      mod_srcs |= safe_modifytype!(d, in, type)
-    end
-    mod_tgt = safe_modifytype!(d, edge_output(d, op_id, edge_val), rule.res_type)
-    return mod_srcs || mod_tgt
+  if name_present && type_diff == 1
+    vars = vcat(edge_inputs(d, op_id, edge_val), edge_output(d, op_id, edge_val))
+    types = vcat(rule.src_types, rule.res_type)
+    return any(map(zip(vars, types)) do (var, type)
+      safe_modifytype!(d, var, type)
+    end)
   end
 
   return false
@@ -556,7 +559,7 @@ function apply_overloading_rule!(d::SummationDecapode, op_id, rule, edge_val)
   name_present, type_diff = check_operator(d, op_id, rule, edge_val; check_aliases = true)
 
   if name_present && type_diff == 0
-    set_edge_label(d, op_id, rule.op_name, edge_val)
+    set_edge_label!(d, op_id, rule.op_name, edge_val)
     return true
   end
 

@@ -1,7 +1,7 @@
 using DiagrammaticEquations
 using ACSets
 
-export TraversalNode, topological_sort_edges, n_ops, retrieve_name, start_nodes, edge_inputs, edge_output, edge_function, set_edge_label
+export TraversalNode, topological_sort_edges, n_ops, retrieve_name, start_nodes, edge_inputs, edge_output, edge_function, set_edge_label!
 
 struct TraversalNode{T}
   index::Int
@@ -29,13 +29,13 @@ edge_function(d::SummationDecapode, idx::Int, ::Val{:Op2}) =
 edge_function(d::SummationDecapode, idx::Int, ::Val{:Σ}) =
   :+
 
-set_edge_label(d::SummationDecapode, idx::Int, new_label, ::Val{:Op1}) =
+set_edge_label!(d::SummationDecapode, idx::Int, new_label, ::Val{:Op1}) =
   (d[idx,:op1] = new_label)
 
-set_edge_label(d::SummationDecapode, idx::Int, new_label, ::Val{:Op2}) =
+set_edge_label!(d::SummationDecapode, idx::Int, new_label, ::Val{:Op2}) =
 (d[idx,:op2] = new_label)
 
-set_edge_label(d::SummationDecapode, idx::Int, new_label, ::Val{:Σ}) = nothing
+set_edge_label!(d::SummationDecapode, idx::Int, new_label, ::Val{:Σ}) = nothing
 
 
 #XXX: This topological sort is O(n^2).
