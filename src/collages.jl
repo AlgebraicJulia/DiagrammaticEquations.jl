@@ -49,6 +49,7 @@ function collate(equations, boundaries, uwd, symbols;
     newtype = @match (gettype(equations, en), gettype(boundaries, bn)) begin
         (:infer, x) || (x, :infer) => x
         (x, :Constant) || (:Constant, x) => x
+        (x, :Parameter) || (:Parameter, x) => x
         (x, y) && if x == y end => x
         _ => error("Cannot use $(string(bn)) of type $(string(bn_type)) to bound $(string(en)) of type $(string(en_type)).")
     end
