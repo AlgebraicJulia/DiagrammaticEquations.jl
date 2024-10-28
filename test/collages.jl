@@ -141,3 +141,77 @@ TwiceCollage = DiagrammaticEquations.collate(
   name = [:K, :J, :K̇, :r1_J, :Jb1, :r2_J, :Jb2]
 end
 
+# Test that `restrictions` adds the correct restriction edges
+DiffusionCollage = DiagrammaticEquations.collate(
+  DiffusionDynamics,
+  DiffusionBoundaries,
+  DiffusionMorphism,
+  DiffusionSymbols;
+  restrictions=Dict(:Kb1 => :K))
+
+@test DiffusionCollage == @acset SummationDecapode{Any, Any, Symbol} begin
+  Var = 8
+  TVar = 1
+  Op1 = 3
+  Op2 = 3
+  src = [1, 3, 5]
+  tgt = [7, 2, 4]
+  proj1 = [5, 1, 2]
+  proj2 = [4, 6, 8]
+  res = [3, 5, 7]
+  incl = [2]
+  op1 = Any[:∂ₜ, [:d, :⋆, :d, :⋆], :restrict_Kb1]
+  op2 = [:rb1_leftwall, :rb2_rightwall, :rb3]
+  type = [:Form0, :Form0, :Form0, :Form0, :Form0, :Form0, :Form0, :Form0]
+  name = [:K, :K̇, :r1_K, :Kb1, :r2_K, :Kb2, :r3_K̇, :Null]
+end
+
+# Parameters
+# Test simple boundary masks.
+ParamDiffusionDynamics = infer_types!(@decapode begin
+  K::Form0
+  A::Parameter
+  ∂ₜ(K) == A*(∘(d,⋆,d,⋆)(K))
+end)
+ParamDiffusionBoundaries = @decapode begin
+  (Kb1, Kb2, Null)::Form0
+  Ab::Parameter
+end
+ParamDiffusionMorphism = @relation () begin
+  rb1_leftwall(C, Cb1)
+  rb2_rightwall(C, Cb2)
+  rb3(Ċ, Zero)
+  r0(Param,BoundaryParam)
+end
+ParamDiffusionSymbols = Dict(
+  :C => :K,
+  :Ċ => :K̇,
+  :Param => :A,
+  :BoundaryParam => :Ab,
+  :Cb1 => :Kb1,
+  :Cb2 => :Kb2,
+  :Zero => :Null)
+ParamDiffusionCollage = DiagrammaticEquations.collate(
+  ParamDiffusionDynamics,
+  ParamDiffusionBoundaries,
+  ParamDiffusionMorphism,
+  ParamDiffusionSymbols)
+infer_types!(ParamDiffusionCollage)
+
+@test ParamDiffusionCollage == @acset SummationDecapode{Any, Any, Symbol} begin
+  Var = 12
+  TVar = 1
+  Op1 = 2
+  Op2 = 5
+  src = [1, 5]
+  tgt = [9, 4]
+  proj1 = [11, 7, 1, 3, 2]
+  proj2 = [4, 6, 8, 10, 12]
+  res = [3, 5, 7, 9, 11]
+  incl = [3]
+  op1 = Any[:∂ₜ, [:d, :⋆, :d, :⋆]]
+  op2 = [:*, :rb1_leftwall, :rb2_rightwall, :rb3, :r0]
+  type = [:Form0, :Parameter, :Form0, :infer, :Form0, :Form0, :Form0, :Form0, :Form0, :Form0, :Parameter, :Parameter]
+  name = [:K, :A, :K̇, Symbol("•2"), :r1_K, :Kb1, :r2_K, :Kb2, :r3_K̇, :Null, :r4_A, :Ab]
+end
+
