@@ -211,7 +211,7 @@ infer_types!(ParamDiffusionCollage)
   incl = [3]
   op1 = Any[:∂ₜ, [:d, :⋆, :d, :⋆]]
   op2 = [:*, :rb1_leftwall, :rb2_rightwall, :rb3, :r0]
-  type = [:Form0, :Parameter, :Form0, :infer, :Form0, :Form0, :Form0, :Form0, :Form0, :Form0, :Parameter, :Parameter]
+  type = [:Form0, :Parameter, :Form0, :Form0, :Form0, :Form0, :Form0, :Form0, :Form0, :Form0, :Parameter, :Parameter]
   name = [:K, :A, :K̇, Symbol("•2"), :r1_K, :Kb1, :r2_K, :Kb2, :r3_K̇, :Null, :r4_A, :Ab]
 end
 
