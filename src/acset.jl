@@ -599,24 +599,11 @@ function run_typechecking(d::SummationDecapode, type_rules::AbstractVector{Opera
 end
 
 function run_typechecking_for_op(d::SummationDecapode, op_id, type_rules, edge_val::Val{table}) where table
-
-  type_error = nothing
-  min_type_diff = Inf
-
-  for rule in type_rules
+  min_diff, min_rule_idx = findmin(type_rules) do rule
     name_present, type_diff = check_operator(d, op_id, rule, edge_val; check_name = true, check_aliases = true, ignore_infers = true, ignore_usertypes = true)
-
-    if name_present
-      if type_diff == 0
-        return nothing
-      elseif type_diff < min_type_diff
-        min_type_diff = type_diff
-        type_error = DecaTypeError{Symbol}(rule, op_id, table)
-      end
-    end
-
+    name_present ? type_diff : Inf
   end
-  return type_error
+  min_diff in [0,Inf] ? nothing : DecaTypeError{Symbol}(type_rules[min_rule_idx], op_id, table)
 end
 
 # TODO: Although the big-O complexity is the same, it might be more efficent on
