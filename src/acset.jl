@@ -8,9 +8,6 @@ using ACSets.InterTypes
 import Base.show
 
 using .decapodeacset
-# TODO: Move this export to main file
-export Operator, same_type_rules_op, arthimetic_operators, infer_resolve!, type_check
-export DecaTypeExeception
 
 # Transferring pointers
 # --------------------

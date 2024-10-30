@@ -7,7 +7,7 @@ using Base.Iterators
 using DiagrammaticEquations
 using DiagrammaticEquations.Deca
 
-import DiagrammaticEquations: Judgement
+import DiagrammaticEquations: Judgement, filterfor_ec_types
 
 @testset "Parsing" begin
   # Tests
