@@ -30,7 +30,9 @@ to_graphviz, # Re-exported from Catlab
 ## rewrite
 average_rewrite,
 ## openoperators
-transfer_parents!, transfer_children!, replace_op1!, replace_op2!, replace_all_op1s!, replace_all_op2s!
+transfer_parents!, transfer_children!, replace_op1!, replace_op2!, replace_all_op1s!, replace_all_op2s!,
+Operator, same_type_rules_op, arthimetic_operators, infer_resolve!, type_check, DecaTypeExeception
+
 
 using Catlab.Theories
 import Catlab.Theories: otimes, oplus, compose, ⊗, ⊕, ⋅, associate, associate_unit, Ob, Hom, dom, codom
