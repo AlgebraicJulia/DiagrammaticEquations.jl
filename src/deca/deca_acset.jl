@@ -30,7 +30,7 @@ op1_operators = [
   # Rules for Δ
   Operator(:Form0, :Form0, :Δ₀, [:Δ, :∇², :lapl]),
   Operator(:Form1, :Form1, :Δ₁, [:Δ, :∇², :lapl]),
-  Operator(:Form2, :Form2, :Δ₂, [:Δ, :∇², :lapl]),   # TODO: Test with this
+  Operator(:Form2, :Form2, :Δ₂, [:Δ, :∇², :lapl]),
 
   # Rules for Δᵈ
   Operator(:DualForm0, :DualForm0, :Δᵈ₀, [:Δ, :∇², :lapl]),
@@ -100,7 +100,7 @@ op2_operators = [
   arthimetic_operators(:.^, true)...,
 
   # TODO: Only labelled as broadcasted since Decapodes converts all these
-  # to their broadcasted forms. They really should have differnt rules.
+  # to their broadcasted forms. They really should have different rules.
   arthimetic_operators(:-, true)...,
   arthimetic_operators(:/, true)...,
   arthimetic_operators(:*, true)...,
@@ -114,6 +114,7 @@ op2_operators = [
 ]
 
 # TODO: When SummationDecapodes are annotated with the degree of their space,
+# use dispatch to choose the correct set of rules.
 function default_operators(dim)
   @assert 1 <= dim <= 2
   metric_free = vcat(op1_operators, op2_operators)
@@ -190,6 +191,3 @@ function vec_to_dec!(d::SummationDecapode)
 
   d
 end
-
-# TODO: When SummationDecapodes are annotated with the degree of their space,
-# use dispatch to choose the correct set of rules.

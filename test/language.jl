@@ -1010,6 +1010,14 @@ end
   only_type_dec_res = Set([(:A, :Form0), (:B, :Form0), (:C, :Form1)])
   test_nametype_equality(only_type_dec, only_type_dec_res)
   @test type_check(only_type_dec)
+
+  poorly_type_deca = @decapode begin
+    (A,B)::Form0
+
+    B == d(A)
+  end
+  resolve_overloads!(poorly_type_deca)
+  @test_throws DecaTypeExeception type_check(poorly_type_deca)
 end
 
 @testset "Type Inference and Overloading Resolution Integration" begin
@@ -1086,6 +1094,71 @@ end
     end
   end
 
+  # Momentum-formulation of Navier Stokes on sphere
+  DiffusionExprBody = quote
+    (T, Ṫ)::Form0{X}
+    ϕ::DualForm1{X}
+    k::Parameter{X}
+    # Fick's first law
+    ϕ ==  ⋆(k*d(T))
+    # Diffusion equation
+    Ṫ ==  ⋆(d(ϕ))
+  end
+  Diffusion = SummationDecapode(parse_decapode(DiffusionExprBody))
+  AdvectionExprBody = quote
+    (M,V)::Form1{X}  #  M = ρV
+    (ρ, p, T, Ṫ)::Form0{X}
+    V == M/avg(ρ)
+    ρ == p / R₀(T)
+    Ṫ == neg(⋆(L(V, ⋆(T))))
+  end
+  Advection = SummationDecapode(parse_decapode(AdvectionExprBody))
+  SuperpositionExprBody = quote
+    (T, Ṫ, Ṫ₁, Ṫₐ)::Form0{X}
+    Ṫ == Ṫ₁ + Ṫₐ
+    ∂ₜ(T) == Ṫ
+  end
+  Superposition = SummationDecapode(parse_decapode(SuperpositionExprBody))
+  compose_continuity = @relation () begin
+    diffusion(T, Ṫ₁)
+    advection(M, ρ, P, T, Ṫₐ)
+    superposition(T, Ṫ, Ṫ₁, Ṫₐ)
+  end
+  continuity_cospan = oapply(compose_continuity,
+                  [Open(Diffusion, [:T, :Ṫ]),
+                  Open(Advection, [:M, :ρ, :p, :T, :Ṫ]),
+                  Open(Superposition, [:T, :Ṫ, :Ṫ₁, :Ṫₐ])])
+
+  continuity = apex(continuity_cospan)
+  NavierStokesExprBody = quote
+    (M, Ṁ, G, V)::Form1{X}
+    (T, ρ, p, ṗ)::Form0{X}
+    (two,three,kᵥ)::Parameter{X}
+    V == M/avg(ρ)
+    Ṁ == neg(L(V, ⋆(V)))*avg(ρ) +
+          kᵥ*(Δ(V) + d(δ(V))/three) +
+          d(i(V, ⋆(V))/two)*avg(ρ) +
+          neg(d(p)) +
+          G*avg(ρ)
+    ∂ₜ(M) == Ṁ
+    ṗ == neg(⋆(L(V, ⋆(p)))) # *Lie(3Form) = Div(*3Form x v) --> conservation of pressure
+    ∂ₜ(p) == ṗ
+  end
+  NavierStokes = SummationDecapode(parse_decapode(NavierStokesExprBody))
+  compose_heatXfer = @relation () begin
+    continuity(M, ρ, P, T)
+    navierstokes(M, ρ, P, T)
+  end
+  heatXfer_cospan = oapply(compose_heatXfer,
+                  [Open(continuity, [:M, :ρ, :P, :T]),
+                  Open(NavierStokes, [:M, :ρ, :p, :T])])
+  HeatXfer = apex(heatXfer_cospan)
+  infer_types!(HeatXfer)
+  resolve_overloads!(HeatXfer)
+
+  @test_throws DecaTypeExeception type_check(HeatXfer)
+  @test HeatXfer[12, :op2] == :*
+  @test HeatXfer[40, :type] == :DualForm1 && HeatXfer[39, :type] == :Form1
 end
 
 @testset "Compilation Transformation" begin
