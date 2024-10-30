@@ -5,9 +5,12 @@ using ACSets.InterTypes
 
 @intertypes "decapodeacset.it" module decapodeacset end
 
+import Base.show
+
 using .decapodeacset
 # TODO: Move this export to main file
 export Operator, same_type_rules_op, arthimetic_operators, infer_resolve!, type_check
+export DecaTypeExeception
 
 # Transferring pointers
 # --------------------
@@ -566,9 +569,57 @@ function apply_overloading_rule!(d::SummationDecapode, op_id, rule, edge_val)
   return false
 end
 
-function apply_type_checking_rule(d::SummationDecapode, op_id, rule, edge_val)
-  name_present, type_diff = check_operator(d, op_id, rule, edge_val; check_name = true, ignore_infers = true, ignore_usertypes = true)
-  return name_present, type_diff == 0
+struct DecaTypeError{T}
+  rule::Operator{T}
+  idx::Int
+  table::Symbol
+end
+
+Base.show(io::IO, type_error::DecaTypeError{T}) where T = println("Operator at index $(type_error.idx) in table $(type_error.table) is not correctly typed. Perhaps the operator was meant to be $(type_error.rule)?")
+
+struct DecaTypeExeception{T} <: Exception
+  type_errors::Vector{DecaTypeError{T}}
+end
+
+function Base.show(io::IO, type_except::DecaTypeExeception{T}) where T
+  map(x -> Base.show(io, x), type_except.type_errors)
+end
+
+function run_typechecking(d::SummationDecapode, type_rules::AbstractVector{Operator{Symbol}})
+
+  type_errors = DecaTypeError{Symbol}[]
+
+  for table in [:Op1, :Op2]
+    for op_idx in parts(d, table)
+      type_error = run_typechecking_for_op(d, op_idx, type_rules, Val(table))
+      if type_error !== nothing
+        push!(type_errors, type_error)
+      end
+    end
+  end
+
+  return type_errors
+end
+
+function run_typechecking_for_op(d::SummationDecapode, op_id, type_rules, edge_val::Val{table}) where table
+
+  type_error = nothing
+  min_type_diff = Inf
+
+  for rule in type_rules
+    name_present, type_diff = check_operator(d, op_id, rule, edge_val; check_name = true, check_aliases = true, ignore_infers = true, ignore_usertypes = true)
+
+    if name_present
+      if type_diff == 0
+        return nothing
+      elseif type_diff < min_type_diff
+        min_type_diff = type_diff
+        type_error = DecaTypeError{Symbol}(rule, op_id, table)
+      end
+    end
+
+  end
+  return type_error
 end
 
 # TODO: Although the big-O complexity is the same, it might be more efficent on
@@ -640,29 +691,12 @@ function resolve_overloads!(d::SummationDecapode, resolve_rules::AbstractVector{
 end
 
 function type_check(d::SummationDecapode, type_rules::AbstractVector{Operator{Symbol}})
-  for table in [:Op1, :Op2]
-    for op_idx in parts(d, table)
+  type_errors = run_typechecking(d, type_rules)
 
-      check_passed = true
-      for rule in type_rules
-        rule_applies, rule_checked = apply_type_checking_rule(d, op_idx, rule, Val(table))
+  isempty(type_errors) && return true
 
-        rule_applies || continue
-        check_passed = false
-
-        rule_checked || continue
-        check_passed = true
-        break
-      end
-
-      check_passed || return false
-
-    end
-  end
-
-  # TODO: Add summation type checking
-
-  true
+  throw(DecaTypeExeception{Symbol}(type_errors))
+  return false
 end
 
 function infer_resolve!(d::SummationDecapode, operators::AbstractVector{Operator{Symbol}})
