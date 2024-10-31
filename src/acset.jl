@@ -411,8 +411,7 @@ function add_parameter(d::AbstractNamedDecapode, k::Symbol)
 end
 
 
-"""
-    safe_modifytype(org_type::Symbol, new_type::Symbol)
+"""    safe_modifytype(org_type::Symbol, new_type::Symbol)
 
 This function accepts an original type and a new type and determines if the original type
   can be safely overwritten by the new type.
@@ -422,8 +421,7 @@ function safe_modifytype(org_type::Symbol, new_type::Symbol)
   return (modify, modify ? new_type : org_type)
 end
 
-"""
-    safe_modifytype!(d::SummationDecapode, var_idx::Int, new_type::Symbol)
+"""    safe_modifytype!(d::SummationDecapode, var_idx::Int, new_type::Symbol)
 
 This function calls `safe_modifytype` to safely modify a Decapode's variable type.
 """
@@ -432,8 +430,7 @@ function safe_modifytype!(d::SummationDecapode, var_idx::Int, new_type::Symbol)
   return modify
 end
 
-"""
-    filterfor_ec_types(types::AbstractVector{Symbol})
+"""    filterfor_ec_types(types::AbstractVector{Symbol})
 
 Return any form or vector-field type symbols.
 """
@@ -512,8 +509,7 @@ function infer_sum_types!(d::SummationDecapode, Σ_idx::Int)
   return applied
 end
 
-"""
-    check_operator(d::SummationDecapode, op_id, rule, edge_val; check_name::Bool = false, check_aliases::Bool = false, ignore_infers::Bool = false, ignore_usertypes::Bool = false)
+"""    check_operator(d::SummationDecapode, op_id, rule, edge_val; check_name::Bool = false, check_aliases::Bool = false, ignore_infers::Bool = false, ignore_usertypes::Bool = false)
 
 Cross references a given operator's name and its input/ouput types with a given rule. It
 reutrns the number of differences in the types. If the rule does not apply to this operator,
@@ -680,8 +676,7 @@ function resolve_overloads!(d::SummationDecapode, resolve_rules::AbstractVector{
   d
 end
 
-"""
-    type_check(d::SummationDecapode, type_rules::AbstractVector{Operator{Symbol}})
+"""    type_check(d::SummationDecapode, type_rules::AbstractVector{Operator{Symbol}})
 
 Takes a Decapode and a set of rules and checks to see if the operators that are in the Decapode
 contain a valid configuration of input/output types. If an operator in the Decapode does not
@@ -699,8 +694,7 @@ function type_check(d::SummationDecapode, type_rules::AbstractVector{Operator{Sy
 end
 
 
-"""
-    infer_resolve!(d::SummationDecapode, operators::AbstractVector{Operator{Symbol}})
+"""    infer_resolve!(d::SummationDecapode, operators::AbstractVector{Operator{Symbol}})
 
 Runs type inference, overload resolution and type checking in that order.
 """
