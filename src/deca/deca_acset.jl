@@ -94,17 +94,17 @@ op2_operators = [
   Operator(:DualForm1, [:DualForm1, :DualForm2], :ι₁₂),
 
   # Arthimetic rules
-  arthimetic_operators(:.-, true)...,
-  arthimetic_operators(:./, true)...,
-  arthimetic_operators(:.*, true)...,
-  arthimetic_operators(:.^, true)...,
+  arithmetic_operators(:.-, true)...,
+  arithmetic_operators(:./, true)...,
+  arithmetic_operators(:.*, true)...,
+  arithmetic_operators(:.^, true)...,
 
   # TODO: Only labelled as broadcasted since Decapodes converts all these
   # to their broadcasted forms. They really should have different rules.
-  arthimetic_operators(:-, true)...,
-  arthimetic_operators(:/, true)...,
-  arthimetic_operators(:*, true)...,
-  arthimetic_operators(:^, true)...,
+  arithmetic_operators(:-, true)...,
+  arithmetic_operators(:/, true)...,
+  arithmetic_operators(:*, true)...,
+  arithmetic_operators(:^, true)...,
 
   # TODO: Add some intermediate result type to avoid having infers
   # Operator(:Form0, [:Form0, :infer], :^),

@@ -469,10 +469,10 @@ function same_type_rules_op(op_name::Symbol, types::AbstractVector{Symbol}, arit
   end
 end
 
-function arthimetic_operators(op_name::Symbol, broadcasted::Bool, arity::Int = 2)
+function arithmetic_operators(op_name::Symbol, broadcasted::Bool, arity::Int = 2)
   @match (broadcasted, arity) begin
     (true, 2) => bin_broad_arith_ops(op_name)
-    _ => error("This type of arthimetic operator is not yet supported or may not be valid.")
+    _ => error("This type of arithmetic operator is not yet supported or may not be valid.")
   end
 end
 
@@ -521,7 +521,7 @@ function check_operator(d::SummationDecapode, op_id, rule, edge_val; check_name:
   rule_types = vcat(rule.src_types, rule.res_type)
   deca_types = vcat(d[inputs, :type], d[output, :type])
 
-  score = mapreduce(+, zip(rule_types, deca_types); init = 0) do (rule_t, deca_t)
+  score = mapreduce(+, rule_types, deca_types; init = 0) do rule_t, deca_t
     if ignore_infers && deca_t in INFER_TYPES
       return 1
     elseif ignore_usertypes && deca_t in USER_TYPES
@@ -546,7 +546,7 @@ function apply_inference_rule!(d::SummationDecapode, op_id, rule, edge_val)
   if name_present && type_diff == 1
     vars = vcat(edge_inputs(d, op_id, edge_val), edge_output(d, op_id, edge_val))
     types = vcat(rule.src_types, rule.res_type)
-    return any(map(zip(vars, types)) do (var, type)
+    return any(map(vars, types) do var, type
       safe_modifytype!(d, var, type)
     end)
   end
