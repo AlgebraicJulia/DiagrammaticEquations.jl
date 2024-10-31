@@ -512,6 +512,13 @@ function infer_sum_types!(d::SummationDecapode, Σ_idx::Int)
   return applied
 end
 
+"""
+    check_operator(d::SummationDecapode, op_id, rule, edge_val; check_name::Bool = false, check_aliases::Bool = false, ignore_infers::Bool = false, ignore_usertypes::Bool = false)
+
+Cross references a given operator's name and its input/ouput types with a given rule. It
+reutrns the number of differences in the types. If the rule does not apply to this operator,
+which is checked by naming matching, the type difference is Inf.
+"""
 function check_operator(d::SummationDecapode, op_id, rule, edge_val; check_name::Bool = false, check_aliases::Bool = false, ignore_infers::Bool = false, ignore_usertypes::Bool = false)
   inputs = edge_inputs(d, op_id, edge_val)
   output = edge_output(d, op_id, edge_val)
@@ -536,14 +543,14 @@ function check_operator(d::SummationDecapode, op_id, rule, edge_val; check_name:
   named = check_name && dop_name == rule.op_name
   aliased = check_aliases && dop_name in rule.aliases
 
-  (named || aliased, max_score - score)
+  return (named || aliased) ? max_score - score : Inf
 end
 
 function apply_inference_rule!(d::SummationDecapode, op_id, rule, edge_val)
 
-  name_present, type_diff = check_operator(d, op_id, rule, edge_val; check_name = true, check_aliases = true)
+  type_diff = check_operator(d, op_id, rule, edge_val; check_name = true, check_aliases = true)
 
-  if name_present && type_diff == 1
+  if type_diff == 1
     vars = vcat(edge_inputs(d, op_id, edge_val), edge_output(d, op_id, edge_val))
     types = vcat(rule.src_types, rule.res_type)
     return any(map(vars, types) do var, type
@@ -556,9 +563,9 @@ end
 
 function apply_overloading_rule!(d::SummationDecapode, op_id, rule, edge_val)
 
-  name_present, type_diff = check_operator(d, op_id, rule, edge_val; check_aliases = true)
+  type_diff = check_operator(d, op_id, rule, edge_val; check_aliases = true)
 
-  if name_present && type_diff == 0
+  if type_diff == 0
     set_edge_label!(d, op_id, rule.op_name, edge_val)
     return true
   end
@@ -600,8 +607,7 @@ end
 
 function run_typechecking_for_op(d::SummationDecapode, op_id, type_rules, edge_val::Val{table}) where table
   min_diff, min_rule_idx = findmin(type_rules) do rule
-    name_present, type_diff = check_operator(d, op_id, rule, edge_val; check_name = true, check_aliases = true, ignore_infers = true, ignore_usertypes = true)
-    name_present ? type_diff : Inf
+    check_operator(d, op_id, rule, edge_val; check_name = true, check_aliases = true, ignore_infers = true, ignore_usertypes = true)
   end
   min_diff in [0,Inf] ? nothing : DecaTypeError{Symbol}(type_rules[min_rule_idx], op_id, table)
 end
@@ -674,6 +680,15 @@ function resolve_overloads!(d::SummationDecapode, resolve_rules::AbstractVector{
   d
 end
 
+"""
+    type_check(d::SummationDecapode, type_rules::AbstractVector{Operator{Symbol}})
+
+Takes a Decapode and a set of rules and checks to see if the operators that are in the Decapode
+contain a valid configuration of input/output types. If an operator in the Decapode does not
+contain a rule in the rule set it will be seen as valid.
+
+In the case of a type error a DecaTypeExeception is thrown. Otherwise true is returned.
+"""
 function type_check(d::SummationDecapode, type_rules::AbstractVector{Operator{Symbol}})
   type_errors = run_typechecking(d, type_rules)
 
@@ -683,6 +698,12 @@ function type_check(d::SummationDecapode, type_rules::AbstractVector{Operator{Sy
   return false
 end
 
+
+"""
+    infer_resolve!(d::SummationDecapode, operators::AbstractVector{Operator{Symbol}})
+
+Runs type inference, overload resolution and type checking in that order.
+"""
 function infer_resolve!(d::SummationDecapode, operators::AbstractVector{Operator{Symbol}})
   infer_types!(d, operators)
   resolve_overloads!(d, operators)
