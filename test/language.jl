@@ -854,7 +854,7 @@ end
   infer_types!(op_not_in_rules)
 
   @test op_not_in_rules == op_not_in_rules_res
-  @test op_not_in_rules !== op_not_in_rules_res
+  @test !(op_not_in_rules === op_not_in_rules_res)
 
   only_type_dec = @decapode begin
     A::Form0
@@ -1173,7 +1173,7 @@ end
   t1_contracted = contract_operators(t1_expanded)
   @test t1_orig == t1_contracted
   # contract_operators does not mutate its argument.
-  @test t1_contracted !== t1_expanded
+  @test !(t1_contracted === t1_expanded)
 
   # contract_operators works on multiple chains.
   Test2 = quote
@@ -1229,7 +1229,7 @@ end
   t6_rec_del = recursive_delete_parents(t6_orig, Vector{Int64}())
   @test t6_orig == SummationDecapode{Any, Any, Symbol}()
   # recursive_delete_parents does not mutate its argument.
-  @test t6_orig !== t6_rec_del
+  @test !(t6_orig === t6_rec_del)
 
   # recursive_delete_parents deletes a chain of single-child parents.
   t7_orig = SummationDecapode(parse_decapode(quote
