@@ -422,6 +422,44 @@ function test_nametype_equality(d::SummationDecapode, names_types_expected)
   @test issetequal(get_name_type_pair(d), names_types_expected)
 end
 
+@testset "Ruleset ambiguity" begin
+  amb_forward_rules = [Operator(:Form0, [:Form0], :test), Operator(:Form1, [:Form0], :test)]
+  @test !check_rule_ambiguity(amb_forward_rules)
+
+  amb_back_rules = [Operator(:Form1, [:Form0], :test), Operator(:Form1, [:Form1], :test)]
+  @test !check_rule_ambiguity(amb_back_rules)
+
+  amb_large_rules = [Operator(:Form0, [:Form0, :Form1, :Form2], :test), Operator(:Form1, [:Form0, :Form1, :Form2], :test)]
+  @test !check_rule_ambiguity(amb_large_rules)
+
+  amb_large_back_rules = [Operator(:Form0, [:Form0, :Form1, :Form1], :test), Operator(:Form0, [:Form0, :Form1, :Form2], :test)]
+  @test !check_rule_ambiguity(amb_large_back_rules)
+
+  usertype_amb_rules = [Operator(:Form0, [:Constant], :test), Operator(:Form1, [:Constant], :test)]
+  @test !check_rule_ambiguity(usertype_amb_rules)
+
+  usertype_good_rules = [Operator(:Form0, [:Constant], :test), Operator(:Form0, [:Parameter], :test)]
+  @test check_rule_ambiguity(usertype_good_rules)
+
+  usertype_large_rules = [Operator(:Form0, [:Form0, :Constant], :test), Operator(:Form0, [:Form0, :Literal], :test)]
+  @test check_rule_ambiguity(usertype_large_rules)
+
+  different_rules = [Operator(:Form0, [:Form0], :test1), Operator(:Form1, [:Form0], :test2)]
+  @test check_rule_ambiguity(different_rules)
+
+  aliases_amb = [Operator(:Form0, [:Form0], :test1, [:test]), Operator(:Form1, [:Form0], :test2, [:test])]
+  @test !check_rule_ambiguity(aliases_amb)
+
+  diff_size_rules = [Operator(:Form0, [:Form0], :test), Operator(:Form1, [:Form0, :Form0], :test)]
+  @test check_rule_ambiguity(diff_size_rules)
+
+  same_rules = [Operator(:Form1, [:Form0], :test), Operator(:Form1, [:Form0], :test)]
+  @test check_rule_ambiguity(same_rules)
+
+  @test check_rule_ambiguity(default_operators(1))
+  @test check_rule_ambiguity(default_operators(2))
+end
+
 @testset "Type Inference" begin
 
   # The type of the tgt of ∂ₜ is inferred.

@@ -483,6 +483,44 @@ function bin_broad_arith_ops(op_name)
   all_ops
 end
 
+# TODO: This could probably be implemented using a better version of `check_operator`
+# TODO: Add printing of rules which are ambigious with each other
+function check_rule_ambiguity(type_rules::AbstractVector{Operator{Symbol}})
+  ntype_rules = length(type_rules)
+  for idx1 in 1:ntype_rules
+    for idx2 in idx1+1:ntype_rules
+
+      rule1 = type_rules[idx1]
+      rule2 = type_rules[idx2]
+
+      if rule1.op_name == rule2.op_name || !isempty(intersect(rule1.aliases, rule2.aliases))
+        types1 = vcat(rule1.res_type, rule1.src_types)
+        types2 = vcat(rule2.res_type, rule2.src_types)
+
+        if length(types1) != length(types2)
+          continue
+        end
+
+        score = mapreduce(+, types1, types2; init = 0) do type1, type2
+          if type1 == type2
+            return 0
+          elseif type1 in NONINFERABLE_TYPES || type2 in NONINFERABLE_TYPES
+            return Inf
+          else
+            return 1
+          end
+        end
+
+        if score == 1 # Criteria for inferring a type
+          return false
+        end
+      end
+
+    end
+  end
+  return true
+end
+
 function infer_sum_types!(d::SummationDecapode, Σ_idx::Int)
   # Note that we are not doing any type checking here for users!
   # i.e. We are not checking the underlying types of Constant or Parameter
