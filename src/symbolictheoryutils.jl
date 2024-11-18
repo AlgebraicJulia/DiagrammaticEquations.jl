@@ -1,7 +1,9 @@
 using MLStyle
 using SymbolicUtils
-using SymbolicUtils: Symbolic, BasicSymbolic, FnType, Sym, symtype
+using SymbolicUtils: Symbolic, BasicSymbolic, FnType, Sym, symtype, issym
 import SymbolicUtils: promote_symtype
+import SymbolicUtils.show_call
+import Base: nameof
 
 function rules end
 export rules
@@ -171,3 +173,34 @@ export @alias
 
 alias(x) = error("$x has no aliases")
 export alias
+
+import Base.nameof
+Base.nameof(f, arg, args...) = nameof(f)
+
+function show_call(io, f, args)
+    fname = nameof(f, symtype.(args)...)
+    frep = Symbol(repr(f))
+    len_args = length(args)
+    
+    if Base.isunaryoperator(frep) && len_args == 1
+        print(io, "$fname")
+        print_arg(io, first(args), paren=true)
+    elseif Base.isbinaryoperator(frep) && len_args > 1
+        for (i, t) in enumerate(args)
+            i != 1 && print(io, " $fname ")
+            print_arg(io, t, paren=true)
+        end
+    else
+        if issym(f)
+            Base.show_unquoted(io, nameof(f))
+        else
+            Base.show_unquoted(io, fname)
+        end
+        print(io, "(")
+        for i=1:len_args
+            print(io, args[i])
+            i != len_args && print(io, ", ")
+        end
+        print(io, ")")
+    end
+end
