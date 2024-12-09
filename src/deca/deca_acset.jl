@@ -9,6 +9,9 @@ op1_operators = [
   Operator(:Form0, :Form0, :∂ₜ, [:dt]),
   Operator(:Form1, :Form1, :∂ₜ, [:dt]),
   Operator(:Form2, :Form2, :∂ₜ, [:dt]),
+  Operator(:DualForm0, :DualForm0, :∂ₜ, [:dt]),
+  Operator(:DualForm1, :DualForm1, :∂ₜ, [:dt]),
+  Operator(:DualForm2, :DualForm2, :∂ₜ, [:dt]),
 
   # Rules for d.
   Operator(:Form1, :Form0, :d₀, [:d]),
