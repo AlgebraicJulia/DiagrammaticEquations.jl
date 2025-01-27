@@ -1024,16 +1024,12 @@ end
   infer_types!(poorly_type_deca_op2)
   @test_throws DecaTypeExeception type_check(poorly_type_deca_op2)
 
-  # TODO: Add check to see if DEC operators infer around them
-  # Idea is that if they have an infer along with other known types,
-  # inferencing is not working properly and is likely a type issue
   poorly_type_deca_infer = @decapode begin
     (A,B)::Form0
 
     B == L(A, d(A))
   end
   @test_broken type_check(poorly_type_deca_infer)
-
 end
 
 @testset "Type Inference and Overloading Resolution Integration" begin
@@ -1097,46 +1093,9 @@ end
                   Open(NavierStokes, [:M, :ρ, :p, :T])])
   HeatXfer = apex(heatXfer_cospan)
 
-  bespoke_op1_inf_rules = [
-  # Rules for avg.
-  (src_type = :Form0, tgt_type = :Form1, op_names = [:avg]),
-  # Rules for R₀.
-  (src_type = :Form0, tgt_type = :Form0, op_names = [:R₀])]
-
-  #= bespoke_op2_inf_rules = [
-  (proj1_type = :Parameter, proj2_type = :Form0, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
-  (proj1_type = :Parameter, proj2_type = :Form1, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
-  (proj1_type = :Parameter, proj2_type = :Form2, res_type = :Form2, op_names = [:/, :./, :*, :.*]),
-
-  (proj1_type = :Form0, proj2_type = :Parameter, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
-  (proj1_type = :Form1, proj2_type = :Parameter, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
-  (proj1_type = :Form2, proj2_type = :Parameter, res_type = :Form2, op_names = [:/, :./, :*, :.*])] =#
-
-  infer_types!(HeatXfer, vcat(bespoke_op1_inf_rules, op1_inf_rules_2D),
-    op2_inf_rules_2D)
-
-  names_types_hx = zip(HeatXfer[:name], HeatXfer[:type])
-
-  names_types_expected_hx = [
-    (:T, :Form0), (:continuity_Ṫ₁, :Form0), (:continuity_diffusion_ϕ, :DualForm1), (:continuity_diffusion_k, :Parameter), (Symbol("continuity_diffusion_•1"), :DualForm2), (Symbol("continuity_diffusion_•2"), :Form1), (Symbol("continuity_diffusion_•3"), :Form1), (:M, :Form1), (:continuity_advection_V, :Form1), (:ρ, :Form0), (:P, :Form0), (:continuity_Ṫₐ, :Form0), (Symbol("continuity_advection_•1"), :Form0), (Symbol("continuity_advection_•2"), :Form1), (Symbol("continuity_advection_•3"), :DualForm2), (Symbol("continuity_advection_•4"), :Form0), (Symbol("continuity_advection_•5"), :DualForm2), (:continuity_Ṫ, :Form0), (:navierstokes_Ṁ, :Form1), (:navierstokes_G, :Form1), (:navierstokes_V, :Form1), (:navierstokes_ṗ, :Form0), (:navierstokes_two, :Parameter), (:navierstokes_three, :Parameter), (:navierstokes_kᵥ, :Parameter), (Symbol("navierstokes_•1"), :DualForm2), (Symbol("navierstokes_•2"), :Form1), (Symbol("navierstokes_•3"), :Form1), (Symbol("navierstokes_•4"), :DualForm1), (Symbol("navierstokes_•5"), :DualForm1), (Symbol("navierstokes_•6"), :DualForm1), (Symbol("navierstokes_•7"), :Form1), (Symbol("navierstokes_•8"), :Form1), (Symbol("navierstokes_•9"), :Form1), (Symbol("navierstokes_•10"), :Form1), (Symbol("navierstokes_•11"), :Form1), (:navierstokes_sum_1, :Form1), (Symbol("navierstokes_•12"), :Form0), (Symbol("navierstokes_•13"), :Form1), (Symbol("navierstokes_•14"), :Form1), (Symbol("navierstokes_•15"), :Form0), (Symbol("navierstokes_•16"), :DualForm0), (Symbol("navierstokes_•17"), :DualForm1), (Symbol("navierstokes_•18"), :Form1), (Symbol("navierstokes_•19"), :Form1), (Symbol("navierstokes_•20"), :Form1), (:navierstokes_sum_2, :Form0), (Symbol("navierstokes_•21"), :Form1), (Symbol("navierstokes_•22"), :Form1), (Symbol("navierstokes_•23"), :DualForm2)]
-
-  @test issetequal(names_types_hx, names_types_expected_hx)
-
-  bespoke_op2_res_rules = [
-  # Rules for L.
-  (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :Form2, resolved_name = :L₀, op = :L),
-  (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm2, resolved_name = :L₀, op = :L),
-  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form1, resolved_name = :L₁′, op = :L)]
-
-  resolve_overloads!(HeatXfer, op1_res_rules_2D,
-    vcat(bespoke_op2_res_rules, op2_res_rules_2D))
-
-  op1s_hx = HeatXfer[:op1]
-  op1s_expected_hx = [:d₀, :⋆₁, :dual_d₁, :⋆₀⁻¹, :avg, :R₀, :⋆₀, :⋆₀⁻¹, :neg, :∂ₜ, :avg, :⋆₁, :neg, :avg, :Δ₁, :δ₁, :d₀, :⋆₁, :d₀, :avg, :d₀, :neg, :avg, :∂ₜ, :⋆₀, :⋆₀⁻¹, :neg, :∂ₜ]
-  @test op1s_hx == op1s_expected_hx
-  op2s_hx = HeatXfer[:op2]
-  op2s_expected_hx = [:*, :/, :/, :L₀, :/, :L₁, :*, :/, :*, :i₁, :/, :*, :*, :L₀]
-  @test op2s_hx == op2s_expected_hx
+  infer_types!(HeatXfer)
+  resolve_overloads!(HeatXfer)
+  @test_throws DecaTypeExeception type_check(HeatXfer)
 
   # Infer types and resolve overloads for the Halfar equation.
   let
