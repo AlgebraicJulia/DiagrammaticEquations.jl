@@ -5,6 +5,8 @@ using ACSets.InterTypes
 
 @intertypes "decapodeacset.it" module decapodeacset end
 
+import Base.show
+
 using .decapodeacset
 
 # Transferring pointers
@@ -362,7 +364,7 @@ function find_chains(d::SummationDecapode;
 
   filter!(x -> passes_white_list(d[x, :op1]), chain_starts)
   filter!(x -> passes_black_list(d[x, :op1]), chain_starts)
-  
+
   s = Stack{Int64}()
   foreach(x -> push!(s, x), chain_starts)
   while !isempty(s)
@@ -409,8 +411,7 @@ function add_parameter(d::AbstractNamedDecapode, k::Symbol)
 end
 
 
-"""
-    safe_modifytype(org_type::Symbol, new_type::Symbol)
+"""   safe_modifytype(org_type::Symbol, new_type::Symbol)
 
 This function accepts an original type and a new type and determines if the original type
   can be safely overwritten by the new type.
@@ -420,8 +421,7 @@ function safe_modifytype(org_type::Symbol, new_type::Symbol)
   return (modify, modify ? new_type : org_type)
 end
 
-"""
-    safe_modifytype!(d::SummationDecapode, var_idx::Int, new_type::Symbol)
+"""   safe_modifytype!(d::SummationDecapode, var_idx::Int, new_type::Symbol)
 
 This function calls `safe_modifytype` to safely modify a Decapode's variable type.
 """
@@ -430,8 +430,7 @@ function safe_modifytype!(d::SummationDecapode, var_idx::Int, new_type::Symbol)
   return modify
 end
 
-"""
-    filterfor_ec_types(types::AbstractVector{Symbol})
+"""   filterfor_ec_types(types::AbstractVector{Symbol})
 
 Return any form or vector-field type symbols.
 """
@@ -495,6 +494,101 @@ function apply_inference_rule_op2!(d::SummationDecapode, op2_id, rule)
 
   return false
 end
+
+"""    type_check(d::SummationDecapode, type_rules::AbstractVector{Operator{Symbol}})
+Takes a Decapode and a set of rules and checks to see if the operators that are in the Decapode
+contain a valid configuration of input/output types. If an operator in the Decapode does not
+contain a rule in the rule set it will be seen as valid.
+In the case of a type error a DecaTypeExeception is thrown. Otherwise true is returned.
+"""
+function type_check(d::SummationDecapode, type_rules_op1, type_rules_op2)
+  type_errors = run_typechecking(d, type_rules_op1, type_rules_op2)
+
+  isempty(type_errors) && return true
+
+  throw(DecaTypeExeception(type_errors))
+  return false
+end
+
+struct DecaTypeError
+  rule
+  idx::Int
+  table::Symbol
+end
+
+Base.show(io::IO, type_error::DecaTypeError) = println("Operator at index $(type_error.idx) in table $(type_error.table) is not correctly typed. Perhaps the operator was meant to be $(type_error.rule)?")
+
+struct DecaTypeExeception <: Exception
+  type_errors::Vector{DecaTypeError}
+end
+
+function Base.show(io::IO, type_except::DecaTypeExeception)
+  map(x -> Base.show(io, x), type_except.type_errors)
+end
+
+function run_typechecking(d::SummationDecapode, type_rules_op1, type_rules_op2)
+
+  type_errors = DecaTypeError[]
+
+  for op_idx in parts(d, :Op1)
+    type_error = run_typechecking_for_op(d, op_idx, type_rules_op1, Val(:Op1))
+    if !isnothing(type_error)
+      push!(type_errors, type_error)
+    end
+  end
+
+  for op_idx in parts(d, :Op2)
+    type_error = run_typechecking_for_op(d, op_idx, type_rules_op2, Val(:Op2))
+    if !isnothing(type_error)
+      push!(type_errors, type_error)
+    end
+  end
+
+  return type_errors
+end
+
+function run_typechecking_for_op(d::SummationDecapode, op_id, type_rules, edge_val::Val{table}) where table
+  min_diff, min_rule_idx = findmin(type_rules) do rule
+    check_operator(d, op_id, rule, edge_val; check_name = true, check_aliases = true, ignore_infers = true, ignore_usertypes = true)
+  end
+  min_diff in [0,Inf] ? nothing : DecaTypeError(type_rules[min_rule_idx], op_id, table)
+end
+
+"""    check_operator(d::SummationDecapode, op_id, rule, edge_val; check_name::Bool = false, check_aliases::Bool = false, ignore_infers::Bool = false, ignore_usertypes::Bool = false)
+
+Cross references a given operator's name and its input/ouput types with a given rule. It
+reutrns the number of differences in the types. If the rule does not apply to this operator,
+which is checked by naming matching, the type difference is Inf.
+"""
+function check_operator(d::SummationDecapode, op_id, rule, edge_val; check_name::Bool = false, check_aliases::Bool = false, ignore_infers::Bool = false, ignore_usertypes::Bool = false)
+  inputs = edge_inputs(d, op_id, edge_val)
+  output = edge_output(d, op_id, edge_val)
+
+  max_score = length(inputs) + length(output)
+
+  rule_types = resrule_input_types(edge_val, rule)
+  deca_types = vcat(d[inputs, :type], d[output, :type])
+
+  score = mapreduce(+, rule_types, deca_types; init = 0) do rule_t, deca_t
+    if ignore_infers && deca_t in INFER_TYPES
+      return 1
+    elseif ignore_usertypes && deca_t in USER_TYPES
+      return 1
+    else
+      return rule_t == deca_t
+    end
+  end
+
+  dop_name = edge_function(d, op_id, edge_val)
+
+  named = check_name && dop_name == rule.resolved_name
+  aliased = check_aliases && dop_name == rule.op
+
+  return (named || aliased) ? max_score - score : Inf
+end
+
+resrule_input_types(::Val{:Op1}, rule) = return [rule.src_type, rule.tgt_type]
+resrule_input_types(::Val{:Op2}, rule) = return [rule.proj1_type, rule.proj2_type, rule.res_type]
 
 
 # TODO: Although the big-O complexity is the same, it might be more efficent on

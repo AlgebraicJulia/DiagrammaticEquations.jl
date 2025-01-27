@@ -293,9 +293,27 @@ op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
 
 # TODO: When SummationDecapodes are annotated with the degree of their space,
 # use dispatch to choose the correct set of rules.
-infer_types!(d::SummationDecapode) =
-  infer_types!(d, op1_inf_rules_2D, op2_inf_rules_2D)
+function infer_types!(d::SummationDecapode; dim = 2)
+  @assert 1 <= dim <= 2
+  dim == 1 && return infer_types!(d, op1_inf_rules_1D, op2_inf_rules_1D)
+  dim == 2 && return infer_types!(d, op1_inf_rules_2D, op2_inf_rules_2D)
+end
 
+"""    function resolve_overloads!(d::SummationDecapode)
+
+Resolve function overloads based on types of src and tgt.
+"""
+function resolve_overloads!(d::SummationDecapode; dim = 2)
+  @assert 1 <= dim <= 2
+  dim == 1 && return resolve_overloads!(d, op1_res_rules_1D, op2_res_rules_1D)
+  dim == 2 && return resolve_overloads!(d, op1_res_rules_2D, op2_res_rules_2D)
+end
+
+function type_check(d::SummationDecapode; dim = 2)
+  @assert 1 <= dim <= 2
+  dim == 1 && return type_check(d, op1_res_rules_1D, op2_res_rules_1D)
+  dim == 2 && return type_check(d, op1_res_rules_2D, op2_res_rules_2D)
+end
 
 ascii_to_unicode_op1 = Pair{Symbol, Any}[
                         (:dt       => :∂ₜ),
@@ -349,12 +367,3 @@ function vec_to_dec!(d::SummationDecapode)
 
   d
 end
-
-# TODO: When SummationDecapodes are annotated with the degree of their space,
-# use dispatch to choose the correct set of rules.
-"""    function resolve_overloads!(d::SummationDecapode)
-
-Resolve function overloads based on types of src and tgt.
-"""
-resolve_overloads!(d::SummationDecapode) =
-  resolve_overloads!(d, op1_res_rules_2D, op2_res_rules_2D)

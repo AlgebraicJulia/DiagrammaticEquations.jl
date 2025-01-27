@@ -5,7 +5,7 @@ using MLStyle
 using Base.Iterators
 
 using DiagrammaticEquations
-
+import DiagrammaticEquations: Judgement
 @testset "Parsing" begin
 
   # @present DiffusionSpace2D(FreeExtCalc2D) begin
@@ -429,17 +429,17 @@ import DiagrammaticEquations: filterfor_ec_types
   @test isempty(filterfor_ec_types([:Literal, :Constant, :Parameter, :infer]))
 end
 
+# Warning, this testing depends on the fact that varname, form information is
+# unique within a decapode even though this is not enforced
+function get_name_type_pair(d::SummationDecapode)
+  Set(zip(d[:name], d[:type]))
+end
+
+function test_nametype_equality(d::SummationDecapode, names_types_expected)
+  @test issetequal(get_name_type_pair(d), names_types_expected)
+end
+
 @testset "Type Inference" begin
-  # Warning, this testing depends on the fact that varname, form information is
-  # unique within a decapode even though this is not enforced
-  function get_name_type_pair(d::SummationDecapode)
-    Set(zip(d[:name], d[:type]))
-  end
-
-  function test_nametype_equality(d::SummationDecapode, names_types_expected)
-    issetequal(get_name_type_pair(d), names_types_expected)
-  end
-
   # The type of the tgt of ∂ₜ is inferred.
   Test1 = quote
     C::Form0{X}
@@ -450,7 +450,7 @@ end
 
   # We use set equality because we do not care about the order of the Var table.
   names_types_expected_1 = Set([(:C, :Form0)])
-  @test test_nametype_equality(t1, names_types_expected_1)
+  test_nametype_equality(t1, names_types_expected_1)
 
   # The type of the src of ∂ₜ is inferred.
   Test2 = quote
@@ -462,7 +462,7 @@ end
   infer_types!(t2)
 
   names_types_expected_2 = Set([(:C, :Form0)])
-  @test test_nametype_equality(t2, names_types_expected_2)
+  test_nametype_equality(t2, names_types_expected_2)
 
   # The type of the tgt of d is inferred.
   Test3 = quote
@@ -480,7 +480,7 @@ end
   infer_types!(t3)
 
   names_types_expected_3 = Set([(:C, :Form0), (:D, :Form1), (:E, :Form2)])
-  @test test_nametype_equality(t3, names_types_expected_3)
+  test_nametype_equality(t3, names_types_expected_3)
 
   # The type of the src and tgt of d is inferred.
   Test4 = quote
@@ -495,7 +495,7 @@ end
   infer_types!(t4)
 
   names_types_expected_4 = Set([(:C, :Form0), (:D, :Form1), (:E, :Form2)])
-  @test test_nametype_equality(t4, names_types_expected_4)
+  test_nametype_equality(t4, names_types_expected_4)
 
   # The type of the src of d is inferred.
   Test5 = quote
@@ -507,7 +507,7 @@ end
   infer_types!(t5)
 
   names_types_expected_5 = Set([(:C, :Form0), (:D, :Form1)])
-  @test test_nametype_equality(t5, names_types_expected_5)
+  test_nametype_equality(t5, names_types_expected_5)
 
   # The type of the src of d is inferred.
   Test6 = quote
@@ -525,7 +525,7 @@ end
   names_types_expected_6 = Set([
     (:A, :Form0),     (:B, :Form1),     (:C, :Form2),
     (:F, :DualForm2), (:E, :DualForm1), (:D, :DualForm0)])
-  @test test_nametype_equality(t6, names_types_expected_6)
+  test_nametype_equality(t6, names_types_expected_6)
 
   # The type of a summand is inferred.
   Test7 = quote
@@ -568,7 +568,7 @@ end
     (:Γ, :Form0),
     (:A, :Form1), (:B, :Form1), (:C, :Form1), (:D, :Form1), (:E, :Form1), (:F, :Form1),
     (:Θ, :Form2)])
-  @test test_nametype_equality(t8, names_types_expected_8)
+  test_nametype_equality(t8, names_types_expected_8)
 
   function makeInferPathDeca(log_cycles; infer_path = false)
     cycles = 2 ^ log_cycles
@@ -613,7 +613,7 @@ end
   names_types_expected_9 = Set([
     (:A, :Form0),     (Symbol("•_1_", 1), :Form1),     (Symbol("•_1_", 2), :Form2),
     (:B, :DualForm2), (Symbol("•_1_", 4), :DualForm1), (Symbol("•_1_", 3), :DualForm0)])
-  @test test_nametype_equality(t9, names_types_expected_9)
+  test_nametype_equality(t9, names_types_expected_9)
 
   # Basic op2 inference using ∧
   Test10 = quote
@@ -633,7 +633,7 @@ end
   infer_types!(t10)
 
   names_types_expected_10 = Set([(:F, :Form1), (:B, :Form0), (:C, :Form0), (:H, :Form1), (:A, :Form0), (:E, :Form1), (:D, :Form0)])
-  @test test_nametype_equality(t10, names_types_expected_10)
+  test_nametype_equality(t10, names_types_expected_10)
 
   # Basic op2 inference using L
   Test11 = quote
@@ -650,7 +650,7 @@ end
 
 
   names_types_expected_11 = Set([(:A, :Form1), (:B, :DualForm0), (:C, :DualForm0), (:E, :DualForm1), (:D, :DualForm1)])
-  @test test_nametype_equality(t11, names_types_expected_11)
+  test_nametype_equality(t11, names_types_expected_11)
 
   # Basic op2 inference using i
   Test12 = quote
@@ -664,7 +664,7 @@ end
   infer_types!(t12)
 
   names_types_expected_12 = Set([(:A, :Form1), (:B, :DualForm1), (:C, :DualForm0)])
-  @test test_nametype_equality(t12, names_types_expected_12)
+  test_nametype_equality(t12, names_types_expected_12)
 
   #2D op2 inference using ∧
   Test13 = quote
@@ -684,7 +684,7 @@ end
   infer_types!(t13)
 
   names_types_expected_13 = Set([(:E, :Form2), (:B, :Form1), (:C, :Form2), (:A, :Form1), (:F, :Form2), (:H, :Form2), (:D, :Form0)])
-  @test test_nametype_equality(t13, names_types_expected_13)
+  test_nametype_equality(t13, names_types_expected_13)
 
   # 2D op2 inference using L
   Test14 = quote
@@ -698,7 +698,7 @@ end
   infer_types!(t14)
 
   names_types_expected_14 = Set([(:C, :DualForm2), (:A, :Form1), (:B, :DualForm2)])
-  @test test_nametype_equality(t14, names_types_expected_14)
+  test_nametype_equality(t14, names_types_expected_14)
 
   # 2D op2 inference using i
   Test15 = quote
@@ -712,7 +712,7 @@ end
   infer_types!(t15)
 
   names_types_expected_15 = Set([(:A, :Form1), (:B, :DualForm2), (:C, :DualForm1)])
-  @test test_nametype_equality(t15, names_types_expected_15)
+  test_nametype_equality(t15, names_types_expected_15)
 
   # Special case of a summation with a mix of infer and Literal.
   t16 = @decapode begin
@@ -721,7 +721,7 @@ end
   infer_types!(t16)
 
   names_types_expected_16 = Set([(:A, :infer), (:C, :infer), (:D, :infer), (Symbol("2"), :Literal)])
-  @test test_nametype_equality(t16, names_types_expected_16)
+  test_nametype_equality(t16, names_types_expected_16)
 
   # Special case of a summation with a mix of Form, Constant, and infer.
   t17 = @decapode begin
@@ -732,7 +732,7 @@ end
   infer_types!(t17)
 
   names_types_expected_17 = Set([(:A, :Form0), (:C, :Constant), (:D, :Form0)])
-  @test test_nametype_equality(t17, names_types_expected_17)
+  test_nametype_equality(t17, names_types_expected_17)
 
   # Special case of a summation with a mix of infer and Constant.
   t18 = @decapode begin
@@ -742,7 +742,7 @@ end
   infer_types!(t18)
 
   names_types_expected_18 = Set([(:A, :infer), (:C, :Constant), (:D, :infer)])
-  @test test_nametype_equality(t18, names_types_expected_18)
+  test_nametype_equality(t18, names_types_expected_18)
 
   # Test #19: Prevent intermediates from converting to Constant
   let
@@ -785,7 +785,7 @@ end
     infer_types!(d)
 
     names_types_expected = Set([(:A, :infer), (:C, :Parameter), (:D, :infer)])
-    @test test_nametype_equality(d, names_types_expected)
+    test_nametype_equality(d, names_types_expected)
   end
 
   # Test #22: Have source form information flow over Parameters and Constants
@@ -799,7 +799,7 @@ end
     infer_types!(d)
 
     names_types_expected = Set([(:A, :Form0), (:B, :Form0), (:C, :Parameter), (:D, :Constant)])
-    @test test_nametype_equality(d, names_types_expected)
+    test_nametype_equality(d, names_types_expected)
   end
 
   # Test #23: Have target form information flow over Parameters and Constants
@@ -813,7 +813,7 @@ end
     infer_types!(d)
 
     names_types_expected = Set([(:A, :Form0), (:B, :Form0), (:C, :Parameter), (:D, :Constant)])
-    @test test_nametype_equality(d, names_types_expected)
+    test_nametype_equality(d, names_types_expected)
   end
 
   # Test #24: Summing mismatched forms throws an error
@@ -856,11 +856,11 @@ end
                                (:E, :DVF), (:F, :infer), (:G, :Form1), (:H, :DualForm1),
                                (:I, :Form1), (:J, :DualForm1), (:K, :PVF), (:L, :DVF),
                                (:M, :PVF), (:N, :DVF), (:O, :infer), (:P, :Form1)])
-    @test test_nametype_equality(d, names_types_expected)
+    test_nametype_equality(d, names_types_expected)
   end
 end
 
-@testset "Overloading Resolution" begin
+@testset "Overloading Resolution and Type Checking" begin
   # d overloading is resolved.
   Test1 = quote
     A::Form0{X}
@@ -880,6 +880,7 @@ end
   op1s_1 = t1[:op1]
   op1s_expected_1 = [:d₀ , :d₁, :dual_d₀, :dual_d₁]
   @test op1s_1 == op1s_expected_1
+  @test type_check(t1)
 
   # ⋆ overloading is resolved.
   Test2 = quote
@@ -904,6 +905,7 @@ end
   # listed in the order in which they appear in Test2.
   op1s_expected_2 = [:⋆₀ , :⋆₀⁻¹ , :⋆₁⁻¹ , :⋆₁ , :⋆₂⁻¹ , :⋆₂]
   @test op1s_2 == op1s_expected_2
+  @test type_check(t2)
 
   # All overloading on the de Rahm complex is resolved.
   Test3 = quote
@@ -932,6 +934,7 @@ end
   # listed in the order in which they appear in Test2.
   op1s_expected_3 = [:d₀ , :d₁, :dual_d₀, :dual_d₁, :⋆₀ , :⋆₀⁻¹ , :⋆₁ , :⋆₁⁻¹ , :⋆₂ , :⋆₂⁻¹]
   @test op1s_3 == op1s_expected_3
+  @test type_check(t3)
 
   Test4 = quote
     (A, C)::Form0{X}
@@ -952,6 +955,7 @@ end
   op2s_4 = t4[:op2]
   op2s_expected_4 = [:∧₀₀ , :∧₀₁, :∧₁₀, :L₀, :L₁, :i₁]
   @test op2s_4 == op2s_expected_4
+  @test type_check(t4)
 
   Test5 = quote
     A::Form0{X}
@@ -972,6 +976,64 @@ end
   op2s_5 = t5[:op2]
   op2s_expected_5 = [:∧₁₁, :∧₀₂, :∧₂₀, :L₂, :i₂]
   @test op2s_5 == op2s_expected_5
+  @test type_check(t5)
+
+  op_not_in_rules = @decapode begin
+    A::Form0
+    B::Form0
+    C::Form0
+    D::Form0
+
+    B == fake(A)
+    D == fake2(A, C)
+  end
+  op_not_in_rules_res = deepcopy(op_not_in_rules)
+  resolve_overloads!(op_not_in_rules)
+
+  @test op_not_in_rules == op_not_in_rules_res
+  @test op_not_in_rules !== op_not_in_rules_res
+  @test type_check(op_not_in_rules)
+
+  only_type_dec = @decapode begin
+    A::Form0
+    B::Form0
+    C::Form1
+
+    B == fake(A)
+    C == d(A)
+  end
+  resolve_overloads!(only_type_dec)
+
+  only_type_dec_res = Set([(:A, :Form0), (:B, :Form0), (:C, :Form1)])
+  test_nametype_equality(only_type_dec, only_type_dec_res)
+  @test type_check(only_type_dec)
+
+  poorly_type_deca_op1 = @decapode begin
+    (A,B)::Form0
+
+    B == d(A)
+  end
+  resolve_overloads!(poorly_type_deca_op1)
+  @test_throws DecaTypeExeception type_check(poorly_type_deca_op1)
+
+  poorly_type_deca_op2 = @decapode begin
+    (A,B)::Form0
+
+    B == L(A, d(A))
+  end
+  infer_types!(poorly_type_deca_op2)
+  @test_throws DecaTypeExeception type_check(poorly_type_deca_op2)
+
+  # TODO: Add check to see if DEC operators infer around them
+  # Idea is that if they have an infer along with other known types,
+  # inferencing is not working properly and is likely a type issue
+  poorly_type_deca_infer = @decapode begin
+    (A,B)::Form0
+
+    B == L(A, d(A))
+  end
+  @test_broken type_check(poorly_type_deca_infer)
+
 end
 
 @testset "Type Inference and Overloading Resolution Integration" begin
