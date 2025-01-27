@@ -5,6 +5,7 @@ using MLStyle
 using Base.Iterators
 
 using DiagrammaticEquations
+import DiagrammaticEquations: Judgement, filterfor_ec_types
 
 @testset "Parsing" begin
 
@@ -419,8 +420,6 @@ import DiagrammaticEquations: safe_modifytype
 
   end
 end
-
-import DiagrammaticEquations: filterfor_ec_types
 
 @testset "Form Type Retrieval" begin
   all_types = [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2, :Literal, :Constant, :Parameter, :PVF, :DVF, :infer]
