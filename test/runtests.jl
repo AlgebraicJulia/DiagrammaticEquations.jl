@@ -1,7 +1,4 @@
 using Test
-
-include("pretty.jl")
-
 @testset "Core" begin
   include("core.jl")
 end
@@ -16,6 +13,7 @@ end
 
 @testset "Visualization" begin
   include("visualization.jl")
+  include("pretty.jl")
 end
 
 @testset "Average Rewriting" begin
