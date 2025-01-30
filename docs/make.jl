@@ -6,6 +6,7 @@ const generated_dir = joinpath(@__DIR__, "src", "generated")
 
 @info "Loading DiagrammaticEquations"
 using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 
 const no_literate = "--no-literate" in ARGS
 if !no_literate
@@ -34,7 +35,8 @@ end
 
 @info "Building Documenter.jl docs"
 makedocs(
-  modules=[DiagrammaticEquations],
+  modules=[DiagrammaticEquations, 
+           DiagrammaticEquations.Deca],
   format=Documenter.HTML(),
   sitename="DiagrammaticEquations.jl",
   doctest=false,
@@ -42,7 +44,11 @@ makedocs(
   pages=Any[
     "DiagrammaticEquations.jl"=>"index.md",
     "Equations"=>"equations.md",
-    "Library Reference"=>"api.md",
+    "Library Reference"=> Any[
+        "apis/api.md",
+        "apis/deca.md",
+        # "apis/learn.md",
+    ]
   ]
 )
 
