@@ -217,6 +217,12 @@ oapply(r::RelationDiagram, podes::Vector{D}) where {D<:OpenSummationDecapode} =
 
 oapply(r::RelationDiagram, pode::OpenSummationDecapode) = oapply(r, [pode])
 
+import Catlab.Programs.RelationalPrograms: UntypedUnnamedRelationDiagram
+export UntypedUnnamedRelationDiagram
+
+(diagram::UntypedUnnamedRelationDiagram{Symbol, Symbol})(opens::Vector{<:OpenSummationDecapode}) = apex(oapply(diagram, opens))
+(diagram::UntypedUnnamedRelationDiagram{Symbol, Symbol})(open::OpenSummationDecapode) = diagram([open])
+
 # Default composition
 # -------------------
 
