@@ -107,6 +107,7 @@ original_apexes = map(apex, decapodes_vars)
 deep_copies = deepcopy(decapodes_vars) # This is to test none of the decapodes are mutated.
 
 dif_adv_sup = oapply(compose_diff_adv, decapodes_vars)
+@test compose_diff_adv(decapodes_vars) == apex(dif_adv_sup)
 
 dif_adv_sup_expected = @acset SummationDecapode{Any, Any, Symbol} begin
   Var = 6
