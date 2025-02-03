@@ -2,6 +2,7 @@
 using .decapodes
 
 import PEG
+import Catlab.Parsers.ParserCore: ws, eq, lparen, rparen, comma, EOL, colon, ident, expr, collect
 
 # Line := Statement & EOL
 # Statement := Judgement | Eq
@@ -15,3 +16,5 @@ import PEG
 # operation = term ws? ((+|*) ws? term)+
 # compose = ∘(args)(term)
 
+@rule derivative = (∂ₜ | dt) Ident
+@rule 
