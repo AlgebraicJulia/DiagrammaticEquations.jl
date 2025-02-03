@@ -24,6 +24,8 @@ transfer_parents!, transfer_children!,
 unique_lits!,
 ## language
 @decapode, Term, parse_decapode, term, Eq, DecaExpr,
+## PEG parser
+
 # ~~~~~
 Plus, AppCirc1, Var, Tan, App1, App2,
 ## visualization
@@ -57,6 +59,7 @@ append_dot(s::Symbol) = Symbol(string(s)*'\U0307')
 
 include("acset.jl")
 include("language.jl")
+include("parser.jl")
 include("composition.jl")
 include("collages.jl")
 include("visualization.jl")
