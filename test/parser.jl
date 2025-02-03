@@ -5,3 +5,7 @@ using LinearAlgebra
 using Base.Iterators
 
 using DiagrammaticEquations
+
+@testset "Derivatives" begin
+    @test derivative("dt(X)")[1] == Tan(Var("X"))
+end

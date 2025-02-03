@@ -1,14 +1,18 @@
-@intertypes "decapodes.it" module decapodes end
 using .decapodes
 
-import PEG
-import Catlab.Parsers.ParserCore: ws, eq, lparen, rparen, comma, EOL, colon, ident, expr, collect
+
+using PEG
+
+# Dylan >
 
 # Line := Statement & EOL
 # Statement := Judgement | Eq
 # Judgement := var::var
-# var := Symbol | Expr
+# var := ident | Expr
 # Eq := term & "==" & term
+
+# Christian >
+
 # Term := derivative | function | operation  
 # derivative = (∂ₜ | dt) Var
 # function = ident (args)
@@ -16,5 +20,4 @@ import Catlab.Parsers.ParserCore: ws, eq, lparen, rparen, comma, EOL, colon, ide
 # operation = term ws? ((+|*) ws? term)+
 # compose = ∘(args)(term)
 
-@rule derivative = (∂ₜ | dt) Ident
-@rule 
+@rule derivative = (∂ₜ , dt) & lparen & ident & rparen
