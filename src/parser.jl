@@ -1,6 +1,8 @@
 @intertypes "decapodes.it" module decapodes end
 using .decapodes
 
+import PEG
+
 # Line := Statement & EOL
 # Statement := Judgement | Eq
 # Judgement := var::var
@@ -10,6 +12,6 @@ using .decapodes
 # derivative = (∂ₜ | dt) Var
 # function = ident (args)
 # args = term | term, term
-# operation = term ((+|*) term)+
+# operation = term ws? ((+|*) ws? term)+
 # compose = ∘(args)(term)
 
