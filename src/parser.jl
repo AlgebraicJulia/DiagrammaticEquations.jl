@@ -11,7 +11,7 @@ using PEG
 
 # Christian >
 
-# Term := derivative | function | operation  
+# Term := derivative | function | operation | Ident | Number 
 # derivative = (∂ₜ | dt) Var
 # function = ident (args)
 # args = term | term, term
@@ -19,7 +19,8 @@ using PEG
 # compose = ∘(args)(term)
 
 # 
-@rule Term = Derivative , Call
+@rule Term = Derivative , Call, 
+  ident |> v -> parse_identifier(v)
 
 # The derivative rule supports derivatives of the form ∂ₜ(x) and dt(x).
 @rule Derivative = ("∂ₜ" , "dt") & lparen & ws & ident & ws & rparen |> v -> Tan(decapodes.Var(Symbol(v[4])))
