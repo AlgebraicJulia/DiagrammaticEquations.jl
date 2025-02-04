@@ -18,4 +18,6 @@ using PEG
 # operation = term ws? ((+|*) ws? term)+
 # compose = ∘(args)(term)
 
-@rule derivative = ("∂ₜ" , "dt") & lparen & ws & ident & ws & rparen |> v -> Tan(decapodes.Var(Symbol(v[4])))
+# The derivative rule supports derivatives of the form ∂ₜ(x) and dt(x).
+@rule Derivative = ("∂ₜ" , "dt") & lparen & ws & ident & ws & rparen |> v -> Tan(decapodes.Var(Symbol(v[4])))
+
