@@ -20,7 +20,6 @@ end
    @test Derivative("∂ₜ(X)")[1] == Tan(DiagrammaticEquations.decapodes.Var(Symbol("X")))
 end
 
-# BROKEN
 @testset "PlusOperation" begin
     @test PlusOperation("a + b")[1] == DiagrammaticEquations.decapodes.Plus([DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b"))])
     @test PlusOperation("a + b + c")[1] == DiagrammaticEquations.decapodes.Plus([DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b")), DiagrammaticEquations.decapodes.Var(Symbol("c"))])
