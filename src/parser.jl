@@ -26,14 +26,15 @@ using PEG
 # The derivative rule supports derivatives of the form ∂ₜ(x) and dt(x).
 @rule Derivative = ("∂ₜ" , "dt") & lparen & ws & ident & ws & rparen |> v -> Tan(decapodes.Var(Symbol(v[4])))
 
-# The operation rule supports addition and multiplication of terms.
-@rule PlusOperation = Term & ws & ("+" & ws & Term)[+] |> v -> Plus(v[1]; v[3][3])
+# The operation rule supports addition and multiplication of terms. BROKEN BROKEN BROKEN BROKEN BROKEN BROKEN BROKEN
+@rule PlusOperation = Term & (ws & "+" & ws & Term)[+] |> v -> Plus(vcat(v[1], last.(v[2])))
 
 # The call rule supports function calls of the form f(x) and g(x, y).
 @rule Call = ident & lparen & ws & Args & ws & rparen |> v -> BuildCall(v)
 
 # Arguments support one or two terms.
 @rule Args = (Term & ws & "," & ws & Term) |> v -> [v[1], v[5]], Term |> v -> [v]
+
 
 """ BuildCall
 
