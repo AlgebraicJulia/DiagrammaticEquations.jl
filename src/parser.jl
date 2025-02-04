@@ -19,8 +19,9 @@ using PEG
 # compose = ∘(args)(term)
 
 # Terms make up core components of DEC equations. They can be symbols, numbers, arithmetic operations, derivatives, or function calls.
-@rule Term = Derivative , Call, 
-  ident |> v -> parse_identifier(v)
+@rule Term = Derivative , 
+  Call, 
+  ident |> v -> ParseIdent(v)
 
 # The derivative rule supports derivatives of the form ∂ₜ(x) and dt(x).
 @rule Derivative = ("∂ₜ" , "dt") & lparen & ws & ident & ws & rparen |> v -> Tan(decapodes.Var(Symbol(v[4])))
@@ -40,5 +41,17 @@ function BuildCall(v)
     return App1(v[1], v[4])
   else
     return App2(v[1], v[4][1], v[4][2])
+  end
+end
+
+""" ParseIdent
+
+.... TO DO ...
+"""
+function ParseIdent(v)
+  if typeof(Catlab.Parsers.ParserCore.parse_identifier(v)) == Symbol
+    return decapodes.Var(Symbol(v))
+  else
+    return Lit(Symbol(v))
   end
 end

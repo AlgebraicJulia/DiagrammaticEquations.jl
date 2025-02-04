@@ -11,6 +11,8 @@ PEG.setdebug!(true) # To disable: PEG.setdebug!(false)
 
 @testset "Terms" begin
     @test Term("∂ₜ(X)")[1] == Tan(DiagrammaticEquations.decapodes.Var(Symbol("X"))) # Need to specify "DiagrammaticEquations.decapodes" b/c Catlab import also has "Var".
+    @test Term("a")[1] == DiagrammaticEquations.decapodes.Var(Symbol("a"))
+    @test Term("12")[1] == DiagrammaticEquations.decapodes.Lit(Symbol("12"))
 end
 
 @testset "Derivatives" begin
@@ -19,7 +21,7 @@ end
 end
 
 @testset "Call" begin
-    @test Call("a(b)")[1] == ["a", "(", "", :b, "", ")"]
+    @test Call("a(b)")[1] == App1(a, DiagrammaticEquations.decapodes.Var(Symbol("b")))
 end
 
 @testset "Args" begin
