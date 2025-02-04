@@ -1,7 +1,8 @@
-using .decapodes
+#using .decapodes
 
+using Catlab.Parsers.ParserCore
 
-using PEG
+#using PEG
 
 # Dylan >
 
@@ -20,4 +21,4 @@ using PEG
 # operation = term ws? ((+|*) ws? term)+
 # compose = ∘(args)(term)
 
-@rule derivative = (∂ₜ , dt) & lparen & ident & rparen
+# @rule derivative = (∂ₜ , dt) & lparen & ident & rparen
