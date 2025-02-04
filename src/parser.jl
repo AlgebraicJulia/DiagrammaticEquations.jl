@@ -18,7 +18,7 @@ using PEG
 # operation = term ws? ((+|*) ws? term)+
 # compose = ∘(args)(term)
 
-# 
+# Terms make up core components of DEC equations. They can be symbols, numbers, arithmetic operations, derivatives, or function calls.
 @rule Term = Derivative , Call, 
   ident |> v -> parse_identifier(v)
 
@@ -29,5 +29,5 @@ using PEG
 @rule Call = ident & lparen & ws & Args & ws & rparen
 
 # Arguments support one or two terms.
-@rule Args = Term[1:2]
+@rule Args = (Term & ws & "," & ws & Term) |> v -> [v[1], v[5]], Term
 

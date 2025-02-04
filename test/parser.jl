@@ -19,5 +19,10 @@ end
 end
 
 @testset "Call" begin
-    @test Call("a(b)")[1] == ["a", "(", "", "b", "", ")"]
+    @test Call("a(b)")[1] == ["a", "(", "", :b, "", ")"]
+end
+
+@testset "Args" begin
+    @test Args("a")[1] == :a
+    @test Args("a, b")[1] == [:a, :b]
 end
