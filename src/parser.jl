@@ -21,6 +21,8 @@ using PEG
 # Terms make up core components of DEC equations. They can be symbols, numbers, arithmetic operations, derivatives, or function calls.
 @rule Term = Derivative , 
   Call, 
+  PlusOperation,
+  MultOperation,
   ident |> v -> ParseIdent(v)
 
 # The derivative rule supports derivatives of the form ∂ₜ(x) and dt(x).
