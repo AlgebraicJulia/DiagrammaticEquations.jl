@@ -1,4 +1,4 @@
-using Catlab.Parsers.ParserCore
+import Catlab.Parsers.ParserCore: ident
 using PEG
 
 # Dylan >
@@ -18,4 +18,6 @@ using PEG
 # operation = term ws? ((+|*) ws? term)+
 # compose = ∘(args)(term)
 
-# @rule derivative = (∂ₜ , dt) & lparen & ident & rparen
+@rule derivative = ("∂ₜ" , "dt") & lparen & ident & rparen
+
+# ("∂ₜ" , "dt") & lparen & ident & rparen
