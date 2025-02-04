@@ -34,7 +34,7 @@ using PEG
 
 """ BuildCall
 
-.... TO DO ...
+Takes in an input array (AST) for a call expression and returns a corresponding App1 or App2 object.
 """
 function BuildCall(v)
   if length(v[4]) == 1
@@ -46,7 +46,7 @@ end
 
 """ ParseIdent
 
-.... TO DO ...
+Takes in an input array (AST) for an identifier and returns a corresponding Var or Lit object.
 """
 function ParseIdent(v)
   if typeof(Catlab.Parsers.ParserCore.parse_identifier(v)) == Symbol
