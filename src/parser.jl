@@ -28,6 +28,7 @@ using PEG
 
 # The operation rule supports addition and multiplication of terms.
 @rule PlusOperation = Term & (ws & "+" & ws & Term)[+] |> v -> Plus(vcat(v[1], last.(v[2])))
+@rule MultOperation = Term & (ws & "*" & ws & Term)[+] |> v -> Mult(vcat(v[1], last.(v[2])))
 
 # The call rule supports function calls of the form f(x) and g(x, y).
 @rule Call = ident & lparen & ws & Args & ws & rparen |> v -> BuildCall(v)
