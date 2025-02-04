@@ -26,8 +26,19 @@ using PEG
 @rule Derivative = ("∂ₜ" , "dt") & lparen & ws & ident & ws & rparen |> v -> Tan(decapodes.Var(Symbol(v[4])))
 
 # The call rule supports function calls of the form f(x) and g(x, y).
-@rule Call = ident & lparen & ws & Args & ws & rparen
+@rule Call = ident & lparen & ws & Args & ws & rparen |> v -> BuildCall(v)
 
 # Arguments support one or two terms.
 @rule Args = (Term & ws & "," & ws & Term) |> v -> [v[1], v[5]], Term
 
+""" BuildCall
+
+.... TO DO ...
+"""
+function BuildCall(v)
+  if length(v[4]) == 1
+    return App1(v[1], v[4])
+  else
+    return App2(v[1], v[4][1], v[4][2])
+  end
+end
