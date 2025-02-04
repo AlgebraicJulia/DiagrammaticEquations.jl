@@ -25,7 +25,7 @@ unique_lits!,
 ## language
 @decapode, Term, parse_decapode, term, Eq, DecaExpr,
 ## PEG parser
-Term, Derivative, Call, Args,
+Term, Derivative, PlusOperation, Call, Args,
 # ~~~~~
 Plus, AppCirc1, Var, Tan, App1, App2,
 ## visualization
