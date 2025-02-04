@@ -18,4 +18,4 @@ using PEG
 # operation = term ws? ((+|*) ws? term)+
 # compose = ∘(args)(term)
 
-@rule derivative = ("∂ₜ" , "dt") & lparen & ws & ident & ws & rparen
+@rule derivative = ("∂ₜ" , "dt") & lparen & ws & ident & ws & rparen |> v -> Tan(decapodes.Var(Symbol(v[4])))
