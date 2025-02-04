@@ -9,7 +9,15 @@ using DiagrammaticEquations
 
 PEG.setdebug!(true)
 
+@testset "Terms" begin
+    @test Term("∂ₜ(X)")[1] == Tan(DiagrammaticEquations.decapodes.Var(Symbol("X")))
+end
+
 @testset "Derivatives" begin
    @test Derivative("dt( X )")[1] == Tan(DiagrammaticEquations.decapodes.Var(Symbol("X")))
    @test Derivative("∂ₜ(X)")[1] == Tan(DiagrammaticEquations.decapodes.Var(Symbol("X")))
+end
+
+@testset "Call" begin
+    @test Call("a(b)")[1] == ["a", "(", "", "b", "", ")"]
 end
