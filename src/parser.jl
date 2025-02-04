@@ -30,7 +30,7 @@ using PEG
 @rule Call = ident & lparen & ws & Args & ws & rparen |> v -> BuildCall(v)
 
 # Arguments support one or two terms.
-@rule Args = (Term & ws & "," & ws & Term) |> v -> [v[1], v[5]], Term
+@rule Args = (Term & ws & "," & ws & Term) |> v -> [v[1], v[5]], Term |> v -> [v]
 
 """ BuildCall
 
@@ -38,9 +38,9 @@ using PEG
 """
 function BuildCall(v)
   if length(v[4]) == 1
-    return App1(v[1], v[4])
+    return App1(Symbol(v[1]), v[4][1])
   else
-    return App2(v[1], v[4][1], v[4][2])
+    return App2(Symbol(v[1]), v[4][1], v[4][2])
   end
 end
 

@@ -21,11 +21,11 @@ end
 end
 
 @testset "Call" begin
-    @test Call("a(b)")[1] == App1(a, DiagrammaticEquations.decapodes.Var(Symbol("b")))
+    @test Call("a(b)")[1] == App1(:a, DiagrammaticEquations.decapodes.Var(Symbol("b")))
 end
 
 @testset "Args" begin
-    @test Args("a")[1] == :a
-    @test Args("a, b")[1] == [:a, :b]
-    @test Args("∂ₜ(X)")[1] == Tan(DiagrammaticEquations.decapodes.Var(Symbol("X")))
+    @test Args("a")[1] == [DiagrammaticEquations.decapodes.Var(:a)]
+    @test Args("a, b")[1] == [DiagrammaticEquations.decapodes.Var(:a), DiagrammaticEquations.decapodes.Var(:b)]
+    @test Args("∂ₜ(X)")[1] == [Tan(DiagrammaticEquations.decapodes.Var(Symbol("X")))]
 end
