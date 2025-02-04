@@ -1,8 +1,5 @@
-#using .decapodes
-
 using Catlab.Parsers.ParserCore
-
-#using PEG
+using PEG
 
 # Dylan >
 
