@@ -6,6 +6,8 @@ using Catlab.Graphs.PropertyGraphs
 using Catlab.Graphs
 using Catlab.Graphs.BasicGraphs
 
+using StatsBase
+using Colors
 
 # TODO: Change orientation to print 
 # TODO: generalize ok??
@@ -51,9 +53,28 @@ varname(d, v, verbose) = begin
   return "$name:$(spacename(d, v))"
 end
 
+const pleasant_colors = [:honeydew2, :tomato1, :darkorange1, :darkgoldenrod1, 
+                         :chartreuse3, :turquoise, :deepskyblue2, :thistle1]
+
+function get_colors(d::SummationDecapode)
+    ns = collect(values(d.subparts.name.m))
+    vals = String.(ns)
+    paths = split.(vals, "_")
+    spaces = first.(filter(p -> length(p) > 1, paths)) |> unique
+    idxs = sample(1:length(pleasant_colors), length(spaces), replace=false)
+    Dict([space => pleasant_colors[idx] for (space, idx) in zip(spaces, idxs)])
+end
+
+function labelcolor(s::String, colordict::Dict{SubString{String}, Symbol})
+    head = first(split(s, "_"))
+    haskey(colordict, head) ? String(colordict[head]) : "white"
+end
+
 # TODO: generalize ok??
 function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; typename=spacename, directed = true, prog = "dot", node_attrs=Dict(), edge_attrs=Dict(), graph_attrs=Dict(), node_labels = true, verbose = true, kw...)
-    
+   
+    colordict = get_colors(d)
+
     default_graph_attrs = Dict(:rankdir => "TB")
     default_edge_attrs = Dict()
     default_node_attrs = Dict(:shape => "oval")
@@ -64,7 +85,10 @@ function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; typena
       graph_attrs = merge!(default_graph_attrs, graph_attrs))
 
     vids = map(parts(d, :Var)) do v
-      add_vertex!(G, label=varname(d, v, verbose))
+      vertex = add_vertex!(G, label=varname(d, v, verbose))
+      set_vprop!(G, v, :fillcolor, labelcolor(String(subpart(d, v, :name)), colordict))
+      set_vprop!(G, v, :style, "filled")
+      vertex
     end
 
     # Add entry and exit vertices and wires
