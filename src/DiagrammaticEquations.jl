@@ -24,8 +24,6 @@ transfer_parents!, transfer_children!,
 unique_lits!,
 ## language
 @decapode, Term, parse_decapode, term, Eq, DecaExpr,
-## PEG parser
-Term, Derivative, PlusOperation, MultOperation, Call, Args,
 # ~~~~~
 Plus, AppCirc1, Var, Tan, App1, App2,
 ## visualization
