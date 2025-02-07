@@ -8,7 +8,8 @@ using DiagrammaticEquations: Term, Derivative, PlusOperation, MultOperation, Cal
 
 
 
-PEG.setdebug!(true) # To disable: PEG.setdebug!(false)
+PEG.setdebug!(false)
+# PEG.setdebug!(true)
 
 @testset "Terms" begin
     @test Term("∂ₜ(X)")[1] == Tan(DiagrammaticEquations.decapodes.Var(Symbol("X"))) # Need to specify "DiagrammaticEquations.decapodes" b/c Catlab import also has "Var".
@@ -43,8 +44,8 @@ end
 end
 
 @testset "List" begin
-    @test List("a, b")[1] == ["a", "b"]
-    @test List("a, b, c")[1] == ["a", "b", "c"]
+    @test List("a, b")[1] == [:a, :b]
+    @test List("a, b, c")[1] == [:a, :b, :c]
 end
 
 @testset "Compose" begin
