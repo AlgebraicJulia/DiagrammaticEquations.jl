@@ -26,7 +26,7 @@ import Catlab.Parsers.ParserCore: ident
 
 # A judgement is a statement of the form A::B. It marks a type assignment.
 #@rule Judgement = (ident , Term) & "::" & (ident , Term) |> v -> Judgement(Symbol(v[1]), Symbol(v[3]), :I)
-@rule Judgement = (ident , List) & "::" & TypeName |> v -> BuildJudgement(v)
+@rule Judgement = (ident , (lparen & ws & List & ws & rparen)) & "::" & TypeName |> v -> BuildJudgement(v)
 @rule TypeName = ident & ("{" & ident & "}")[:?] |> v -> BuildTypeName(v)
 
 
@@ -88,10 +88,22 @@ end
 
 Takes in an input array (AST) for a Judgement corresponding Judgement object
 """
-# function BuildJudgement(v)
-#   if 
-#   end
-# end
+function BuildJudgement(v)
+  if v[1] isa Array
+    if v[3] isa Array
+      return map(sym -> Judgement(sym, Symbol(v[3][1]), Symbol(v[3][2])), Symbol.(v[1][3]))
+    else
+      return map(sym -> Judgement(sym, Symbol(v[3]), :I), Symbol.(v[1][3]))
+    end
+  else
+    if v[3] isa Array
+      return Judgement(Symbol(v[1]), Symbol(v[3][1]), Symbol(v[3][2]))
+    else
+      return Judgement(Symbol(v[1]), Symbol(v[3]), :I)
+    end
+  end
+
+end
 
 """" BuildTypeName
 

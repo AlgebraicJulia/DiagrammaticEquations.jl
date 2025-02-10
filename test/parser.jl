@@ -49,8 +49,11 @@ end
 
 @testset "Judgement" begin
     @test Judgement("alpha::beta")[1] == DiagrammaticEquations.decapodes.Judgement(:alpha, :beta, :I)
+    @test Judgement("(a, b, c)::d")[1] == [DiagrammaticEquations.decapodes.Judgement(:a, :d, :I),
+        DiagrammaticEquations.decapodes.Judgement(:b, :d, :I), DiagrammaticEquations.decapodes.Judgement(:c, :d, :I)]
     @test Judgement("a::b")[1] == DiagrammaticEquations.decapodes.Judgement(:a, :b, :I)
     @test Judgement("X::Y")[1] == DiagrammaticEquations.decapodes.Judgement(:X, :Y, :I)
+    @test Judgement("a::Form{X}")[1] == DiagrammaticEquations.decapodes.Judgement(:a, :Form, :X)
 end
 
 @testset "Statement" begin
