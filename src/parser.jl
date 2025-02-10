@@ -6,7 +6,7 @@ import Catlab.Parsers.ParserCore: ident
 # Line := Statement & EOL
 # Statement := Judgement | Eq
 # Judgement := var::var
-# var := ident | Expr
+# var := ident | Term
 # Eq := term & "==" & term
 
 # Christian >
@@ -17,6 +17,12 @@ import Catlab.Parsers.ParserCore: ident
 # args = term | term, term
 # operation = term ws? ((+|*) ws? term)+
 # compose = ∘(args)(term) NEED TO IMPLEMENT
+
+@rule Variable = ident |> v -> ParseIdent(v)
+@rule Judgement = (ident , Term) & "::" & (ident , Term) |> v -> Judgement(Symbol(v[1]), Symbol(v[3]), :I) 
+@rule Statement = (Judgement , Equation) |> v -> v 
+@rule Line = Statement & EOL |> v -> v[1]
+@rule Equation = Term & ws & "==" & ws & Term |> v -> Eq(v[1], v[5]) 
 
 # Terms make up core components of DEC equations. They can be symbols, numbers, arithmetic operations, derivatives, or function calls.
 @rule Term = Derivative, 
