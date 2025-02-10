@@ -4,7 +4,8 @@ using LinearAlgebra
 # using MLStyle
 using Base.Iterators
 
-using DiagrammaticEquations: Term, Derivative, PlusOperation, MultOperation, Call, Args, Variable, Judgement, Statement, Line, Equation
+using DiagrammaticEquations
+using DiagrammaticEquations: Term, Derivative, PlusOperation, MultOperation, Call, Args, Variable, Judgement, Statement, Line, Equation, List, Compose
 
 
 PEG.setdebug!(false) # To disable: PEG.setdebug!(false)
