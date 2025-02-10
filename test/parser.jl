@@ -4,11 +4,10 @@ using LinearAlgebra
 # using MLStyle
 using Base.Iterators
 
-using DiagrammaticEquations: Term, Derivative, PlusOperation, MultOperation, Call, Args, List, Compose
+using DiagrammaticEquations: Term, Derivative, PlusOperation, MultOperation, Call, Args, Variable, Judgement, Statement, Line, Equation
 
 
 PEG.setdebug!(false) # To disable: PEG.setdebug!(false)
-=======
 
 @testset "Terms" begin
     @test Term("∂ₜ(X)")[1] == Tan(DiagrammaticEquations.decapodes.Var(Symbol("X"))) # Need to specify "DiagrammaticEquations.decapodes" b/c Catlab import also has "Var".
