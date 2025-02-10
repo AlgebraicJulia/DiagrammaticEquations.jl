@@ -25,12 +25,9 @@ import Catlab.Parsers.ParserCore: ident
 @rule Statement = Judgement , Equation
 
 # A judgement is a statement of the form A::B. It marks a type assignment.
-#@rule Judgement = (ident , Term) & "::" & (ident , Term) |> v -> Judgement(Symbol(v[1]), Symbol(v[3]), :I)
 @rule Judgement = (ident , (lparen & ws & List & ws & rparen)) & "::" & TypeName |> v -> BuildJudgement(v)
 @rule TypeName = ident & ("{" & ident & "}")[:?] |> v -> BuildTypeName(v)
 
-
-@rule Variable = ident |> v -> ParseIdent(v)
 @rule Equation = Term & ws & "==" & ws & Term |> v -> Eq(v[1], v[5]) 
 
 # Terms make up core components of DEC equations. They can be symbols, numbers, arithmetic operations, derivatives, or function calls.
@@ -47,7 +44,6 @@ import Catlab.Parsers.ParserCore: ident
 
 # The composition rule supports the compostion of terms A over term b.
 @rule Compose = "∘" & lparen & ws & List & rparen & ws & lparen & ws & Term & rparen |> v -> AppCirc1(v[4], v[9])
-@rule List = ident & (ws & comma & ws & ident)[*] |> v -> vcat(Symbol(v[1]), Symbol.(last.(v[2])))
 
 # The operation rule supports addition and multiplication of terms.
 @rule PlusOperation = Term & (ws & "+" & ws & Term)[+] |> v -> Plus(vcat(v[1], last.(v[2])))
@@ -58,7 +54,7 @@ import Catlab.Parsers.ParserCore: ident
 
 # Arguments support one or two terms.
 @rule Args = (Term & ws & "," & ws & Term) |> v -> [v[1], v[5]], Term |> v -> [v]
-
+@rule List = ident & (ws & comma & ws & ident)[*] |> v -> vcat(Symbol(v[1]), Symbol.(last.(v[2])))
 
 """ BuildCall
 
