@@ -1,23 +1,6 @@
 using PEG
 import Catlab.Parsers.ParserCore: ident
 
-# Dylan >
-
-# Line := Statement & EOL
-# Statement := Judgement | Eq
-# Judgement := var::var
-# var := ident | expr
-# Eq := term & "==" & term
-
-# Christian >
-
-# Term := derivative | call | operation | Ident | Number 
-# derivative = (∂ₜ | dt) Var
-# call = ident (args)
-# args = term | term, term
-# operation = term ws? ((+|*) ws? term)+
-# compose = ∘(args)(term) NEED TO IMPLEMENT
-
 # Lines are made up of a statement followed by an end of line character. 
 @rule Line = ws & Statement & r"[^\S\r\n]*" & EOL |> v->v[2]
 
@@ -51,9 +34,10 @@ import Catlab.Parsers.ParserCore: ident
 
 # The call rule supports function calls of the form f(x) and g(x, y).
 @rule Call = ident & lparen & ws & Args & ws & rparen |> v -> BuildCall(v)
+@rule Args = (Term & ws & "," & ws & Term) |> v -> [v[1], v[5]],
+  Term |> v -> [v]
 
-# Arguments support one or two terms.
-@rule Args = (Term & ws & "," & ws & Term) |> v -> [v[1], v[5]], Term |> v -> [v]
+
 @rule List = ident & (ws & comma & ws & ident)[*] |> v -> vcat(Symbol(v[1]), Symbol.(last.(v[2])))
 
 """ BuildCall
