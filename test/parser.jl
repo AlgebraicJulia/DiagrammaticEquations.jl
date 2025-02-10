@@ -7,9 +7,8 @@ using Base.Iterators
 using DiagrammaticEquations: Term, Derivative, PlusOperation, MultOperation, Call, Args, List, Compose
 
 
-
-PEG.setdebug!(false)
-# PEG.setdebug!(true)
+PEG.setdebug!(false) # To disable: PEG.setdebug!(false)
+=======
 
 @testset "Terms" begin
     @test Term("∂ₜ(X)")[1] == Tan(DiagrammaticEquations.decapodes.Var(Symbol("X"))) # Need to specify "DiagrammaticEquations.decapodes" b/c Catlab import also has "Var".
@@ -42,6 +41,39 @@ end
     @test Args("a")[1] == [DiagrammaticEquations.decapodes.Var(:a)]
     @test Args("a, b")[1] == [DiagrammaticEquations.decapodes.Var(:a), DiagrammaticEquations.decapodes.Var(:b)]
     @test Args("∂ₜ(X)")[1] == [Tan(DiagrammaticEquations.decapodes.Var(Symbol("X")))]
+end
+
+@testset "Variable" begin
+    @test Variable("a")[1] == DiagrammaticEquations.decapodes.Var(Symbol("a"))
+    @test Variable("you")[1] == DiagrammaticEquations.decapodes.Var(Symbol("you"))
+end
+
+@testset "Judgement" begin
+    @test Judgement("alpha::beta")[1] == DiagrammaticEquations.decapodes.Judgement(:alpha, :beta, :I)
+    @test Judgement("a::b")[1] == DiagrammaticEquations.decapodes.Judgement(:a, :b, :I)
+    @test Judgement("X::Y")[1] == DiagrammaticEquations.decapodes.Judgement(:X, :Y, :I)
+end
+
+@testset "Statement" begin
+    @test DiagrammaticEquations.Statement("a::b")[1] == DiagrammaticEquations.decapodes.Judgement(:a, :b, :I)
+    @test DiagrammaticEquations.Statement("a::b, c::d")[1] != [DiagrammaticEquations.decapodes.Judgement(:a, :b, :I), DiagrammaticEquations.decapodes.Judgement(:c, :d, :I)]
+    @test DiagrammaticEquations.Statement("a::b\n")[1] != [DiagrammaticEquations.decapodes.Judgement(:a, :b, :I), DiagrammaticEquations.decapodes.Judgement(:c, :d, :I)]
+end
+
+@testset "Line" begin
+    @test Line("a::b\n")[1] == DiagrammaticEquations.decapodes.Judgement(:a, :b, :I)
+    @test Line("alpha::beta\n")[1] == DiagrammaticEquations.decapodes.Judgement(:alpha, :beta, :I)
+    @test Line("x::y\n")[1] == DiagrammaticEquations.decapodes.Judgement(:x, :y, :I)
+end
+
+@testset "Equation" begin
+    @test Equation("a == b")[1] == DiagrammaticEquations.decapodes.Eq(
+        DiagrammaticEquations.decapodes.Var(:a), DiagrammaticEquations.decapodes.Var(:b)
+    )
+    @test Equation("dt( X ) == Y")[1] == DiagrammaticEquations.decapodes.Eq(
+        DiagrammaticEquations.decapodes.Tan(DiagrammaticEquations.decapodes.Var(:X)), 
+        DiagrammaticEquations.decapodes.Var(:Y)
+    )
 end
 
 @testset "List" begin
