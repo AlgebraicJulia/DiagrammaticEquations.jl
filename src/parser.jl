@@ -16,11 +16,11 @@ import Catlab.Parsers.ParserCore: ident
 # Terms make up core components of DEC equations. They can be symbols, numbers, arithmetic operations, derivatives, or function calls.
 # Term rule has major isses with precedence. Need to fix this.
 @rule Term = Derivative, 
-  Call, 
-  ident |> v -> ParseIdent(v),
+  Call,
+  Compose,
   PlusOperation,
   MultOperation,
-  Compose
+  ident |> v -> ParseIdent(v)
 
 # The derivative rule supports derivatives of the form ∂ₜ(x) and dt(x).
 @rule Derivative = ("∂ₜ" , "dt") & lparen & ws & ident & ws & rparen |> v -> Tan(decapodes.Var(Symbol(v[4])))
@@ -37,7 +37,6 @@ import Catlab.Parsers.ParserCore: ident
 @rule Args = (Term & ws & "," & ws & Term) |> v -> [v[1], v[5]],
   Term |> v -> [v]
 
-
 @rule List = ident & (ws & comma & ws & ident)[*] |> v -> vcat(Symbol(v[1]), Symbol.(last.(v[2])))
 
 """ BuildCall
@@ -49,18 +48,6 @@ function BuildCall(v)
     return App1(Symbol(v[1]), v[4][1])
   else
     return App2(Symbol(v[1]), v[4][1], v[4][2])
-  end
-end
-
-""" ParseIdent
-
-Takes in an input array (AST) for an identifier and returns a corresponding Var or Lit object.
-"""
-function ParseIdent(v)
-  if typeof(Catlab.Parsers.ParserCore.parse_identifier(v)) == Symbol
-    return decapodes.Var(Symbol(v))
-  else
-    return Lit(Symbol(v))
   end
 end
 
@@ -89,5 +76,17 @@ function BuildTypeName(v)
     return Symbol(v[1])
   else
     return [Symbol(v[1]), Symbol(collect(Iterators.flatten(v[2]))[2])]
+  end
+end
+
+""" ParseIdent
+
+Takes in an input array (AST) for an identifier and returns a corresponding Var or Lit object.
+"""
+function ParseIdent(v)
+  if typeof(Catlab.Parsers.ParserCore.parse_identifier(v)) == Symbol
+    return decapodes.Var(Symbol(v))
+  else
+    return Lit(Symbol(v))
   end
 end
