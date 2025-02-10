@@ -4,10 +4,11 @@ using LinearAlgebra
 # using MLStyle
 using Base.Iterators
 
-using DiagrammaticEquations
+using DiagrammaticEquations: Term, Derivative, PlusOperation, MultOperation, Call, Args, List, Compose
 
 
 PEG.setdebug!(false) # To disable: PEG.setdebug!(false)
+=======
 
 @testset "Terms" begin
     @test Term("∂ₜ(X)")[1] == Tan(DiagrammaticEquations.decapodes.Var(Symbol("X"))) # Need to specify "DiagrammaticEquations.decapodes" b/c Catlab import also has "Var".
@@ -72,4 +73,14 @@ end
         DiagrammaticEquations.decapodes.Tan(DiagrammaticEquations.decapodes.Var(:X)), 
         DiagrammaticEquations.decapodes.Var(:Y)
     )
+end
+
+@testset "List" begin
+    @test List("a, b")[1] == [:a, :b]
+    @test List("a, b, c")[1] == [:a, :b, :c]
+end
+
+@testset "Compose" begin
+    @test Compose("∘(a, b)(c)")[1] == AppCirc1([:a, :b], DiagrammaticEquations.decapodes.Var(:c))
+    @test Compose("∘(a, b, c)(d)")[1] == AppCirc1([:a, :b, :c], DiagrammaticEquations.decapodes.Var(:d))
 end

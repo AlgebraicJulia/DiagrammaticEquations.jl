@@ -1,5 +1,5 @@
-import Catlab.Parsers.ParserCore: ident
 using PEG
+import Catlab.Parsers.ParserCore: ident
 
 # Dylan >
 
@@ -25,14 +25,18 @@ using PEG
 @rule Equation = Term & ws & "==" & ws & Term |> v -> Eq(v[1], v[5]) 
 
 # Terms make up core components of DEC equations. They can be symbols, numbers, arithmetic operations, derivatives, or function calls.
-@rule Term = Derivative , 
-  #Call, 
-  #PlusOperation,
-  #MultOperation,
-  ident |> v -> ParseIdent(v)
+@rule Term = Derivative, 
+  Call, 
+  ident |> v -> ParseIdent(v),
+  PlusOperation,
+  MultOperation
 
 # The derivative rule supports derivatives of the form ∂ₜ(x) and dt(x).
 @rule Derivative = ("∂ₜ" , "dt") & lparen & ws & ident & ws & rparen |> v -> Tan(decapodes.Var(Symbol(v[4])))
+
+# The composition rule supports the compostion of terms A over term b.
+@rule Compose = "∘" & lparen & ws & List & rparen & ws & lparen & ws & Term & rparen |> v -> AppCirc1(v[4], v[9])
+@rule List = ident & (ws & comma & ws & ident)[*] |> v -> vcat(Symbol(v[1]), Symbol.(last.(v[2])))
 
 # The operation rule supports addition and multiplication of terms.
 @rule PlusOperation = Term & (ws & "+" & ws & Term)[+] |> v -> Plus(vcat(v[1], last.(v[2])))
