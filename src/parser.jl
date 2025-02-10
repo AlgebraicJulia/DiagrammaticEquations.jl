@@ -6,7 +6,7 @@ import Catlab.Parsers.ParserCore: ident
 # Line := Statement & EOL
 # Statement := Judgement | Eq
 # Judgement := var::var
-# var := ident | Term
+# var := ident | expr
 # Eq := term & "==" & term
 
 # Christian >
@@ -18,10 +18,19 @@ import Catlab.Parsers.ParserCore: ident
 # operation = term ws? ((+|*) ws? term)+
 # compose = ∘(args)(term) NEED TO IMPLEMENT
 
+# Lines are made up of a statement followed by an end of line character. 
+@rule Line = ws & Statement & r"[^\S\r\n]*" & EOL |> v->v[2]
+
+# Statements can incldue either type judgements or equations.
+@rule Statement = Judgement , Equation
+
+# A judgement is a statement of the form A::B. It marks a type assignment.
+#@rule Judgement = (ident , Term) & "::" & (ident , Term) |> v -> Judgement(Symbol(v[1]), Symbol(v[3]), :I)
+@rule Judgement = (ident , List) & "::" & TypeName |> v -> BuildJudgement(v)
+@rule TypeName = ident & ("{" & ident & "}")[:?] |> v -> [Symbol(v[1]), Symbol(collect(Iterators.flatten(v[2]))[2])]
+
+
 @rule Variable = ident |> v -> ParseIdent(v)
-@rule Judgement = (ident , Term) & "::" & (ident , Term) |> v -> Judgement(Symbol(v[1]), Symbol(v[3]), :I) 
-@rule Statement = (Judgement , Equation) |> v -> v 
-@rule Line = Statement & EOL |> v -> v[1]
 @rule Equation = Term & ws & "==" & ws & Term |> v -> Eq(v[1], v[5]) 
 
 # Terms make up core components of DEC equations. They can be symbols, numbers, arithmetic operations, derivatives, or function calls.
@@ -74,3 +83,12 @@ function ParseIdent(v)
     return Lit(Symbol(v))
   end
 end
+
+""" BuildJudgement
+
+Takes in an input array (AST) for a Judgement corresponding Judgement object
+"""
+# function BuildJudgement(v)
+#   if 
+#   end
+# end

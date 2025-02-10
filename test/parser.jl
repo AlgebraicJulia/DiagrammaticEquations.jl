@@ -5,8 +5,7 @@ using LinearAlgebra
 using Base.Iterators
 
 using DiagrammaticEquations
-using DiagrammaticEquations: Term, Derivative, PlusOperation, MultOperation, Call, Args, Variable, Judgement, Statement, Line, Equation, List, Compose
-
+using DiagrammaticEquations: Term, Derivative, PlusOperation, MultOperation, Call, Args, Variable, Judgement, Statement, Line, Equation, List, Compose, TypeName
 
 PEG.setdebug!(false) # To disable: PEG.setdebug!(false)
 
@@ -85,3 +84,8 @@ end
     @test Compose("∘(a, b)(c)")[1] == AppCirc1([:a, :b], DiagrammaticEquations.decapodes.Var(:c))
     @test Compose("∘(a, b, c)(d)")[1] == AppCirc1([:a, :b, :c], DiagrammaticEquations.decapodes.Var(:d))
 end
+
+@testset "TypeName" begin
+    @test TypeName("Form0")[1] == :Form0
+    @test TypeName("Form0{X}")[1] == [:Form0, :X]
+|end
