@@ -15,6 +15,7 @@ PEG.setdebug!(false)
     @test Term("∂ₜ(X)")[1] == Tan(DiagrammaticEquations.decapodes.Var(Symbol("X"))) # Need to specify "DiagrammaticEquations.decapodes" b/c Catlab import also has "Var".
     @test Term("a")[1] == DiagrammaticEquations.decapodes.Var(Symbol("a"))
     @test Term("12")[1] == DiagrammaticEquations.decapodes.Lit(Symbol("12"))
+    @test Term("a + b")[1] == DiagrammaticEquations.decapodes.Plus([DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b"))])
 end
 
 @testset "Derivatives" begin

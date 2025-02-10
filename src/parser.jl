@@ -19,11 +19,13 @@ import Catlab.Parsers.ParserCore: ident
 # compose = ∘(args)(term) NEED TO IMPLEMENT
 
 # Terms make up core components of DEC equations. They can be symbols, numbers, arithmetic operations, derivatives, or function calls.
+# Term rule has major isses with precedence. Need to fix this.
 @rule Term = Derivative, 
   Call, 
   ident |> v -> ParseIdent(v),
   PlusOperation,
-  MultOperation
+  MultOperation,
+  Compose
 
 # The derivative rule supports derivatives of the form ∂ₜ(x) and dt(x).
 @rule Derivative = ("∂ₜ" , "dt") & lparen & ws & ident & ws & rparen |> v -> Tan(decapodes.Var(Symbol(v[4])))
