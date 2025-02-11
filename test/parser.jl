@@ -2,7 +2,7 @@ using Test
 using Catlab
 using DiagrammaticEquations
 using DiagrammaticEquations: Term, Derivative, PlusOperation, MultOperation, Call, Args,
-    Judgement, Statement, Line, Equation, List, Compose, TypeName
+    Judgement, Statement, Line, Equation, List, Compose, TypeName, Grouping
 
 PEG.setdebug!(false) # To disable: PEG.setdebug!(false)
 
@@ -40,6 +40,11 @@ end
     @test Equation("a == b")[1] == DiagrammaticEquations.decapodes.Eq(
         DiagrammaticEquations.decapodes.Var(:a), DiagrammaticEquations.decapodes.Var(:b)
     )
+    @test Equation("a 
+            ==
+     b")[1] == DiagrammaticEquations.decapodes.Eq(
+        DiagrammaticEquations.decapodes.Var(:a), DiagrammaticEquations.decapodes.Var(:b)
+    )
     @test Equation("dt( X ) == Y")[1] == DiagrammaticEquations.decapodes.Eq(
         DiagrammaticEquations.decapodes.Tan(DiagrammaticEquations.decapodes.Var(:X)), 
         DiagrammaticEquations.decapodes.Var(:Y)
@@ -55,17 +60,12 @@ end
     )
 end
 
-@testset "Terms" begin # Broken
-    @test Term("∂ₜ(X)")[1] == Tan(DiagrammaticEquations.decapodes.Var(Symbol("X"))) # Need to specify "DiagrammaticEquations.decapodes" b/c Catlab import also has "Var".
-    @test Term("a")[1] == DiagrammaticEquations.decapodes.Var(Symbol("a"))
-    @test Term("12")[1] == DiagrammaticEquations.decapodes.Lit(Symbol("12"))
-    @test Term("∘(a, b)(c)")[1] == AppCirc1([:a, :b], DiagrammaticEquations.decapodes.Var(:c))
-    @test Term("a(b)")[1] == App1(:a, DiagrammaticEquations.decapodes.Var(Symbol("b")))
-end
-
-@testset "Derivatives" begin
-   @test Derivative("dt( X )")[1] == Tan(DiagrammaticEquations.decapodes.Var(Symbol("X")))
-   @test Derivative("∂ₜ(X)")[1] == Tan(DiagrammaticEquations.decapodes.Var(Symbol("X")))
+@testset "MultOperation" begin
+    @test MultOperation("a * b")[1] == DiagrammaticEquations.decapodes.Mult([DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b"))])
+    @test MultOperation("a * 
+                            b")[1] == DiagrammaticEquations.decapodes.Mult([DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b"))])
+    @test MultOperation("a * b * c")[1] == DiagrammaticEquations.decapodes.Mult(
+        [DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b")), DiagrammaticEquations.decapodes.Var(Symbol("c"))])
 end
 
 @testset "PlusOperation" begin
@@ -75,15 +75,36 @@ end
         [DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b")), DiagrammaticEquations.decapodes.Var(Symbol("c"))])
     @test PlusOperation("dt(X) + ∂ₜ(X)")[1] == DiagrammaticEquations.decapodes.Plus(
         [Tan(DiagrammaticEquations.decapodes.Var(Symbol("X"))), Tan(DiagrammaticEquations.decapodes.Var(Symbol("X")))])
+    @test PlusOperation("a * b + c")[1] == DiagrammaticEquations.decapodes.Plus([
+        DiagrammaticEquations.decapodes.Mult([DiagrammaticEquations.decapodes.Var(Symbol("a")), 
+            DiagrammaticEquations.decapodes.Var(Symbol("b"))]), DiagrammaticEquations.decapodes.Var(Symbol("c"))])
+    @test PlusOperation("3 * (5 + 2)")[1] == DiagrammaticEquations.decapodes.Mult([
+        DiagrammaticEquations.decapodes.Lit(Symbol("3")), DiagrammaticEquations.decapodes.Plus(
+            [DiagrammaticEquations.decapodes.Lit(Symbol("5")), DiagrammaticEquations.decapodes.Lit(Symbol("2"))])
+        ])
+    @test PlusOperation("3 * 5 + 2")[1] == DiagrammaticEquations.decapodes.Plus([
+        DiagrammaticEquations.decapodes.Mult([DiagrammaticEquations.decapodes.Lit(Symbol("3")), DiagrammaticEquations.decapodes.Lit(Symbol("5"))]),
+        DiagrammaticEquations.decapodes.Lit(Symbol("2"))
+    ])
 end
 
-@testset "MultOperation" begin
-    @test MultOperation("a * b")[1] == DiagrammaticEquations.decapodes.Mult([DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b"))])
-    @test MultOperation("a * b * c")[1] == DiagrammaticEquations.decapodes.Mult(
-        [DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b")), DiagrammaticEquations.decapodes.Var(Symbol("c"))])
-    @test MultOperation("a * b + c")[1] == DiagrammaticEquations.decapodes.Mult(
-        [DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Plus(
-            [DiagrammaticEquations.decapodes.Var(Symbol("b")), DiagrammaticEquations.decapodes.Var(Symbol("c"))])])
+@testset "Terms" begin
+    @test Term("∂ₜ(X)")[1] == Tan(DiagrammaticEquations.decapodes.Var(Symbol("X"))) # Need to specify "DiagrammaticEquations.decapodes" b/c Catlab import also has "Var".
+    @test Term("a")[1] == DiagrammaticEquations.decapodes.Var(Symbol("a"))
+    @test Term("12")[1] == DiagrammaticEquations.decapodes.Lit(Symbol("12"))
+    @test Term("∘(a, b)(c)")[1] == AppCirc1([:a, :b], DiagrammaticEquations.decapodes.Var(:c))
+    @test Term("a(b)")[1] == App1(:a, DiagrammaticEquations.decapodes.Var(Symbol("b")))
+end
+
+@testset "Grouping" begin
+    @test Grouping("(a)")[1] == DiagrammaticEquations.decapodes.Var(Symbol("a"))
+    @test Grouping("(a + b)")[1] == DiagrammaticEquations.decapodes.Plus(
+        [DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b"))])
+end
+
+@testset "Derivatives" begin
+   @test Derivative("dt( X )")[1] == Tan(DiagrammaticEquations.decapodes.Var(Symbol("X")))
+   @test Derivative("∂ₜ(X)")[1] == Tan(DiagrammaticEquations.decapodes.Var(Symbol("X")))
 end
 
 @testset "Compose" begin
