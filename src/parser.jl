@@ -17,7 +17,10 @@ import Catlab.Parsers.ParserCore: ident
 @rule PlusOperation = MultOperation & (ws & "+" & ws & MultOperation)[*] |> v -> BuildPlusOperation(v)
 @rule MultOperation = Term & (ws & "*" & ws & Term)[*] |> v -> BuildMultOperation(v)
 
-@rule Term = Derivative, Compose, Call, ident |> v -> ParseIdent(v)
+@rule Term = Grouping, Derivative, Compose, Call, ident |> v -> ParseIdent(v)
+
+# The grouping rule supports the grouping of terms using parentheses. Higher precedence than +/*.
+@rule Grouping = lparen & ws & PlusOperation & ws & rparen |> v -> v[3]
 
 # The derivative rule supports derivatives of the form ∂ₜ(x) and dt(x).
 @rule Derivative = ("∂ₜ" , "dt") & lparen & ws & ident & ws & rparen |> v -> Tan(decapodes.Var(Symbol(v[4])))

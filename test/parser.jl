@@ -2,7 +2,7 @@ using Test
 using Catlab
 using DiagrammaticEquations
 using DiagrammaticEquations: Term, Derivative, PlusOperation, MultOperation, Call, Args,
-    Judgement, Statement, Line, Equation, List, Compose, TypeName
+    Judgement, Statement, Line, Equation, List, Compose, TypeName, Grouping
 
 PEG.setdebug!(false) # To disable: PEG.setdebug!(false)
 
@@ -78,6 +78,14 @@ end
     @test PlusOperation("a * b + c")[1] == DiagrammaticEquations.decapodes.Plus([
         DiagrammaticEquations.decapodes.Mult([DiagrammaticEquations.decapodes.Var(Symbol("a")), 
             DiagrammaticEquations.decapodes.Var(Symbol("b"))]), DiagrammaticEquations.decapodes.Var(Symbol("c"))])
+    @test PlusOperation("3 * (5 + 2)")[1] == DiagrammaticEquations.decapodes.Mult([
+        DiagrammaticEquations.decapodes.Lit(Symbol("3")), DiagrammaticEquations.decapodes.Plus(
+            [DiagrammaticEquations.decapodes.Lit(Symbol("5")), DiagrammaticEquations.decapodes.Lit(Symbol("2"))])
+        ])
+    @test PlusOperation("3 * 5 + 2")[1] == DiagrammaticEquations.decapodes.Plus([
+        DiagrammaticEquations.decapodes.Mult([DiagrammaticEquations.decapodes.Lit(Symbol("3")), DiagrammaticEquations.decapodes.Lit(Symbol("5"))]),
+        DiagrammaticEquations.decapodes.Lit(Symbol("2"))
+    ])
 end
 
 @testset "Terms" begin
@@ -86,6 +94,12 @@ end
     @test Term("12")[1] == DiagrammaticEquations.decapodes.Lit(Symbol("12"))
     @test Term("∘(a, b)(c)")[1] == AppCirc1([:a, :b], DiagrammaticEquations.decapodes.Var(:c))
     @test Term("a(b)")[1] == App1(:a, DiagrammaticEquations.decapodes.Var(Symbol("b")))
+end
+
+@testset "Grouping" begin
+    @test Grouping("(a)")[1] == DiagrammaticEquations.decapodes.Var(Symbol("a"))
+    @test Grouping("(a + b)")[1] == DiagrammaticEquations.decapodes.Plus(
+        [DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b"))])
 end
 
 @testset "Derivatives" begin
