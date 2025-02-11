@@ -32,6 +32,8 @@ MultOperation |> v -> [v]
 
 @rule List = ident & (ws & comma & ws & ident)[*] |> v -> vcat(Symbol(v[1]), Symbol.(last.(v[2])))
 
+@rule ident = r"[^\+*:{}→\n;=,\(\)\s]+" # Catlab ident does not support removal of `+` and `*` characters.
+
 """ BuildMultOperation
 
 Takes in an input array (AST) for a multiplication operation and returns a corresponding Mult object. Handles non mult operations as well.
