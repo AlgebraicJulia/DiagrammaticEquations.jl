@@ -1,5 +1,5 @@
 using PEG
-import Catlab.Parsers.ParserCore: ident
+import Catlab.Parsers.ParserCore
 
 # Lines are made up of a statement followed by an end of line character. 
 @rule Line = ws & Statement & r"[^\S\r\n]*" & EOL |> v->v[2]
@@ -79,7 +79,6 @@ Takes in an input array (AST) for a Judgement corresponding Judgement object
 """
 function BuildJudgement(v)
   pattern = (v[1], v[3])
-  print("Pattern  = $pattern")
   @match pattern begin
     ([a...], [b...]) => map(sym -> Judgement(sym, Symbol(b[1]), Symbol(b[2])), Symbol.(a[3]))
     ([a...], b)       => map(sym -> Judgement(sym, Symbol(b), :I), Symbol.(a[3]))
