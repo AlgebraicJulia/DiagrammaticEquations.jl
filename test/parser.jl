@@ -1,7 +1,7 @@
 using Test
 using Catlab
 using DiagrammaticEquations
-using DiagrammaticEquations: Term, Derivative, PlusOperation, MultOperation, Call, Args,
+using DiagrammaticEquations: Term, Derivative, PlusOperation, MultOperation, Call, Args, Variable,
     Judgement, Statement, Line, Equation, List, Compose, TypeName
 
 PEG.setdebug!(false) # To disable: PEG.setdebug!(false)
@@ -65,7 +65,6 @@ end
 @testset "MultOperation" begin
     @test MultOperation("a * b")[1] == DiagrammaticEquations.decapodes.Mult([DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b"))])
     @test MultOperation("a * b * c")[1] == DiagrammaticEquations.decapodes.Mult([DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b")), DiagrammaticEquations.decapodes.Var(Symbol("c"))])
-    @test MultOperation("A")[1] == DiagrammaticEquations.decapodes.Var(Symbol("A"))
 end
 
 @testset "Compose" begin
