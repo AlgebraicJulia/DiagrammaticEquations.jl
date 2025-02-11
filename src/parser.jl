@@ -14,8 +14,8 @@ import Catlab.Parsers.ParserCore: ident
 @rule Equation = MultOperation & ws & "==" & ws & MultOperation |> v -> Eq(v[1], v[5]) 
 
 # The operation rule supports addition and multiplication of terms.
-@rule MultOperation = PlusOperation & (ws & "*" & ws & PlusOperation)[*] |> v -> BuildMultOperation(v) # Left recursion :(
-@rule PlusOperation = Term & (ws & "+" & ws & Term)[*] |> v -> Plus(vcat(v[1], last.(v[2]))) # Left recursion :(
+@rule MultOperation = PlusOperation & (ws & "*" & ws & PlusOperation)[*] |> v -> BuildMultOperation(v)
+@rule PlusOperation = Term & (ws & "+" & ws & Term)[*] |> v -> BuildPlusOperation(v)
 
 @rule Term = Derivative, Compose, Call, ident |> v -> ParseIdent(v)
 
@@ -37,13 +37,24 @@ MultOperation |> v -> [v]
 Takes in an input array (AST) for a multiplication operation and returns a corresponding Mult object. Handles non mult operations as well.
 """
 function BuildMultOperation(v)
-  if v[2] isempty
+  if isempty(v[2])
     return v[1]
   else
     return Mult(vcat(v[1], last.(v[2])))
+  end
 end
 
+""" BuildPlusOperation
 
+Takes in an input array (AST) for a multiplication operation and returns a corresponding Mult object. Handles non mult operations as well.
+"""
+function BuildPlusOperation(v)
+  if isempty(v[2])
+    return v[1]
+  else
+    return Plus(vcat(v[1], last.(v[2])))
+  end
+end
 
 """ BuildCall
 
