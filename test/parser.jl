@@ -1,7 +1,7 @@
 using Test
 using Catlab
 using DiagrammaticEquations
-using DiagrammaticEquations: Term, Derivative, PlusOperation, MultOperation, Call, Args, Variable,
+using DiagrammaticEquations: Term, Derivative, PlusOperation, MultOperation, Call, Args,
     Judgement, Statement, Line, Equation, List, Compose, TypeName
 
 PEG.setdebug!(false) # To disable: PEG.setdebug!(false)
