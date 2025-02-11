@@ -11,33 +11,52 @@ import Catlab.Parsers.ParserCore: ident
 @rule Judgement = (ident , (lparen & ws & List & ws & rparen)) & "::" & TypeName |> v -> BuildJudgement(v)
 @rule TypeName = ident & ("{" & ident & "}")[:?] |> v -> BuildTypeName(v)
 
-@rule Equation = Term & ws & "==" & ws & Term |> v -> Eq(v[1], v[5]) 
+@rule Equation = MultOperation & ws & "==" & ws & MultOperation |> v -> Eq(v[1], v[5]) 
 
-# Terms make up core components of DEC equations. They can be symbols, numbers, arithmetic operations, derivatives, or function calls.
-# Term rule has major isses with precedence. Need to fix this.
-@rule Term = Derivative, 
-  Call,
-  Compose,
-  PlusOperation,
-  MultOperation,
-  ident |> v -> ParseIdent(v)
+# The operation rule supports addition and multiplication of terms.
+@rule MultOperation = PlusOperation & (ws & "*" & ws & PlusOperation)[*] |> v -> BuildMultOperation(v)
+@rule PlusOperation = Term & (ws & "+" & ws & Term)[*] |> v -> BuildPlusOperation(v)
+
+@rule Term = Derivative, Compose, Call, ident |> v -> ParseIdent(v)
 
 # The derivative rule supports derivatives of the form ∂ₜ(x) and dt(x).
 @rule Derivative = ("∂ₜ" , "dt") & lparen & ws & ident & ws & rparen |> v -> Tan(decapodes.Var(Symbol(v[4])))
 
 # The composition rule supports the compostion of terms A over term b.
-@rule Compose = "∘" & lparen & ws & List & rparen & ws & lparen & ws & Term & rparen |> v -> AppCirc1(v[4], v[9])
-
-# The operation rule supports addition and multiplication of terms.
-@rule PlusOperation = Term & (ws & "+" & ws & Term)[+] |> v -> Plus(vcat(v[1], last.(v[2])))
-@rule MultOperation = Term & (ws & "*" & ws & Term)[+] |> v -> Mult(vcat(v[1], last.(v[2])))
+@rule Compose = "∘" & lparen & ws & List & rparen & ws & lparen & ws & MultOperation & rparen |> v -> AppCirc1(v[4], v[9])
 
 # The call rule supports function calls of the form f(x) and g(x, y).
 @rule Call = ident & lparen & ws & Args & ws & rparen |> v -> BuildCall(v)
-@rule Args = (Term & ws & "," & ws & Term) |> v -> [v[1], v[5]],
-  Term |> v -> [v]
+@rule Args = (MultOperation & ws & "," & ws & MultOperation) |> v -> [v[1], v[5]],
+MultOperation |> v -> [v]
 
 @rule List = ident & (ws & comma & ws & ident)[*] |> v -> vcat(Symbol(v[1]), Symbol.(last.(v[2])))
+
+@rule ident = r"[^\+*:{}→\n;=,\(\)\s]+" # Catlab ident does not support removal of `+` and `*` characters.
+
+""" BuildMultOperation
+
+Takes in an input array (AST) for a multiplication operation and returns a corresponding Mult object. Handles non mult operations as well.
+"""
+function BuildMultOperation(v)
+  if isempty(v[2])
+    return v[1]
+  else
+    return Mult(vcat(v[1], last.(v[2])))
+  end
+end
+
+""" BuildPlusOperation
+
+Takes in an input array (AST) for a multiplication operation and returns a corresponding Mult object. Handles non mult operations as well.
+"""
+function BuildPlusOperation(v)
+  if isempty(v[2])
+    return v[1]
+  else
+    return Plus(vcat(v[1], last.(v[2])))
+  end
+end
 
 """ BuildCall
 
