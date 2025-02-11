@@ -40,6 +40,11 @@ end
     @test Equation("a == b")[1] == DiagrammaticEquations.decapodes.Eq(
         DiagrammaticEquations.decapodes.Var(:a), DiagrammaticEquations.decapodes.Var(:b)
     )
+    @test Equation("a 
+            ==
+     b")[1] == DiagrammaticEquations.decapodes.Eq(
+        DiagrammaticEquations.decapodes.Var(:a), DiagrammaticEquations.decapodes.Var(:b)
+    )
     @test Equation("dt( X ) == Y")[1] == DiagrammaticEquations.decapodes.Eq(
         DiagrammaticEquations.decapodes.Tan(DiagrammaticEquations.decapodes.Var(:X)), 
         DiagrammaticEquations.decapodes.Var(:Y)
@@ -55,7 +60,27 @@ end
     )
 end
 
-@testset "Terms" begin # Broken
+@testset "MultOperation" begin
+    @test MultOperation("a * b")[1] == DiagrammaticEquations.decapodes.Mult([DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b"))])
+    @test MultOperation("a * 
+                            b")[1] == DiagrammaticEquations.decapodes.Mult([DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b"))])
+    @test MultOperation("a * b * c")[1] == DiagrammaticEquations.decapodes.Mult(
+        [DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b")), DiagrammaticEquations.decapodes.Var(Symbol("c"))])
+end
+
+@testset "PlusOperation" begin
+    @test PlusOperation("a + b")[1] == DiagrammaticEquations.decapodes.Plus(
+        [DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b"))])
+    @test PlusOperation("a + b + c")[1] == DiagrammaticEquations.decapodes.Plus(
+        [DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b")), DiagrammaticEquations.decapodes.Var(Symbol("c"))])
+    @test PlusOperation("dt(X) + ∂ₜ(X)")[1] == DiagrammaticEquations.decapodes.Plus(
+        [Tan(DiagrammaticEquations.decapodes.Var(Symbol("X"))), Tan(DiagrammaticEquations.decapodes.Var(Symbol("X")))])
+    @test PlusOperation("a * b + c")[1] == DiagrammaticEquations.decapodes.Plus([
+        DiagrammaticEquations.decapodes.Mult([DiagrammaticEquations.decapodes.Var(Symbol("a")), 
+            DiagrammaticEquations.decapodes.Var(Symbol("b"))]), DiagrammaticEquations.decapodes.Var(Symbol("c"))])
+end
+
+@testset "Terms" begin
     @test Term("∂ₜ(X)")[1] == Tan(DiagrammaticEquations.decapodes.Var(Symbol("X"))) # Need to specify "DiagrammaticEquations.decapodes" b/c Catlab import also has "Var".
     @test Term("a")[1] == DiagrammaticEquations.decapodes.Var(Symbol("a"))
     @test Term("12")[1] == DiagrammaticEquations.decapodes.Lit(Symbol("12"))
@@ -66,24 +91,6 @@ end
 @testset "Derivatives" begin
    @test Derivative("dt( X )")[1] == Tan(DiagrammaticEquations.decapodes.Var(Symbol("X")))
    @test Derivative("∂ₜ(X)")[1] == Tan(DiagrammaticEquations.decapodes.Var(Symbol("X")))
-end
-
-@testset "PlusOperation" begin
-    @test PlusOperation("a + b")[1] == DiagrammaticEquations.decapodes.Plus(
-        [DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b"))])
-    @test PlusOperation("a + b + c")[1] == DiagrammaticEquations.decapodes.Plus(
-        [DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b")), DiagrammaticEquations.decapodes.Var(Symbol("c"))])
-    @test PlusOperation("dt(X) + ∂ₜ(X)")[1] == DiagrammaticEquations.decapodes.Plus(
-        [Tan(DiagrammaticEquations.decapodes.Var(Symbol("X"))), Tan(DiagrammaticEquations.decapodes.Var(Symbol("X")))])
-end
-
-@testset "MultOperation" begin
-    @test MultOperation("a * b")[1] == DiagrammaticEquations.decapodes.Mult([DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b"))])
-    @test MultOperation("a * b * c")[1] == DiagrammaticEquations.decapodes.Mult(
-        [DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b")), DiagrammaticEquations.decapodes.Var(Symbol("c"))])
-    @test MultOperation("a * b + c")[1] == DiagrammaticEquations.decapodes.Mult(
-        [DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Plus(
-            [DiagrammaticEquations.decapodes.Var(Symbol("b")), DiagrammaticEquations.decapodes.Var(Symbol("c"))])])
 end
 
 @testset "Compose" begin

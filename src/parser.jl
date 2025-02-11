@@ -10,12 +10,12 @@ import Catlab.Parsers.ParserCore: ident
 # A judgement is a statement of the form A::B. It marks a type assignment.
 @rule Judgement = (ident , (lparen & ws & List & ws & rparen)) & "::" & TypeName |> v -> BuildJudgement(v)
 @rule TypeName = ident & ("{" & ident & "}")[:?] |> v -> BuildTypeName(v)
-
-@rule Equation = MultOperation & ws & "==" & ws & MultOperation |> v -> Eq(v[1], v[5]) 
+  
+@rule Equation = PlusOperation & ws & "==" & ws & PlusOperation |> v -> Eq(v[1], v[5]) 
 
 # The operation rule supports addition and multiplication of terms.
-@rule MultOperation = PlusOperation & (ws & "*" & ws & PlusOperation)[*] |> v -> BuildMultOperation(v)
-@rule PlusOperation = Term & (ws & "+" & ws & Term)[*] |> v -> BuildPlusOperation(v)
+@rule PlusOperation = MultOperation & (ws & "+" & ws & MultOperation)[*] |> v -> BuildPlusOperation(v)
+@rule MultOperation = Term & (ws & "*" & ws & Term)[*] |> v -> BuildMultOperation(v)
 
 @rule Term = Derivative, Compose, Call, ident |> v -> ParseIdent(v)
 
@@ -27,8 +27,8 @@ import Catlab.Parsers.ParserCore: ident
 
 # The call rule supports function calls of the form f(x) and g(x, y).
 @rule Call = ident & lparen & ws & Args & ws & rparen |> v -> BuildCall(v)
-@rule Args = (MultOperation & ws & "," & ws & MultOperation) |> v -> [v[1], v[5]],
-MultOperation |> v -> [v]
+@rule Args = (PlusOperation & ws & "," & ws & PlusOperation) |> v -> [v[1], v[5]],
+PlusOperation |> v -> [v]
 
 @rule List = ident & (ws & comma & ws & ident)[*] |> v -> vcat(Symbol(v[1]), Symbol.(last.(v[2])))
 
