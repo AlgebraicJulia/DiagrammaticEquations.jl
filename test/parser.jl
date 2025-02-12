@@ -208,6 +208,8 @@ end
   Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
   ∂ₜ(C) == Ċ"
 
+  parse_decapode(quote ϕ ==  4*2*3*d₀(C) end)
+
   DiffusionExprBody3 =  quote
   (C, Ċ)::Form0
   ϕ::Form1
@@ -218,7 +220,7 @@ end
 
   ddp3 = SummationDecapode(parse_decapode(DiffusionExprBody3))
 
-  @test parsed_result  ≃ ddp3
+  @test parsed_result ≃ ddp3
 
   # Variables need not be declared before use.
   parsed_result = decapode"
@@ -236,7 +238,7 @@ end
   
   ddp4 = SummationDecapode(parse_decapode(DiffusionExprBody4))
   
-  @test parsed_result  ≃ ddp4
+  @test parsed_result ≃ ddp4
 
   parsed_result = decapode"
     ϕ ==  2*d₀(C)
@@ -267,7 +269,7 @@ end
 
   ddp6 = SummationDecapode(parse_decapode(DiffusionExprBody6))
 
-  @test parsed_result  ≃ ddp6
+  @test parsed_result ≃ ddp6
 
   parsed_result = decapode"
     ϕ ==  2*d₀(C)
