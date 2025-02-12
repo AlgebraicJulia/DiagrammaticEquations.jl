@@ -2,12 +2,23 @@ using Test
 using Catlab
 using DiagrammaticEquations
 using DiagrammaticEquations: Term, Derivative, PlusOperation, MultOperation, Call, Args,
-    Judgement, Statement, Line, Equation, List, Compose, TypeName, Grouping
+    Judgement, Statement, Line, Equation, List, Compose, TypeName, Grouping, Body
 
 PEG.setdebug!(false) # To disable: PEG.setdebug!(false)
 
 # Unit Tests
 ##############
+@testset "Body" begin
+    @test Body("a::b\nc == d\ndt(X) == Y\n")[1] == DecaExpr([
+        DiagrammaticEquations.decapodes.Judgement(:a, :b, :I)],
+        [DiagrammaticEquations.decapodes.Eq(DiagrammaticEquations.decapodes.Var(:c), DiagrammaticEquations.decapodes.Var(:d)),
+        DiagrammaticEquations.decapodes.Eq(Tan(DiagrammaticEquations.decapodes.Var(:X)), DiagrammaticEquations.decapodes.Var(:Y))]
+    )
+    @test Body("{ \n}")[1] == DecaExpr([],[])
+    @test Body("a::b\n")[1] == DecaExpr([
+        DiagrammaticEquations.decapodes.Judgement(:a, :b, :I)
+    ],[])
+end
 
 @testset "Line" begin
     @test Line("a::b\n")[1] == DiagrammaticEquations.decapodes.Judgement(:a, :b, :I)

@@ -1,10 +1,13 @@
 using PEG
 import Catlab.Parsers.ParserCore
 
+# Bodies are made up of lines where each line holds a statement 
+@rule Body = Line[*] |> v -> BuildExpr(v) #has an issue the body is returning List but List also contains this EOL causing there to be trailing "" in test case
+
 # Lines are made up of a statement followed by an end of line character. 
 @rule Line = ws & Statement & r"[^\S\r\n]*" & EOL |> v->v[2]
 
-# Statements can incldue either type judgements or equations.
+# Statements can include either type judgements or equations.
 @rule Statement = Judgement , Equation
 
 # A judgement is a statement of the form A::B. It marks a type assignment.
@@ -110,4 +113,23 @@ function ParseIdent(v)
   else
     return Lit(Symbol(v))
   end
+end
+
+"""
+BuildExpr
+
+Takes in an input array (AST) for a body and returns a corresponding DecaExpr object.
+"""
+function BuildExpr(v)
+  judges = []
+  eqns = []
+  foreach(v) do s
+    @match s begin
+      ::Judgement => push!(judges, s)
+      ::Vector{Judgement} => append!(judges, s)
+        ::Eq => push!(eqns, s)
+        _ => error("Statement containing $s of type $(typeof(s)) was not added.")
+      end
+    end
+    DecaExpr(judges, eqns)
 end
