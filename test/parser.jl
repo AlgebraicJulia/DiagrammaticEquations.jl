@@ -2,20 +2,20 @@ using Test
 using Catlab
 using DiagrammaticEquations
 using DiagrammaticEquations: Term, Derivative, PlusOperation, MultOperation, Call, Args,
-    Judgement, Statement, Line, Equation, List, Compose, TypeName, Grouping, Body
+    Judgement, Statement, Line, Equation, List, Compose, TypeName, Grouping, DecapodeExpr
 
 PEG.setdebug!(false) # To disable: PEG.setdebug!(false)
 
 # Unit Tests
 ##############
-@testset "Body" begin
-    @test Body("a::b\nc == d\ndt(X) == Y\n")[1] == DecaExpr([
+@testset "DecapodeExpr" begin
+    @test DecapodeExpr("a::b\nc == d\ndt(X) == Y\n")[1] == DecaExpr([
         DiagrammaticEquations.decapodes.Judgement(:a, :b, :I)],
         [DiagrammaticEquations.decapodes.Eq(DiagrammaticEquations.decapodes.Var(:c), DiagrammaticEquations.decapodes.Var(:d)),
         DiagrammaticEquations.decapodes.Eq(Tan(DiagrammaticEquations.decapodes.Var(:X)), DiagrammaticEquations.decapodes.Var(:Y))]
     )
-    @test Body("{ \n}")[1] == DecaExpr([],[])
-    @test Body("a::b\n")[1] == DecaExpr([
+    @test DecapodeExpr(" \n")[1] == DecaExpr([],[])
+    @test DecapodeExpr("a::b\n")[1] == DecaExpr([
         DiagrammaticEquations.decapodes.Judgement(:a, :b, :I)
     ],[])
 end
@@ -155,6 +155,10 @@ end
 ##################
 
 @testset "End to End" begin
-    parsed_result = decapode"a::b"
-    @test parse_decapode("a::b\n") == DecaExpr([DiagrammaticEquations.decapodes.Judgement(:a, :b, :I)], [])
+    parsed_result = decapode"
+    (C, Ċ)::Form0
+    ϕ::Form1
+    ϕ ==  ∘(k, d₀)(C)
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    ∂ₜ(C) == Ċ"
 end

@@ -4,7 +4,7 @@ import Catlab.Parsers.ParserCore
 export @decapode_str
 
 # Bodies are made up of lines where each line holds a statement 
-@rule Body = Line[*] |> v -> BuildExpr(v)
+@rule DecapodeExpr = Line[*] |> v -> BuildExpr(v)
 
 # Lines are made up of a statement followed by an end of line character. 
 @rule Line = ws & Statement & r"[^\S\r\n]*" & EOL |> v->v[2]
@@ -133,7 +133,7 @@ function BuildExpr(v)
         _ => error("Statement containing $s of type $(typeof(s)) was not added.")
       end
     end
-    DecaExpr(judges, eqns)
+    return DecaExpr(judges, eqns)
 end
 
 """ Relation String Macro
@@ -141,7 +141,6 @@ end
 This macro parses a string representation of a UWD into an ACSet representation. It operates by parsing a string input into an UWDExpr object.
 Then it constructs a RelationDiagram object from the UWDExpr object.
 """
-macro decapode_str(x::String) begin
-  :(SummationDecapode(parse_whole(Body, x)))
-end
+macro decapode_str(y::String) 
+  :(SummationDecapode(parse_whole(DecapodeExpr, $(y))))
 end
