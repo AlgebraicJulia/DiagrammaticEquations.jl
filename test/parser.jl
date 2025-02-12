@@ -153,3 +153,8 @@ end
 
 # END TO END Tests
 ##################
+
+@testset "End to End" begin
+    parsed_result = decapode"a::b"
+    @test parse_decapode("a::b\n") == DecaExpr([DiagrammaticEquations.decapodes.Judgement(:a, :b, :I)], [])
+end

@@ -1,8 +1,10 @@
 using PEG
 import Catlab.Parsers.ParserCore
 
+export @decapode_str
+
 # Bodies are made up of lines where each line holds a statement 
-@rule Body = Line[*] |> v -> BuildExpr(v) #has an issue the body is returning List but List also contains this EOL causing there to be trailing "" in test case
+@rule Body = Line[*] |> v -> BuildExpr(v)
 
 # Lines are made up of a statement followed by an end of line character. 
 @rule Line = ws & Statement & r"[^\S\r\n]*" & EOL |> v->v[2]
@@ -132,4 +134,14 @@ function BuildExpr(v)
       end
     end
     DecaExpr(judges, eqns)
+end
+
+""" Relation String Macro
+
+This macro parses a string representation of a UWD into an ACSet representation. It operates by parsing a string input into an UWDExpr object.
+Then it constructs a RelationDiagram object from the UWDExpr object.
+"""
+macro decapode_str(x::String) begin
+  :(SummationDecapode(parse_whole(Body, x)))
+end
 end
