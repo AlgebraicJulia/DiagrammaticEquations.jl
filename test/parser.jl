@@ -154,6 +154,8 @@ end
 # END TO END Tests
 ##################
 
+(≃) = is_isomorphic
+
 @testset "End to End" begin
   parsed_result = decapode"
   (C, Ċ)::Form0
@@ -171,7 +173,7 @@ end
   end
   ddp1 = SummationDecapode(parse_decapode(DiffusionExprBody1))
   
-  @test parsed_result == ddp1
+  @test parsed_result ≃ ddp1
   
   # Support parsing literals. # Swamps an infered part. Represents identical. Database slightly constructed differently.
   parsed_result = decapode"
@@ -191,9 +193,9 @@ end
 
   ddp2 = SummationDecapode(parse_decapode(DiffusionExprBody2))
 
-  @test parsed_result == ddp2
+  @test parsed_result ≃ ddp2
   
-  # TODO - ^ Problem: Our parser interperts '2*d₀(C)' as multiplication. Original parser interperets as function call with 2 as argument:
+  # TODO - ^^^^ Problem: Our parser interperts '2*d₀(C)' as multiplication. Original parser interperets as function call with 2 as argument:
   #  App2(:*, Lit(2), App1(:d₀, Var(:C))). Looks like in their pattern matching switch case, App2 comes before Mult and Julia
   # already interperts 2*d₀(C) as a function call where * is the call and lhs and rhs are arguments.
   # We need to change precedences?
@@ -216,25 +218,25 @@ end
 
   ddp3 = SummationDecapode(parse_decapode(DiffusionExprBody3))
 
-  @test parsed_result == ddp3
+  @test parsed_result  ≃ ddp3
 
   # Variables need not be declared before use.
   parsed_result = decapode"
   Ċ::Form0
-  ϕ ==  2*d₀(C)
+  ϕ ==  4*2*3*d₀(C)
   Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
   ∂ₜ(C) == Ċ"
 
   DiffusionExprBody4 =  quote
   Ċ::Form0
-  ϕ ==  2*d₀(C)
+  ϕ ==  4*2*3*d₀(C)
   Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
   ∂ₜ(C) == Ċ
   end
   
   ddp4 = SummationDecapode(parse_decapode(DiffusionExprBody4))
   
-  @test parsed_result == ddp4
+  @test parsed_result  ≃ ddp4
 
   parsed_result = decapode"
     ϕ ==  2*d₀(C)
@@ -249,7 +251,7 @@ end
 
   ddp5 = SummationDecapode(parse_decapode(DiffusionExprBody5))
 
-  @test parsed_result == ddp5
+  @test parsed_result ≃ ddp5
 
   # TVars can be parsed on either side of an equation.
   parsed_result = decapode"
@@ -265,7 +267,7 @@ end
 
   ddp6 = SummationDecapode(parse_decapode(DiffusionExprBody6))
 
-  @test parsed_result == ddp6
+  @test parsed_result  ≃ ddp6
 
   parsed_result = decapode"
     ϕ ==  2*d₀(C)
@@ -278,7 +280,7 @@ end
 
   ddp7 = SummationDecapode(parse_decapode(DiffusionExprBody7))
 
-  @test parsed_result == ddp7
+  @test parsed_result ≃ ddp7
 
   # Vars can only be of certain types.
   @test_throws ErrorException parsed_result = decapode"
@@ -294,7 +296,7 @@ end
   
   # Just noting that the first decapode is denotes a X as an op1
   # while the second is a multiplication between X and F
-  parsed_result = decapode"
+  parsed_result_1 = decapode"
     (A, B, X)::Form0{X}
     A == X(F)"
 
@@ -304,10 +306,10 @@ end
     end
     pt2_1 = SummationDecapode(parse_decapode(ParseTest2_1))
 
-    @test parsed_result_1 == pt2_1
+    @test parsed_result_1 ≃ pt2_1
 
     # TODO This has not been implemented and does not neccessarily need to be implemented right now > Multiplication by Parenthesis. 
-    parsed_result = decapode"
+    parsed_result_2 = decapode"
       (A, B, X)::Form0{X}
       A == (X)F"
 
@@ -318,7 +320,7 @@ end
 
     pt2_2 = SummationDecapode(parse_decapode(ParseTest2_2))
 
-    @test parsed_result_2 == pt2_2 
+    @test parsed_result_2 ≃ pt2_2 
 
     @test parsed_result_1 != parsed_result_2
   
@@ -335,7 +337,7 @@ end
 
     pt3 = SummationDecapode(parse_decapode(ParseTest3))
 
-    @test parsed_result == pt3
+    @test parsed_result ≃ pt3
 
     # Do not rename TVars if they are given a name.
     parsed_result = decapode"
@@ -357,5 +359,5 @@ end
       ∂ₜ(V) == -1*k*(X)
     end))
 
-    @test parsed_result == pt5
+    @test parsed_result ≃ pt5
 end
