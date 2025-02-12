@@ -59,27 +59,6 @@ end
 # a nice pastel scheme
 const colors = ColorSchemes.cyclic_mygbm_30_95_c78_n256
 
-function to_integer(x::RGB{Float64})
-    (Int(floor(255*x.b)), Int(floor(255*x.g)), Int(floor(255*x.r)))
-end
-
-"""    proximate_color(color::RGB{Float64})::String
-
-Given a RGB value, obtain the color word whose color is closest to the RGB value.
-
-This is necessary to pass colors to GraphViz, which only accepts color words.
-"""
-function proximate_color(color::RGB{Float64}, 
-        color_names::Dict{String, Tuple{Int64, Int64, Int64}}=Colors.color_names)
-    integer_color = to_integer(color)
-    normdiff = norm.([integer_color .- value for value ∈ values(color_names)])
-    idx = first((1:length(normdiff))[normdiff .== minimum(normdiff)])
-    # ^ `only` did not work as there were two minima. Need more principled way of picking!
-    collect(keys(color_names))[idx]
-end
-
-const available_colors = unique(proximate_color.(colors))
-
 """    get_colors(d::SummationDecapode)::Dict{String, String}
 
 Given a Decapode, we infer the name of the boxes in the cospan which defines it and associate to these boxes a random unique color from a list of colors.
@@ -90,21 +69,19 @@ function get_colors(d::SummationDecapode)
     paths = split.(vals, "_")
     # vectors with length > 1 are those which have been prefixed by a "_".
     spaces = first.(filter(p -> length(p) > 1, paths)) |> unique
-    swatches = sample(available_colors, length(spaces), replace=false)
-    Dict([space => swatches for (space, swatches) in zip(spaces, swatches)])
+    swatches = sample(colors.colors, length(spaces), replace=false)
+    Dict([space => "#" * Colors.hex(swatch) for (space, swatch) in zip(spaces, swatches)])
 end
 
 
 function labelcolor(s::Symbol, colordict::Dict{SubString{String}, T}) where T
     head = first(split(String(s), "_"))
-    haskey(colordict, head) ? String(colordict[head]) : "white"
-    # the default color is "white" because the default background for GraphViz visualizations in
-    # AlgebraicJulia is white.
+    haskey(colordict, head) ? String(colordict[head]) : "#ffffff"
 end
 
 function labelcolor(s::String, colordict::Dict{SubString{String}, Symbol})
     head = first(split(s, "_"))
-    haskey(colordict, head) ? String(colordict[head]) : "white"
+    haskey(colordict, head) ? String(colordict[head]) : "#ffffff"
 end
 
 # TODO: generalize ok??
