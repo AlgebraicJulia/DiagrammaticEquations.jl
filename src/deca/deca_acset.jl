@@ -35,6 +35,7 @@ op1_inf_rules_1D = [
 
   # Rules for ♯.
   (src_type = :Form1, tgt_type = :PVF, op_names = [:♯, :♯ᵖᵖ]),
+  (src_type = :Form1, tgt_type = :DVF, op_names = [:♯, :♯ᵖᵈ]),
   (src_type = :DualForm1, tgt_type = :DVF, op_names = [:♯, :♯ᵈᵈ]),
 
   # Rules for ♭.
