@@ -6,6 +6,11 @@ using Catlab.Graphs.PropertyGraphs
 using Catlab.Graphs
 using Catlab.Graphs.BasicGraphs
 
+import LinearAlgebra: norm
+using StatsBase
+using Colors
+using ColorSchemes
+using ColorSchemeTools
 
 # TODO: Change orientation to print 
 # TODO: generalize ok??
@@ -51,9 +56,39 @@ varname(d, v, verbose) = begin
   return "$name:$(spacename(d, v))"
 end
 
+# a nice pastel scheme
+const colors = ColorSchemes.cyclic_mygbm_30_95_c78_n256
+
+"""    get_colors(d::SummationDecapode)::Dict{String, String}
+
+Given a Decapode, we infer the name of the boxes in the cospan which defines it and associate to these boxes a random unique color from a list of colors.
+"""
+function get_colors(d::SummationDecapode)
+    ns = collect(values(d.subparts.name.m))
+    vals = String.(ns)
+    paths = split.(vals, "_")
+    # vectors with length > 1 are those which have been prefixed by a "_".
+    spaces = first.(filter(p -> length(p) > 1, paths)) |> unique
+    swatches = sample(colors.colors, length(spaces), replace=false)
+    Dict([space => "#" * Colors.hex(swatch) for (space, swatch) in zip(spaces, swatches)])
+end
+
+
+function labelcolor(s::Symbol, colordict::Dict{SubString{String}, T}) where T
+    head = first(split(String(s), "_"))
+    haskey(colordict, head) ? String(colordict[head]) : "#ffffff"
+end
+
+function labelcolor(s::String, colordict::Dict{SubString{String}, Symbol})
+    head = first(split(s, "_"))
+    haskey(colordict, head) ? String(colordict[head]) : "#ffffff"
+end
+
 # TODO: generalize ok??
 function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; typename=spacename, directed = true, prog = "dot", node_attrs=Dict(), edge_attrs=Dict(), graph_attrs=Dict(), node_labels = true, verbose = true, kw...)
-    
+   
+    colordict = get_colors(d)
+
     default_graph_attrs = Dict(:rankdir => "TB")
     default_edge_attrs = Dict()
     default_node_attrs = Dict(:shape => "oval")
@@ -64,7 +99,10 @@ function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; typena
       graph_attrs = merge!(default_graph_attrs, graph_attrs))
 
     vids = map(parts(d, :Var)) do v
-      add_vertex!(G, label=varname(d, v, verbose))
+      vertex = add_vertex!(G, label=varname(d, v, verbose))
+      set_vprop!(G, v, :fillcolor, labelcolor(subpart(d, v, :name), colordict))
+      set_vprop!(G, v, :style, "filled")
+      vertex
     end
 
     # Add entry and exit vertices and wires
