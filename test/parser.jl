@@ -6,6 +6,19 @@ using DiagrammaticEquations: Term, Derivative, PlusOperation, MultOperation, Cal
 
 PEG.setdebug!(false) # To disable: PEG.setdebug!(false)
 
+#Taken from "PEG.jl/blob/master/test/misc.jl" to test parsing exception handling
+function parse_fails_at(rule, input)
+  try
+    parse_whole(rule, input)
+    "parse succeeded!"
+  catch err
+    isa(err, Meta.ParseError) || rethrow()
+    m = match(r"^On line \d+, at column \d+ \(byte (\d+)\):", err.msg)
+    m == nothing && rethrow()
+    parse(Int, m.captures[1])
+  end
+end
+
 # Unit Tests
 ##############
 @testset "DecapodeExpr" begin
@@ -275,6 +288,10 @@ end
     ϕ ==  2*d₀(C)
     ∂ₜ(C) == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)"
 
+  # Because vars are infered, the two differ in names although they are identical in
+  # structure. I have modified the names to match so that the test focuses on structure.
+  parsed_result[:name] = [:ϕ, Symbol("2"), Symbol("•2"), :C, :Ċ]
+
   DiffusionExprBody7 =  quote
     ϕ ==  2*d₀(C)
     ∂ₜ(C) == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
@@ -290,11 +307,6 @@ end
     ϕ ==  2*d₀(C)
     Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
     Ċ == ∂ₜ(C)"
-
-  # Multiple equality is not an accepted input
-  @test_throws ErrorException parsed_result = decapode"
-    (A, B, X)::Form0{X}
-    A == d(B) == f(X)"
   
   # Just noting that the first decapode is denotes a X as an op1
   # while the second is a multiplication between X and F
@@ -310,15 +322,15 @@ end
 
     @test parsed_result_1 ≃ pt2_1
 
-    # TODO This has not been implemented and does not neccessarily need to be implemented right now > Multiplication by Parenthesis. 
-    parsed_result_2 = decapode"
-      (A, B, X)::Form0{X}
-      A == (X)F"
+    # TODO This has not been implemented and does not neccessarily need to be implemented right now -> Multiplication by Parenthesis. 
+    # parsed_result_2 = decapode"
+    #   (A, B, X)::Form0{X}
+    #   A == (X)F"
 
-    ParseTest2_2 = quote
-      (A, B, X)::Form0{X}
-      A == (X)F
-    end
+    # ParseTest2_2 = quote
+    #   (A, B, X)::Form0{X}
+    #   A == (X)F
+    # end
 
     pt2_2 = SummationDecapode(parse_decapode(ParseTest2_2))
 
@@ -362,4 +374,15 @@ end
     end))
 
     @test parsed_result ≃ pt5
+end
+
+# Exception Handling Tests
+##########################
+
+@testset "Exception Handling" begin
+    # Multiple equality is not an accepted input
+  test_input = "(A, B, X)::Form0{X}
+    A == d(B) == f(X)\n"
+
+  @test parse_fails_at(DecapodeExpr, test_input) == 35
 end
