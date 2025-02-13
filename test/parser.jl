@@ -475,4 +475,92 @@ end
     end))
 
     @test parsed_result ≃ pt5
+
+    # Recursive Expr
+    parse_result = decapode"
+      x::Form0{X}
+      y::Form0{X}
+      z::Form0{X}
+  
+      ∂ₜ(z) == f1(x) + ∘(g, h)(y)
+      y == F(f2(x), ρ(x,z))"
+
+    Recursion = quote
+      x::Form0{X}
+      y::Form0{X}
+      z::Form0{X}
+  
+      ∂ₜ(z) == f1(x) + ∘(g, h)(y)
+      y == F(f2(x), ρ(x,z))
+    end
+  
+    rdp = SummationDecapode(parse_decapode(Recursion))
+
+    @test parse_result ≃ rdp
+
+    # Diffusion Diagram
+    parse_result = decapode"
+      (C, Ċ)::Form0{X}
+      ϕ::Form1{X}
+
+      ϕ ==  ∘(k, d₀)(C)
+
+      Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+      ∂ₜ(C) == Ċ"
+    # TODO: Add Comment Support in PEG?
+
+    DiffusionExprBody =  quote
+      (C, Ċ)::Form0{X}
+      ϕ::Form1{X}
+
+      # Fick's first law
+      ϕ ==  ∘(k, d₀)(C)
+      # Diffusion equation
+      Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+      ∂ₜ(C) == Ċ
+  end
+
+  ddp = SummationDecapode(parse_decapode(DiffusionExprBody))
+
+  @test parse_result ≃ ddp
+
+  # Advection Diagram
+  parse_result = decapode"
+    C::Form0{X}
+    (V, ϕ)::Form1{X}
+
+    ϕ == ∧₀₁(C,V)"
+
+  Advection = quote
+    C::Form0{X}
+    (V, ϕ)::Form1{X}
+
+    ϕ == ∧₀₁(C,V)
+  end
+
+  advdp = SummationDecapode(parse_decapode(Advection))
+
+  @test parse_result ≃ advdp
+
+  # Superposition Diagram
+  parse_result = decapode"
+    (C, Ċ)::Form0{X}
+    (ϕ, ϕ₁, ϕ₂)::Form1{X}
+
+    ϕ == ϕ₁ + ϕ₂
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    ∂ₜ(C) == Ċ"
+
+  Superposition = quote
+    (C, Ċ)::Form0{X}
+    (ϕ, ϕ₁, ϕ₂)::Form1{X}
+
+    ϕ == ϕ₁ + ϕ₂
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    ∂ₜ(C) == Ċ
+  end
+
+  supdp = SummationDecapode(parse_decapode(Superposition))
+
+  @test parse_result ≃ supdp
 end
