@@ -35,10 +35,10 @@ export @decapode_str
 
 # The call rule supports function calls of the form f(x) and g(x, y).
 @rule Call = ident & lparen & ws & Args & ws & rparen |> v -> BuildCall(v)
-@rule Args = (PlusOperation & ws & "," & ws & PlusOperation) |> v -> [v[1], v[5]],
+@rule Args = (PlusOperation & ws & comma & PlusOperation) |> v -> [v[1], v[4]],
 PlusOperation |> v -> [v]
 
-@rule List = ident & (ws & comma & ws & ident)[*] |> v -> vcat(Symbol(v[1]), Symbol.(last.(v[2])))
+@rule List = ident & (ws & comma & ident)[*] |> v -> vcat(Symbol(v[1]), Symbol.(last.(v[2])))
 
 @rule ident = r"[^\+*:{}→\n;=,\(\)\s]+" # Catlab ident does not support removal of `+` and `*` characters.
 

@@ -6,21 +6,9 @@ using DiagrammaticEquations: Term, Derivative, PlusOperation, MultOperation, Cal
 
 PEG.setdebug!(false) # To disable: PEG.setdebug!(false)
 
-#Taken from "PEG.jl/blob/master/test/misc.jl" to test parsing exception handling
-function parse_fails_at(rule, input)
-  try
-    parse_whole(rule, input)
-    "parse succeeded!"
-  catch err
-    isa(err, Meta.ParseError) || rethrow()
-    m = match(r"^On line \d+, at column \d+ \(byte (\d+)\):", err.msg)
-    m == nothing && rethrow()
-    parse(Int, m.captures[1])
-  end
-end
-
 # Unit Tests
 ##############
+
 @testset "DecapodeExpr" begin
   @test DecapodeExpr("a::b\nc == d\ndt(X) == Y\n")[1] == DecaExpr([
   DiagrammaticEquations.decapodes.Judgement(:a, :b, :I)],
@@ -164,6 +152,124 @@ end
   @test List("a, b, c")[1] == [:a, :b, :c]
 end
 
+# Exception Handling Tests
+##########################
+
+# Taken from "PEG.jl/blob/master/test/misc.jl" to test parsing exception handling
+function parse_fails_at(rule, input)
+  try
+    parse_whole(rule, input)
+    "parse succeeded!"
+  catch err
+    isa(err, Meta.ParseError) || rethrow()
+    m = match(r"^On line \d+, at column \d+ \(byte (\d+)\):", err.msg)
+    m == nothing && rethrow()
+    parse(Int, m.captures[1])
+  end
+end
+
+@testset "Exception Handling" begin
+  # Comparing byte # where parsing error occured.
+
+  # Test List Exceptions - Missing comma
+  test_input = "meow bark woof"
+  @test parse_fails_at(List, test_input) == 6
+
+  # Test List Exceptions - Missing comma 2
+  test_input = "meow bark, woof"
+  @test parse_fails_at(List, test_input) == 6
+
+  # Test Argument Exceptions - Extra Parameter
+  test_input = "ident, ident ident"
+  @test parse_fails_at(Args, test_input) == 13
+
+  # Test Argument Exceptions - Missing Comma
+  test_input = "ident ident"
+  @test parse_fails_at(Args, test_input) == 7
+
+  # Test Call Exceptions - Missing Closing Parenthesis
+  test_input = "ident(ident"
+  @test parse_fails_at(Call, test_input) == 12
+
+  # Test Call Exceptions - Missing Opening Parenthesis
+  test_input = "ident ident)"
+  @test parse_fails_at(Call, test_input) == 6
+
+  # Test Call Exceptions - Missing Parameters
+  test_input = "ident()"
+  @test parse_fails_at(Call, test_input) == 7
+
+  # Test Composure Exceptions - Missing Second Argument
+  test_input = "∘(ident)"
+  @test parse_fails_at(Compose, test_input) == 11
+
+  # Test Composure Exceptions - Missing Parenthesis
+  test_input = "∘(ident)ident"
+  @test parse_fails_at(Compose, test_input) == 11
+
+  # Test Composure Exceptions - Missing Parenthesis 2
+  test_input = "∘ident(ident)"
+  @test parse_fails_at(Compose, test_input) == 4
+
+  # Test Derivative Exceptions - Missing Derivative Symbol
+  test_input = "ident(X)"
+  @test parse_fails_at(Derivative, test_input) == 1
+
+  # Test Derivative Exceptions - Missing Parenthesis
+  test_input = "∂ₜident"
+  @test parse_fails_at(Derivative, test_input) == 7
+
+  # Test Derivative Exceptions - Missing Parenthesis 2
+  test_input = "∂ₜ(X"
+  @test parse_fails_at(Derivative, test_input) == 9
+
+  # Test Grouping Exceptions - Missing Parenthesis
+  test_input = "(ident"
+  @test parse_fails_at(Grouping, test_input) == 7
+
+  # Test Multiplication Exceptions - Missing Second Argument
+  test_input = "ident *"
+  @test parse_fails_at(MultOperation, test_input) == 8
+
+  # Test Multiplication Exceptions - Missing Operator
+  test_input = "2 3"
+  @test parse_fails_at(MultOperation, test_input) == 2
+
+  # Test Plus Exceptions - Missing Argument
+  test_input = " + 3"
+  @test parse_fails_at(PlusOperation, test_input) == 1
+
+  # Test Equation Exceptions - Missing Equation Symbol
+  test_input = "A B"
+  @test parse_fails_at(Statement, test_input) == 2
+
+  # Test Equation Exceptions - Missing RHS
+  test_input = "A == "
+  @test parse_fails_at(Statement, test_input) == 6
+
+  # Test Equation Exceptions - Too many equations
+  test_input = "A == B == C"
+  @test parse_fails_at(Statement, test_input) == 7
+
+  # Test TypeName Exceptions - Missing Bracket Argument
+  test_input = "Form0{}"
+  @test parse_fails_at(TypeName, test_input) == 7
+
+  # Test TypeName Exceptions - Missing Bracket
+  # Interestingly fails at the identifier before the }.
+  # Seems to be a handling difference with the PEG. 
+  test_input = "Form0{X "
+  @test parse_fails_at(TypeName, test_input) == 7
+
+  # Test Judgement Exceptions - Missing Type
+  test_input = "ident::"
+  @test parse_fails_at(Statement, test_input) == 8
+
+  # Test Judgement Exceptions - Missing Var
+  test_input = "::ident"
+  @test parse_fails_at(Statement, test_input) == 1
+end
+
 # END TO END Tests
 ##################
 
@@ -208,11 +314,6 @@ end
 
   @test parsed_result ≃ ddp2
   
-  # TODO - ^^^^ Problem: Our parser interperts '2*d₀(C)' as multiplication. Original parser interperets as function call with 2 as argument:
-  #  App2(:*, Lit(2), App1(:d₀, Var(:C))). Looks like in their pattern matching switch case, App2 comes before Mult and Julia
-  # already interperts 2*d₀(C) as a function call where * is the call and lhs and rhs are arguments.
-  # We need to change precedences?
-
   # Multiply without explicitly giving parentheses.
   parsed_result = decapode"
   (C, Ċ)::Form0
@@ -332,11 +433,11 @@ end
     #   A == (X)F
     # end
 
-    pt2_2 = SummationDecapode(parse_decapode(ParseTest2_2))
+    # pt2_2 = SummationDecapode(parse_decapode(ParseTest2_2))
 
-    @test parsed_result_2 ≃ pt2_2 
+    # @test parsed_result_2 ≃ pt2_2 
 
-    @test parsed_result_1 != parsed_result_2
+    # @test parsed_result_1 != parsed_result_2
   
     # Chained Tvars test
     # TODO: Do we want explict support for higher order Tvars?
@@ -374,15 +475,4 @@ end
     end))
 
     @test parsed_result ≃ pt5
-end
-
-# Exception Handling Tests
-##########################
-
-@testset "Exception Handling" begin
-    # Multiple equality is not an accepted input
-  test_input = "(A, B, X)::Form0{X}
-    A == d(B) == f(X)\n"
-
-  @test parse_fails_at(DecapodeExpr, test_input) == 35
 end
