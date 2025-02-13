@@ -563,4 +563,13 @@ end
   supdp = SummationDecapode(parse_decapode(Superposition))
 
   @test parse_result ≃ supdp
+
+  # Mixed Semicolon support test
+  parse_result_semi = decapode"
+    (C, Ċ)::Form0{X}; (ϕ, ϕ₁, ϕ₂)::Form1{X};
+
+    ϕ == ϕ₁ + ϕ₂; Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ);
+    ∂ₜ(C) == Ċ"
+
+  @test parse_result_semi ≃ supdp
 end
