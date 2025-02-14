@@ -28,7 +28,7 @@ end
 pprint(io::IO, exp::Term, pad=0) = begin
   let ! = x -> sprint((io, y)->pprint(io, y, 0), x)
   @match exp begin
-    Var(name) => print(io, name)
+    decapodes.Var(name) => print(io, name)
     Lit(name) => print(io, name)
     AppCirc1(fs, arg) => print(io, "($fs)($(!arg))")
     App1(f, arg) => print(io, "$f($(!arg))")
