@@ -28,9 +28,14 @@ end
   @test DecapodeExpr("a::b\n# This is comment\nc == d\n")[1] == DecaExpr([
     DiagrammaticEquations.decapodes.Judgement(:a, :b, :I)], 
     [DiagrammaticEquations.decapodes.Eq(DiagrammaticEquations.decapodes.Var(:c), DiagrammaticEquations.decapodes.Var(:d))])
-  @test DecapodeExpr("#= This is a multi-line comment\nspanning multiple lines\n=#\na::b\n")[1] == DecaExpr([
+  @test DecapodeExpr("#= This is a multi-line comment\nspanning multiple lines\n=# a::b\n")[1] == DecaExpr([
     DiagrammaticEquations.decapodes.Judgement(:a, :b, :I)
   ], [])
+  @test DecapodeExpr("a::b\n#= Multi-line comment\nspanning lines\n=#\nc == d\n")[1] == DecaExpr([
+    DiagrammaticEquations.decapodes.Judgement(:a, :b, :I)
+  ], [
+    DiagrammaticEquations.decapodes.Eq(DiagrammaticEquations.decapodes.Var(:c), DiagrammaticEquations.decapodes.Var(:d))
+  ])
 end
 
 @testset "Line" begin

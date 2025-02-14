@@ -4,14 +4,14 @@ import Catlab.Parsers.ParserCore
 export @decapode_str
 
 # Bodies are made up of lines where each line holds a statement 
-@rule DecapodeExpr = Line[*] & ws |> v -> BuildExpr(v[1])
+@rule DecapodeExpr = (MultiLineComment, Line)[*] & ws |> v -> BuildExpr(v[1])
 
 #Comments are ignored by the parser.
-@rule SingleLineComment = "#" & r"[^\r\n]*" |> v -> nothing
-@rule MultiLineComment = "#=" & r"(.|\s)*?" & "=#" |> v -> nothing
+#==#@rule SingleLineComment = "#" & r"[^\r\n]*" |> v -> nothing
+@rule MultiLineComment = "#=" & r"(?:[^=]|=(?!#)|\s)*" & "=#" |> v -> nothing
 
 # Lines are made up of a statement or comment followed by an end of line character. 
-@rule Line = ws & (SingleLineComment , MultiLineComment , Statement) & r"[^\S\r\n]*" & EOL |> v -> v[2]# === nothing ? [] : v[2]
+@rule Line = ws & (SingleLineComment , Statement) & r"[^\S\r\n]*" & EOL |> v -> v[2]
 
 # Statements can include either type judgements or equations.
 @rule Statement = Judgement , Equation
@@ -127,14 +127,7 @@ BuildExpr
 Takes in an input array (AST) for a body and returns a corresponding DecaExpr object.
 """
 function BuildExpr(v)
-  foreach(v) do s
-    println(s)
-  end
   filtered_lines = filter(x -> x !== nothing, v)
-  #comment_lines = filter(x -> x === nothing, v)
-  #foreach(comment_lines) do s
-    #println(s)
-  #end
   judges = []
   eqns = []
   foreach(filtered_lines) do s
