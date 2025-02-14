@@ -2,7 +2,7 @@ using Test
 using Catlab
 using DiagrammaticEquations
 using DiagrammaticEquations: Term, Derivative, PlusOperation, MultOperation, Call, Args,
-  Judgement, Statement, Line, Equation, List, Compose, TypeName, Grouping, DecapodeExpr
+  Judgement, Statement, Line, Equation, List, Compose, TypeName, Grouping, DecapodeExpr, SingleLineComment, MultiLineComment
 
 PEG.setdebug!(false) # To disable: PEG.setdebug!(false)
 
@@ -19,6 +19,23 @@ PEG.setdebug!(false) # To disable: PEG.setdebug!(false)
   @test DecapodeExpr("a::b\n")[1] == DecaExpr([
   DiagrammaticEquations.decapodes.Judgement(:a, :b, :I)
   ],[])
+end
+
+@testset "Comments" begin
+  @test DecapodeExpr("a::b\n# This is a comment\n")[1] == DecaExpr([DiagrammaticEquations.decapodes.Judgement(:a, :b, :I)], [])
+  @test DecapodeExpr("a::b\n#a::b\n")[1] == DecaExpr([DiagrammaticEquations.decapodes.Judgement(:a, :b, :I)], [])
+  @test DecapodeExpr("# This is a comment\na::b\n")[1] == DecaExpr([DiagrammaticEquations.decapodes.Judgement(:a, :b, :I)], [])
+  @test DecapodeExpr("a::b\n# This is comment\nc == d\n")[1] == DecaExpr([
+    DiagrammaticEquations.decapodes.Judgement(:a, :b, :I)], 
+    [DiagrammaticEquations.decapodes.Eq(DiagrammaticEquations.decapodes.Var(:c), DiagrammaticEquations.decapodes.Var(:d))])
+  @test DecapodeExpr("#= This is a multi-line comment\nspanning multiple lines\n=# a::b\n")[1] == DecaExpr([
+    DiagrammaticEquations.decapodes.Judgement(:a, :b, :I)
+  ], [])
+  @test DecapodeExpr("a::b\n#= Multi-line comment\nspanning lines\n=#\nc == d\n")[1] == DecaExpr([
+    DiagrammaticEquations.decapodes.Judgement(:a, :b, :I)
+  ], [
+    DiagrammaticEquations.decapodes.Eq(DiagrammaticEquations.decapodes.Var(:c), DiagrammaticEquations.decapodes.Var(:d))
+  ])
 end
 
 @testset "Line" begin
