@@ -56,37 +56,29 @@ varname(d, v, verbose) = begin
   return "$name:$(spacename(d, v))"
 end
 
-# a nice pastel scheme
-const colors = ColorSchemes.cyclic_mygbm_30_95_c78_n256
+# XXX: Diagrams with more than 256 namespaces will throw an error.
+const colors = ColorSchemes.cyclic_mygbm_30_95_c78_n256 # A nice pastel scheme
 
 """    get_colors(d::SummationDecapode)
 
 Given a Decapode, we infer the name of the boxes in the cospan which defines it and associate to these boxes a random unique color from a list of colors.
 """
 function get_colors(d::SummationDecapode)
-    ns = collect(values(d.subparts.name.m))
-    vals = String.(ns)
-    paths = split.(vals, "_")
-    # vectors with length > 1 are those which have been prefixed by a "_".
-    spaces = first.(filter(p -> length(p) > 1, paths)) |> unique
+    # Vectors with length > 1 are those which have been prefixed by a "_".
+    names = String.(d[:name])
+    paths = split.(names, "_")
+    spaces = first.(filter(p -> length(p) > 1, paths))
+    setdiff!(spaces, ["sum", ""])
     swatches = sample(colors.colors, length(spaces), replace=false)
     Dict([space => "#" * Colors.hex(swatch) for (space, swatch) in zip(spaces, swatches)])
 end
 
-
-function labelcolor(s::Symbol, colordict::Dict{SubString{String}, T}) where T
+function labelcolor(s::T, colordict::Dict{SubString{String}, U}) where {T, U}
     head = first(split(String(s), "_"))
-    haskey(colordict, head) ? String(colordict[head]) : "#ffffff"
+    String(get(colordict, head, "#ffffff"))
 end
 
-function labelcolor(s::String, colordict::Dict{SubString{String}, Symbol})
-    head = first(split(s, "_"))
-    haskey(colordict, head) ? String(colordict[head]) : "#ffffff"
-end
-
-# TODO: generalize ok??
 function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; typename=spacename, directed = true, prog = "dot", node_attrs=Dict(), edge_attrs=Dict(), graph_attrs=Dict(), node_labels = true, verbose = true, color = false, kw...)
-   
     default_graph_attrs = Dict(:rankdir => "TB")
     default_edge_attrs = Dict()
     default_node_attrs = Dict(:shape => "oval")
