@@ -1,5 +1,6 @@
 using Test
 using DiagrammaticEquations
+using ACSets
 using Catlab.Graphics
 using Catlab.Graphics.Graphviz
 using Catlab.Graphs.PropertyGraphs
@@ -133,3 +134,28 @@ Test6 = SummationDecapode(parse_decapode(quote
 
 t6 = to_graphviz(Test6)
 @test Graphviz.filter_statements(t6, Graphviz.Node, :label) == ["A:Ω₀", "B:Ω₁", "C:Ω₂", "D:Ω̃₀", "E:Ω̃₁", "F:Ω̃₂", "G:ΩL", "H:ΩP", "I:ΩC", "J:Ω•", "", ""]
+
+AlteredKlausmeier = @acset SummationDecapode{Any, Any, Symbol} begin
+  Var = 21
+  TVar = 2
+  Op1 = 3
+  Op2 = 10
+  Σ = 2
+  Summand = 4
+  src = [1, 1, 2]
+  tgt = [4, 10, 14]
+  proj1 = [1, 2, 3, 6, 12, 1, 2, 16, 11, 13]
+  proj2 = [8, 7, 1, 9, 2, 19, 18, 17, 2, 21]
+  res = [7, 6, 9, 5, 16, 18, 17, 15, 21, 20]
+  incl = [4, 14]
+  summand = [5, 10, 15, 20]
+  summation = [1, 1, 2, 2]
+  sum = [4, 14]
+  op1 = [:∂ₜ, :Δ, :∂ₜ]
+  op2 = [:^, :*, :*, :-, :-, :^, :*, :-, :L, :*]
+  type = [:DualForm0, :DualForm0, :Constant, :infer, :infer, :infer, :infer, :Literal, :infer, :infer, :Form1, :Constant, :Constant, :infer, :infer, :infer, :infer, :infer, :Literal, :infer, :infer]
+  name = [:sum_N, :W, :phyto_m, :phyto_ṅ, Symbol("phyto_•2"), Symbol("phyto_•3"), Symbol("phyto_•4"), Symbol("2"), Symbol("phyto_•5"), Symbol("phyto_•6"), :hydro_dX, :hydro_a, :hydro_ν, :hydro_ẇ, Symbol("hydro_•2"), Symbol("hydro_•3"), Symbol("hydro_•4"), Symbol("hydro_•5"), Symbol("2"), Symbol("hydro_•6"), Symbol("hydro_•7")]
+end
+
+t7 = to_graphviz(AlteredKlausmeier, color = true)
+@test length(unique(Graphviz.filter_statements(t7, Graphviz.Node, :fillcolor))) == 3
