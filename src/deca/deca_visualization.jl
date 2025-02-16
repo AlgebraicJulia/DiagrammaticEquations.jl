@@ -59,7 +59,7 @@ end
 # a nice pastel scheme
 const colors = ColorSchemes.cyclic_mygbm_30_95_c78_n256
 
-"""    get_colors(d::SummationDecapode)::Dict{String, String}
+"""    get_colors(d::SummationDecapode)
 
 Given a Decapode, we infer the name of the boxes in the cospan which defines it and associate to these boxes a random unique color from a list of colors.
 """
@@ -85,10 +85,8 @@ function labelcolor(s::String, colordict::Dict{SubString{String}, Symbol})
 end
 
 # TODO: generalize ok??
-function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; typename=spacename, directed = true, prog = "dot", node_attrs=Dict(), edge_attrs=Dict(), graph_attrs=Dict(), node_labels = true, verbose = true, kw...)
+function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; typename=spacename, directed = true, prog = "dot", node_attrs=Dict(), edge_attrs=Dict(), graph_attrs=Dict(), node_labels = true, verbose = true, color = false, kw...)
    
-    colordict = get_colors(d)
-
     default_graph_attrs = Dict(:rankdir => "TB")
     default_edge_attrs = Dict()
     default_node_attrs = Dict(:shape => "oval")
@@ -97,6 +95,8 @@ function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; typena
       node_attrs = merge!(default_node_attrs, node_attrs),  
       edge_attrs = merge!(default_edge_attrs, edge_attrs),  
       graph_attrs = merge!(default_graph_attrs, graph_attrs))
+
+    colordict = color ? get_colors(d) : Dict{SubString{String}, Symbol}()
 
     vids = map(parts(d, :Var)) do v
       vertex = add_vertex!(G, label=varname(d, v, verbose))
