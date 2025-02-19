@@ -589,4 +589,691 @@ end
     ∂ₜ(C) == Ċ"
 
   @test parse_result_semi ≃ supdp
+
+  # Heat Transfer Model
+  parse_result = decapode"
+    (HT, Tₛ)::Form0
+    (D, cosϕᵖ, cosϕᵈ)::Constant
+    
+    HT == (D ./ cosϕᵖ) .* (⋆)(d(cosϕᵈ .* (⋆)(d(Tₛ))))"
+
+  HeatTransfer = quote
+    (HT, Tₛ)::Form0
+    (D, cosϕᵖ, cosϕᵈ)::Constant
+    
+    HT == (D ./ cosϕᵖ) .* (⋆)(d(cosϕᵈ .* (⋆)(d(Tₛ))))
+  end
+
+  htts ≃ SummationDecapode(parse_decapode(HeatTransfer))
+
+  @test parse_result ≃ htts
+
+  # Outgoing Longwave Radiation Model
+  parse_result = decapode"
+    (Tₛ, OLR)::Form0
+    (A, B)::Constant
+    
+    OLR == A .+ B .* Tₛ"
+
+  OutgoingLongRadiation = quote
+    (Tₛ, OLR)::Form0
+    (A, B)::Constant
+    
+    OLR == A .+ B .* Tₛ
+  end
+
+  olr ≃ SummationDecapode(parse_decapode(OutgoingLongRadiation))
+
+  @test parse_result ≃ olr
+
+  # Absorbed Shortwave Radiation Model
+  parse_result = decapode"
+    (Q, ASR)::Form0
+    α::Constant
+    
+    ASR == (1 .- α) .* Q"
+
+  AbsorbedShortRadiation = quote
+    (Q, ASR)::Form0
+    α::Constant
+    
+    ASR == (1 .- α) .* Q
+  end
+
+  asr ≃ SummationDecapode(parse_decapode(AbsorbedShortRadiation))
+
+  @test parse_result ≃ asr
+
+  #Advection Model
+  parse_result = decapode"
+    C::Form0
+    (ϕ, V)::Form1
+              
+    ϕ == C ∧₀₁ V"
+
+  Advection = quote
+    C::Form0
+    (ϕ, V)::Form1
+              
+    ϕ == C ∧₀₁ V
+  end
+
+  adv ≃ SummationDecapode(parse_decapode(Advection))
+
+  @test parse_result ≃ adv
+
+  # Ficks Law Model
+  parse_result = decapode"
+    C::Form0
+    ϕ::Form1
+              
+    ϕ == k(d₀(C))"
+
+  FicksLaw = quote
+    C::Form0
+    ϕ::Form1
+              
+    ϕ == k(d₀(C))
+  end
+
+  ficks ≃ SummationDecapode(parse_decapode(FicksLaw))
+
+  @test parse_result ≃ ficks
+
+  # IceBlockingWater Model
+  parse_result = decapode"
+    h::Form0
+    (𝐮, w)::DualForm1
+              
+    w == (1 - σ(h)) ∧ᵖᵈ₀₁ 𝐮"
+
+  IceBlockingWater = quote
+    h::Form0
+    (𝐮, w)::DualForm1
+              
+    w == (1 - σ(h)) ∧ᵖᵈ₀₁ 𝐮
+  end
+
+  ibw ≃ SummationDecapode(parse_decapode(IceBlockingWater))
+
+  @test parse_result ≃ ibw
+
+  # Jordan-Kinderlehrer-Otto Model
+  parse_result = decapode"
+    (ρ, Ψ)::Form0
+    β⁻¹::Constant
+              
+    ∂ₜ(ρ) == (∘(⋆, d, ⋆))(d(Ψ) ∧ ρ) + β⁻¹ * Δ(ρ)"
+
+  JKO = quote
+    (ρ, Ψ)::Form0
+    β⁻¹::Constant
+
+    ∂ₜ(ρ) == (∘(⋆, d, ⋆))(d(Ψ) ∧ ρ) + β⁻¹ * Δ(ρ)
+  end
+
+  jko ≃ SummationDecapode(parse_decapode(JKO))
+
+  @test parse_result ≃ jko
+    
+  # Lie Model
+  parse_result = decapode"
+    C::Form0
+    V::Form1
+    dX::Form1
+              
+    V == ((⋆) ∘ (⋆))(C ∧ dX)"
+
+  Lie = quote
+    C::Form0
+    V::Form1
+    dX::Form1
+              
+    V == ((⋆) ∘ (⋆))(C ∧ dX)
+  end
+
+  lie ≃ SummationDecapode(parse_decapode(Lie))
+
+  @test parse_result ≃ lie
+
+  # Mohamed Eq. 10, N2
+  parse_result = decapode"
+    (𝐮, w)::DualForm1
+    (P, 𝑝ᵈ)::DualForm0
+    μ::Constant
+              
+    𝑝ᵈ == P + 0.5 * ι₁₁(w, w)
+              
+    ∂ₜ(𝐮) == μ * (∘(d, ⋆, d, ⋆))(w) + -1 * (⋆₁⁻¹)(w ∧ᵈᵖ₁₀ (⋆)(d(w))) + d(𝑝ᵈ)"
+
+  Mohamed = quote
+    (𝐮, w)::DualForm1
+    (P, 𝑝ᵈ)::DualForm0
+    μ::Constant
+
+    𝑝ᵈ == P + 0.5 * ι₁₁(w, w)
+
+    ∂ₜ(𝐮) == μ * (∘(d, ⋆, d, ⋆))(w) + -1 * (⋆₁⁻¹)(w ∧ᵈᵖ₁₀ (⋆)(d(w))) + d(𝑝ᵈ)
+  end
+
+  mohamed ≃ SummationDecapode(parse_decapode(Mohamed))
+
+  @test parse_result ≃ mohamed
+
+  # Momentum Model
+  parse_result = decapode"
+    (f, b)::Form0
+    (v, V, g, Fᵥ, uˢ, v_up)::Form1
+    τ::Form2
+    U::Parameter
+              
+    uˢ̇ == ∂ₜ(uˢ)
+              
+    v_up == (((((((-1 * L(v, v) - L(V, v)) - L(v, V)) - f ∧ v) - (∘(⋆, d, ⋆))(uˢ) ∧ v) - d(p)) + b ∧ g) - (∘(⋆, d, ⋆))(τ)) + uˢ̇ + Fᵥ
+              
+    uˢ̇ == force(U)"
+
+  Momentum = quote
+    (f, b)::Form0
+    (v, V, g, Fᵥ, uˢ, v_up)::Form1
+    τ::Form2
+    U::Parameter
+
+    uˢ̇ == ∂ₜ(uˢ)
+
+    v_up == (((((((-1 * L(v, v) - L(V, v)) - L(v, V)) - f ∧ v) - (∘(⋆, d, ⋆))(uˢ) ∧ v) - d(p)) + b ∧ g) - (∘(⋆, d, ⋆))(τ)) + uˢ̇ + Fᵥ
+
+    uˢ̇ == force(U)
+  end
+
+  mom ≃ SummationDecapode(parse_decapode(Momentum))
+
+  @test parse_result ≃ mom
+
+  # Navier-Stokes Model
+  parse_result = decapode"
+    (V, V̇, G)::Form1{X}
+    (ρ, ṗ, p)::Form0{X}
+              
+    V̇ == neg₁(L₁′(V, V)) + div₁(kᵥ(Δ₁(V) + third(d₀(δ₁(V)))), avg₀₁(ρ)) + d₀(half(i₁′(V, V))) + neg₁(div₁(d₀(p), avg₀₁(ρ))) + G
+    ∂ₜ(V) == V̇
+              
+    ṗ == neg₀((⋆₀⁻¹)(L₀(V, (⋆₀)(p))))
+    ∂ₜ(p) == ṗ"
+
+  NavierStokes = quote
+    (V, V̇, G)::Form1{X}
+    (ρ, ṗ, p)::Form0{X}
+
+    V̇ == neg₁(L₁′(V, V)) + div₁(kᵥ(Δ₁(V) + third(d₀(δ₁(V)))), avg₀₁(ρ)) + d₀(half(i₁′(V, V))) + neg₁(div₁(d₀(p), avg₀₁(ρ))) + G
+    ∂ₜ(V) == V̇
+
+    ṗ == neg₀((⋆₀⁻¹)(L₀(V, (⋆₀)(p))))
+    ∂ₜ(p) == ṗ
+  end
+
+  navier ≃ SummationDecapode(parse_decapode(NavierStokes))
+
+  @test parse_result ≃ navier
+
+  # Oscillator Model
+  parse_result = decapode"
+    X::Form0
+    V::Form0
+    k::Constant
+    
+    ∂ₜ(X) == V
+    ∂ₜ(V) == -k * X"
+
+  Oscillator = quote
+    X::Form0
+    V::Form0
+    k::Constant
+    
+    ∂ₜ(X) == V
+    ∂ₜ(V) == -k * X
+  end
+
+  osc ≃ SummationDecapode(parse_decapode(Oscillator))
+
+  @test parse_result ≃ osc
+
+  # Poiseuille Model
+  parse_result = decapode"
+    P::Form0
+    q::Form1
+    (R, μ̃)::Constant
+              
+    Δq == Δ(q)
+    ∇P == d(P)
+              
+    ∂ₜ(q) == q̇
+    
+    q̇ == μ̃ * ∂q(Δq) + ∇P + R * q"
+
+  Poiseuille = quote
+    P::Form0
+    q::Form1
+    (R, μ̃)::Constant
+
+    Δq == Δ(q)
+    ∇P == d(P)
+
+    ∂ₜ(q) == q̇
+    
+    q̇ == μ̃ * ∂q(Δq) + ∇P + R * q
+  end
+
+  pois ≃ SummationDecapode(parse_decapode(Poiseuille))
+
+  @test parse_result ≃ pois
+
+  # Poiseuille Density Model
+  parse_result = decapode"
+    q::Form1
+    (P, ρ)::Form0
+    (k, R, μ̃)::Constant
+              
+    ∂ₜ(q) == q̇
+    ∇P == d(P)
+              
+    q̇ == (μ̃ * ∂q(Δ(q)) - ∇P) + R * q
+    P == k * ρ
+              
+    ∂ₜ(ρ) == ρ̇
+              
+    ρ_up == (∘(⋆, d, ⋆))(-1 * (ρ ∧₀₁ q))
+              
+    ρ̇ == ∂ρ(ρ_up)"
+
+  PoiseuilleDensity = quote
+    q::Form1
+    (P, ρ)::Form0
+    (k, R, μ̃)::Constant
+
+    ∂ₜ(q) == q̇
+    ∇P == d(P)
+
+    q̇ == (μ̃ * ∂q(Δ(q)) - ∇P) + R * q
+    P == k * ρ
+
+    ∂ₜ(ρ) == ρ̇
+
+    ρ_up == (∘(⋆, d, ⋆))(-1 * (ρ ∧₀₁ q))
+
+    ρ̇ == ∂ρ(ρ_up)
+  end
+
+  poisden ≃ SummationDecapode(parse_decapode(PoiseuilleDensity))
+
+  @test parse_result ≃ poisden
+
+  # Schroedinger Model
+  parse_result = decapode"
+    (i, h, m)::Constant
+    V::Parameter
+    Ψ::Form0
+              
+    ∂ₜ(Ψ) == (((-1 * h ^ 2) / (2m)) * Δ(Ψ) + V * Ψ) / (i * h)"
+
+  Schroedinger = quote
+    (i, h, m)::Constant
+    V::Parameter
+    Ψ::Form0
+
+    ∂ₜ(Ψ) == (((-1 * h ^ 2) / (2m)) * Δ(Ψ) + V * Ψ) / (i * h)
+  end
+
+  schroed ≃ SummationDecapode(parse_decapode(Schroedinger))
+
+  @test parse_result ≃ schroed
+
+  # Superposition Model
+  parse_result = decapode"
+    (C, Ċ)::Form0
+    (ϕ, ϕ₁, ϕ₂)::Form1
+
+    ϕ == ϕ₁ + ϕ₂
+    Ċ == (⋆₀⁻¹)(dual_d₁((⋆₁)(ϕ)))
+    ∂ₜ(C) == Ċ"
+
+  Superposition = quote
+    (C, Ċ)::Form0
+    (ϕ, ϕ₁, ϕ₂)::Form1
+
+    ϕ == ϕ₁ + ϕ₂
+    Ċ == (⋆₀⁻¹)(dual_d₁((⋆₁)(ϕ)))
+    ∂ₜ(C) == Ċ
+  end
+
+  sup ≃ SummationDecapode(parse_decapode(Superposition))
+
+  @test parse_result ≃ sup
+
+  # Gray-Scott Model
+  parse_result = decapode"
+    (U, V)::Form0
+    UV2::Form0
+    (U̇, V̇)::Form0
+    (f, k, rᵤ, rᵥ)::Constant
+              
+    UV2 == U .* (V .* V)
+    U̇ == (rᵤ * Δ(U) - UV2) + f * (1 .- U)
+    V̇ == (rᵥ * Δ(V) + UV2) - (f + k) .* V
+              
+    ∂ₜ(U) == U̇
+    ∂ₜ(V) == V̇"
+
+  GrayScott = quote
+    (U, V)::Form0
+    UV2::Form0
+    (U̇, V̇)::Form0
+    (f, k, rᵤ, rᵥ)::Constant
+
+    UV2 == U .* (V .* V)
+    U̇ == (rᵤ * Δ(U) - UV2) + f * (1 .- U)
+    V̇ == (rᵥ * Δ(V) + UV2) - (f + k) .* V
+
+    ∂ₜ(U) == U̇
+    ∂ₜ(V) == V̇
+  end
+
+  gs ≃ SummationDecapode(parse_decapode(GrayScott))
+
+  @test parse_result ≃ gs
+
+  # Brusselator Model
+  parse_result = decapode"
+    (U, V)::Form0
+    U2V::Form0
+    (U̇, V̇)::Form0
+    α::Constant
+    F::Parameter
+              
+    U2V == (U .* U) .* V
+    U̇ == ((1 + U2V) - 4.4U) + α * Δ(U) + F
+    V̇ == (3.4U - U2V) + α * Δ(V)
+              
+    ∂ₜ(U) == U̇
+    ∂ₜ(V) == V̇"
+
+  Brusselator = quote
+    (U, V)::Form0
+    U2V::Form0
+    (U̇, V̇)::Form0
+    α::Constant
+    F::Parameter
+
+    U2V == (U .* U) .* V
+    U̇ == ((1 + U2V) - 4.4U) + α * Δ(U) + F
+    V̇ == (3.4U - U2V) + α * Δ(V)
+
+    ∂ₜ(U) == U̇
+    ∂ₜ(V) == V̇
+  end
+
+  brussel ≃ SummationDecapode(parse_decapode(Brusselator))
+
+  @test parse_result ≃ brussel
+
+  # Kealy Model
+  parse_result = decapode"
+    (n, w)::DualForm0
+    dX::Form1
+    (a, ν)::Constant
+              
+    ∂ₜ(w) == ((a - w) - w * n ^ 2) + ν * Δ(w)"
+
+  Kealy = quote
+    (n, w)::DualForm0
+    dX::Form1
+    (a, ν)::Constant
+
+    ∂ₜ(w) == ((a - w) - w * n ^ 2) + ν * Δ(w)
+  end
+
+  kealy ≃ SummationDecapode(parse_decapode(Kealy))
+
+  @test parse_result ≃ kealy
+
+  # Klausmeier (Eq. 2a) Model
+  parse_result = decapode"
+    (n, w)::DualForm0
+    dX::Form1
+    (a, ν)::Constant
+              
+    ∂ₜ(w) == ((a - w) - w * n ^ 2) + ν * ℒ(dX, w)"
+
+  Klausmeier = quote
+    (n, w)::DualForm0
+    dX::Form1
+    (a, ν)::Constant
+
+    ∂ₜ(w) == ((a - w) - w * n ^ 2) + ν * ℒ(dX, w)
+  end
+
+  klaus ≃ SummationDecapode(parse_decapode(Klausmeier))
+
+  @test parse_result ≃ klaus
+
+  # Klausmeier (Eq. 2b) Model
+  parse_result = decapode"
+    (n, w)::DualForm0
+    m::Constant
+              
+    ∂ₜ(n) == (w * n ^ 2 - m * n) + Δ(n)"
+
+  Klausmeier2 = quote
+    (n, w)::DualForm0
+    m::Constant
+
+    ∂ₜ(n) == (w * n ^ 2 - m * n) + Δ(n)
+  end
+
+  klaus2 ≃ SummationDecapode(parse_decapode(Klausmeier2))
+
+  @test parse_result ≃ klaus2
+
+  # Lejeune Model
+  parse_result = decapode"
+    ρ::Form0
+    (μ, Λ, L)::Constant
+              
+    ∂ₜ(ρ) == (ρ * (((1 - μ) + (Λ - 1) * ρ) - ρ * ρ) + 0.5 * (L * L - ρ) * Δ(ρ)) - 0.125 * ρ * Δ(ρ) * Δ(ρ)"
+
+  Lejeune = quote
+    ρ::Form0
+    (μ, Λ, L)::Constant
+
+    ∂ₜ(ρ) == (ρ * (((1 - μ) + (Λ - 1) * ρ) - ρ * ρ) + 0.5 * (L * L - ρ) * Δ(ρ)) - 0.125 * ρ * Δ(ρ) * Δ(ρ)
+  end
+
+  lejeune ≃ SummationDecapode(parse_decapode(Lejeune))
+
+  @test parse_result ≃ lejeune
+
+  # Turing Continuous Ring Model
+  parse_result = decapode"
+    (X, Y)::Form0
+    (μ, ν, a, b, c, d)::Constant
+              
+    ∂ₜ(X) == a * X + b * Y + μ * Δ(X)
+    ∂ₜ(Y) == c * X + d * Y + ν * Δ(X)"
+
+  TuringContinuousRing = quote
+    (X, Y)::Form0
+    (μ, ν, a, b, c, d)::Constant
+
+    ∂ₜ(X) == a * X + b * Y + μ * Δ(X)
+    ∂ₜ(Y) == c * X + d * Y + ν * Δ(X)
+  end
+
+  turing ≃ SummationDecapode(parse_decapode(TuringContinuousRing))
+
+  @test parse_result ≃ turing
+
+  # Boundary Conditions Model
+  parse_result = decapode"
+    (S, T)::Form0
+    (Ṡ, T_up)::Form0
+    v::Form1
+    v_up::Form1
+              
+    Ṫ == ∂ₜ(T)
+    Ṡ == ∂ₜ(S)
+    v̇ == ∂ₜ(v)
+    
+    Ṫ == ∂_spatial(T_up)
+    v̇ == ∂_noslip(v_up)"
+
+  BoundaryConditions = quote
+    (S, T)::Form0
+    (Ṡ, T_up)::Form0
+    v::Form1
+    v_up::Form1
+
+    Ṫ == ∂ₜ(T)
+    Ṡ == ∂ₜ(S)
+    v̇ == ∂ₜ(v)
+    
+    Ṫ == ∂_spatial(T_up)
+    v̇ == ∂_noslip(v_up)
+  end
+
+  bc ≃ SummationDecapode(parse_decapode(BoundaryConditions))
+
+  @test parse_result ≃ bc
+
+  # Energy Balance Model
+  parse_result = decapode"
+    (Tₛ, ASR, OLR, HT)::Form0
+    C::Constant
+              
+    Tₛ̇ == ∂ₜ(Tₛ)
+              
+    Tₛ̇ == ((ASR - OLR) + HT) ./ C"
+
+  EnergyBalance = quote
+    (Tₛ, ASR, OLR, HT)::Form0
+    C::Constant
+
+    Tₛ̇ == ∂ₜ(Tₛ)
+
+    Tₛ̇ == ((ASR - OLR) + HT) ./ C
+  end
+
+  eb ≃ SummationDecapode(parse_decapode(EnergyBalance))
+
+  @test parse_result ≃ eb
+
+  # Equation of State Model
+  parse_result = decapode"
+    (b, T, S)::Form0
+    (g, α, β)::Constant
+              
+    b == g * (α * T - β * S)"
+
+  EquationOfState = quote
+    (b, T, S)::Form0
+    (g, α, β)::Constant
+
+    b == g * (α * T - β * S)
+  end
+
+  eos ≃ SummationDecapode(parse_decapode(EquationOfState))
+
+  @test parse_result ≃ eos
+
+  # Glens Law
+  parse_result = decapode"
+    Γ::Form1
+    (A, ρ, g, n)::Constant
+              
+    Γ == (2 / (n + 2)) * A * (ρ * g) ^ n"
+
+  GlensLaw = quote
+    Γ::Form1
+    (A, ρ, g, n)::Constant
+
+    Γ == (2 / (n + 2)) * A * (ρ * g) ^ n
+  end
+
+  glens ≃ SummationDecapode(parse_decapode(GlensLaw))
+
+  @test parse_result ≃ glens
+
+  # Halfar (Eq. 2) Model
+  parse_result = decapode"
+    h::Form0
+    Γ::Form1
+    n::Constant
+              
+    ∂ₜ(h) == (∘(⋆, d, ⋆))(((Γ * d(h)) ∧ mag(♯(d(h))) ^ (n - 1)) ∧ h ^ (n + 2))"
+
+  Halfar = quote
+    h::Form0
+    Γ::Form1
+    n::Constant
+
+    ∂ₜ(h) == (∘(⋆, d, ⋆))(((Γ * d(h)) ∧ mag(♯(d(h))) ^ (n - 1)) ∧ h ^ (n + 2))
+  end
+
+  halfar ≃ SummationDecapode(parse_decapode(Halfar))
+
+  @test parse_result ≃ halfar
+
+  # Insolation Model
+  parse_result = decapode"
+    Q::Form0
+    cosϕᵖ::Constant
+              
+    Q == 450cosϕᵖ"
+
+  Insolation = quote
+    Q::Form0
+    cosϕᵖ::Constant
+
+    Q == 450cosϕᵖ
+  end
+
+  ins ≃ SummationDecapode(parse_decapode(Insolation))
+
+  @test parse_result ≃ ins
+
+  # Tracer Model
+  parse_result = decapode"
+    (c, C, F, c_up)::Form0
+    (v, V, q)::Form1
+              
+    c_up == (((-1 * (⋆)(L(v, (⋆)(c))) - (⋆)(L(V, (⋆)(c)))) - (⋆)(L(v, (⋆)(C)))) - (∘(⋆, d, ⋆))(q)) + F"
+
+  Tracer = quote
+    (c, C, F, c_up)::Form0
+    (v, V, q)::Form1
+
+    c_up == (((-1 * (⋆)(L(v, (⋆)(c))) - (⋆)(L(V, (⋆)(c)))) - (⋆)(L(v, (⋆)(C)))) - (∘(⋆, d, ⋆))(q)) + F
+  end
+
+  trac ≃ SummationDecapode(parse_decapode(Tracer))
+
+  @test parse_result ≃ trac
+
+  # Warming Model
+  parse_result = decapode"
+    Tₛ::Form0
+    A::Form1
+              
+    A == avg₀₁(5.8282 * 10 ^ (-0.236Tₛ) * 1.65e7)"
+
+  Warming = quote
+    Tₛ::Form0
+    A::Form1
+
+    A == avg₀₁(5.8282 * 10 ^ (-0.236Tₛ) * 1.65e7)
+  end
+
+  warm ≃ SummationDecapode(parse_decapode(Warming))
+
+  @test parse_result ≃ warm
+
 end
