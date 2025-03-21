@@ -26,6 +26,8 @@ unique_lits!,
 @decapode, Term, parse_decapode, term, Eq, DecaExpr,
 # ~~~~~
 Plus, AppCirc1, Var, Tan, App1, App2,
+## Parser
+@decapode_str,
 ## visualization
 to_graphviz_property_graph, typename, draw_composition,
 to_graphviz, # Re-exported from Catlab
@@ -57,6 +59,7 @@ append_dot(s::Symbol) = Symbol(string(s)*'\U0307')
 
 include("acset.jl")
 include("language.jl")
+include("parser.jl")
 include("composition.jl")
 include("collages.jl")
 include("visualization.jl")
