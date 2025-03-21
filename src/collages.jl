@@ -1,7 +1,7 @@
 struct Collage
   src::SummationDecapode{Any,Any,Symbol}
   tgt::SummationDecapode{Any,Any,Symbol}
-  uwd::Catlab.Programs.RelationalPrograms.UntypedUnnamedRelationDiagram{Symbol, Symbol}
+  uwd::Catlab.RelationDiagrams.UntypedUnnamedRelationDiagram{Symbol, Symbol}
   symbols::Dict{Symbol, Symbol}
 end
 

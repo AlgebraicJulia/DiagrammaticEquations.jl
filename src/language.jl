@@ -1,14 +1,14 @@
 @intertypes "decapodes.it" module decapodes end
 using .decapodes
 
-term(s::Symbol) = Var(normalize_unicode(s))
+term(s::Symbol) = decapodes.Var(normalize_unicode(s))
 term(s::Number) = Lit(Symbol(s))
 
 term(expr::Expr) = begin
     @match expr begin
         #TODO: Would we want ∂ₜ to be used with general expressions or just Vars?
-        Expr(:call, :∂ₜ, b) => Tan(Var(b)) 
-        Expr(:call, :dt, b) => Tan(Var(b)) 
+        Expr(:call, :∂ₜ, b) => Tan(decapodes.Var(b)) 
+        Expr(:call, :dt, b) => Tan(decapodes.Var(b)) 
 
         Expr(:call, Expr(:call, :∘, a...), b) => AppCirc1(a, term(b))
         Expr(:call, a, b) => App1(a, term(b))
@@ -56,7 +56,7 @@ end
 reduce_term!(t::Term, d::AbstractDecapode, syms::Dict{Symbol, Int}) =
   let ! = reduce_term!
     @match t begin
-      Var(x) => begin 
+      decapodes.Var(x) => begin 
         if haskey(syms, x)
            syms[x]
         else
@@ -128,8 +128,8 @@ function eval_eq!(eq::Equation, d::AbstractDecapode, syms::Dict{Symbol, Int}, de
       # some kind of way to check track of this equality
       ref_pair = (t1, t2)
       @match ref_pair begin
-        (Var(a), Var(b)) => return d
-        (t1, Var(b)) => begin
+        (decapodes.Var(a), decapodes.Var(b)) => return d
+        (t1, decapodes.Var(b)) => begin
           lhs_ref, rhs_ref = rhs_ref, lhs_ref
         end
         _ => nothing
