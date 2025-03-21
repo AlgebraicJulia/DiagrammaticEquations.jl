@@ -121,7 +121,7 @@ macro. Those documents can be consulted further for information on Decapodes.
 # Digits consist of numerical characters
 @rule Digit = r"([\-]?)([0-9]+)(\.[0-9]+(e[0-9]+)?)?" |> v -> Lit(Symbol(v))
 
-# Unary operators support operators that work on one operand525 170 8618
+# Unary operators support operators that work on one operand
 @rule UnaryOperator = PrecMinusOp , PrecDivOp , PrecPowerOp
 
 # Unary operators with the same precedence as subtraction
