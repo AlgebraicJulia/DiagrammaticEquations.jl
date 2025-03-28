@@ -1,4 +1,4 @@
-import Catlab.Parsers.ParserCore
+using Catlab.Parsers.ParserCore
 
 # Syntactic Analysis
 ####################

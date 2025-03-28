@@ -4,9 +4,9 @@ using DiagrammaticEquations
 
 # Import Decapodes AST Nodes
 using DiagrammaticEquations: Lit, AppCirc1, App1, App2, Plus, Mult, Tan, Eq
-# TODO: Var conflicts with current Catlab main branch. Will be fixed in next PR. Manually using var as of now.
 
 # Import PEG Rules
+using PEG
 using DiagrammaticEquations: DecapodeExpr, SingleLineComment, MultiLineComment, Line, Statement, 
   Judgement, TypeName, Equation, SummationOperation, PrecMinusOperation, PrecDivOperation, MultOperation,
   PrecPowerOperation, Term, Grouping, Derivative, Compose, Call, CallName, UnaryOperator, Args, List, 
@@ -18,14 +18,14 @@ using DiagrammaticEquations: DecapodeExpr, SingleLineComment, MultiLineComment, 
 @testset "Overall Decapode Expression" begin
   @test DecapodeExpr("a::b\nc == d\ndt(X) == Y\n")[1] == DecaExpr(
     [Judgement(:a, :b, :I)],
-    [Eq(DiagrammaticEquations.decapodes.Var(:c), DiagrammaticEquations.decapodes.Var(:d)),
-      Eq(Tan(DiagrammaticEquations.decapodes.Var(:X)), DiagrammaticEquations.decapodes.Var(:Y))]
+    [Eq(Var(:c), Var(:d)),
+      Eq(Tan(Var(:X)), Var(:Y))]
   )
   @test DecapodeExpr(" \n")[1] == DecaExpr([],[])
   @test DecapodeExpr("a::b\n")[1] == DecaExpr([Judgement(:a, :b, :I)],[])
   @test DecapodeExpr("a::b\nx::y\nz::l\na == b\n")[1] == DecaExpr(
     [Judgement(:a, :b, :I), Judgement(:x, :y, :I), Judgement(:z, :l, :I)],
-    [Eq(DiagrammaticEquations.decapodes.Var(:a), DiagrammaticEquations.decapodes.Var(:b))]
+    [Eq(Var(:a), Var(:b))]
   )
 end
 
@@ -35,13 +35,13 @@ end
   @test DecapodeExpr("# This is a comment\na::b\n")[1] == DecaExpr([Judgement(:a, :b, :I)], [])
   @test DecapodeExpr("a::b\n# This is comment\nc == d\n")[1] == DecaExpr(
     [Judgement(:a, :b, :I)], 
-    [Eq(DiagrammaticEquations.decapodes.Var(:c), DiagrammaticEquations.decapodes.Var(:d))]
+    [Eq(Var(:c), Var(:d))]
   )
   @test DecapodeExpr("#= This is a multi-line comment\nspanning multiple lines\n=# a::b\n")[1] == DecaExpr(
-    [DiagrammaticEquations.decapodes.Judgement(:a, :b, :I)], []
+    [Judgement(:a, :b, :I)], []
   )
   @test DecapodeExpr("a::b\n#= Multi-line comment\nspanning lines\n=#\nc == d\n")[1] == DecaExpr(
-    [Judgement(:a, :b, :I)], [Eq(DiagrammaticEquations.decapodes.Var(:c), DiagrammaticEquations.decapodes.Var(:d))]
+    [Judgement(:a, :b, :I)], [Eq(Var(:c), Var(:d))]
   )
 end
 
@@ -50,17 +50,17 @@ end
   @test Line("alpha::beta\n")[1] == Judgement(:alpha, :beta, :I)
   @test Line("x::y\n")[1] == Judgement(:x, :y, :I)
   @test Line("a == b\n")[1] == Eq(
-  DiagrammaticEquations.decapodes.Var(:a), DiagrammaticEquations.decapodes.Var(:b)
+  Var(:a), Var(:b)
   )
   @test Line("Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)\n")[1] == Eq(
-  DiagrammaticEquations.decapodes.Var(Symbol("Ċ")), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁], DiagrammaticEquations.decapodes.Var(Symbol("ϕ")))
+  Var(Symbol("Ċ")), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁], Var(Symbol("ϕ")))
   )
 end
 
 @testset "Statements" begin
   @test DiagrammaticEquations.Statement("a::b")[1] == Judgement(:a, :b, :I)
   @test DiagrammaticEquations.Statement("a == b")[1] == Eq(
-  DiagrammaticEquations.decapodes.Var(:a), DiagrammaticEquations.decapodes.Var(:b)
+  Var(:a), Var(:b)
   )
 end
 
@@ -78,41 +78,41 @@ end
 
 @testset "Equation" begin
   @test Equation("a == b")[1] == Eq(
-    DiagrammaticEquations.decapodes.Var(:a), DiagrammaticEquations.decapodes.Var(:b)
+    Var(:a), Var(:b)
   )
   @test Equation("a 
   ==
    b")[1] == Eq(
-  DiagrammaticEquations.decapodes.Var(:a), DiagrammaticEquations.decapodes.Var(:b)
+  Var(:a), Var(:b)
   )
   @test Equation("dt( X ) == Y")[1] == Eq(
-    Tan(DiagrammaticEquations.decapodes.Var(:X)), DiagrammaticEquations.decapodes.Var(:Y)
+    Tan(Var(:X)), Var(:Y)
   )
   @test Equation("f(n+1, N+2) * ∂ₜ(X) == ∘(a, b)(c)")[1] == Eq(
     App2(:*, App2(:f,
-      Plus([DiagrammaticEquations.decapodes.Var(Symbol("n")), Lit(Symbol("1"))]),
-      Plus([DiagrammaticEquations.decapodes.Var(Symbol("N")), Lit(Symbol("2"))])),
-    Tan(DiagrammaticEquations.decapodes.Var(Symbol("X")))),
-    AppCirc1([:a, :b], DiagrammaticEquations.decapodes.Var(:c))
+      Plus([Var(Symbol("n")), Lit(Symbol("1"))]),
+      Plus([Var(Symbol("N")), Lit(Symbol("2"))])),
+    Tan(Var(Symbol("X")))),
+    AppCirc1([:a, :b], Var(:c))
   )
   @test Equation("Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)")[1] == Eq(
-    DiagrammaticEquations.decapodes.Var(Symbol("Ċ")),
-    AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁], DiagrammaticEquations.decapodes.Var(Symbol("ϕ")))
+    Var(Symbol("Ċ")),
+    AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁], Var(Symbol("ϕ")))
   )
 end
 
 @testset "Summation Operation" begin
   @test SummationOperation("a + b")[1] == Plus(
-    [DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b"))]
+    [Var(Symbol("a")), Var(Symbol("b"))]
   )
   @test SummationOperation("a + b + c")[1] == Plus(
-    [DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b")), DiagrammaticEquations.decapodes.Var(Symbol("c"))]
+    [Var(Symbol("a")), Var(Symbol("b")), Var(Symbol("c"))]
   )
   @test SummationOperation("dt(X) + ∂ₜ(X)")[1] == Plus(
-    [Tan(DiagrammaticEquations.decapodes.Var(Symbol("X"))), Tan(DiagrammaticEquations.decapodes.Var(Symbol("X")))]
+    [Tan(Var(Symbol("X"))), Tan(Var(Symbol("X")))]
   )
   @test SummationOperation("a * b + c")[1] == Plus(
-    [App2(:*, DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b"))), DiagrammaticEquations.decapodes.Var(Symbol("c"))]
+    [App2(:*, Var(Symbol("a")), Var(Symbol("b"))), Var(Symbol("c"))]
   )
   @test SummationOperation("3 * (5 + 2)")[1] == App2(:*,
     Lit(Symbol("3")), Plus([Lit(Symbol("5")), Lit(Symbol("2"))])
@@ -141,84 +141,84 @@ end
   @test PrecDivOperation("10/2")[1] == App2(:/, Lit(Symbol("10")), Lit(Symbol("2")))
   @test PrecDivOperation("10 / 2")[1] == App2(:/, Lit(Symbol("10")), Lit(Symbol("2")))
   @test PrecDivOperation("10 ∧ 2")[1] == App2(:∧, Lit(Symbol("10")), Lit(Symbol("2")))
-  @test PrecDivOperation("C ∧₀₁ V")[1] == App2(:∧₀₁, DiagrammaticEquations.decapodes.Var(Symbol("C")), DiagrammaticEquations.decapodes.Var(Symbol("V")))
-  @test PrecDivOperation("A .* B")[1] == App2(:.*, DiagrammaticEquations.decapodes.Var(Symbol("A")), DiagrammaticEquations.decapodes.Var(Symbol("B")))
+  @test PrecDivOperation("C ∧₀₁ V")[1] == App2(:∧₀₁, Var(Symbol("C")), Var(Symbol("V")))
+  @test PrecDivOperation("A .* B")[1] == App2(:.*, Var(Symbol("A")), Var(Symbol("B")))
 end
 
 @testset "Multiplication Operations" begin
-  @test MultOperation("a * b")[1] == App2(:*, DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b")))
-  @test MultOperation("(a)b")[1] == App2(:*, DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b")))
+  @test MultOperation("a * b")[1] == App2(:*, Var(Symbol("a")), Var(Symbol("b")))
+  @test MultOperation("(a)b")[1] == App2(:*, Var(Symbol("a")), Var(Symbol("b")))
   @test MultOperation("3(a)b")[1] == Mult(
-    [Lit(Symbol("3")), DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b"))]
+    [Lit(Symbol("3")), Var(Symbol("a")), Var(Symbol("b"))]
   )
-  @test MultOperation("(a) * b")[1] == App2(:*, DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b")))
+  @test MultOperation("(a) * b")[1] == App2(:*, Var(Symbol("a")), Var(Symbol("b")))
   @test MultOperation("a * 
-  b")[1] == App2(:*, DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b")))
+  b")[1] == App2(:*, Var(Symbol("a")), Var(Symbol("b")))
   @test MultOperation("a * b * c")[1] == Mult(
-    [DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b")), DiagrammaticEquations.decapodes.Var(Symbol("c"))]
+    [Var(Symbol("a")), Var(Symbol("b")), Var(Symbol("c"))]
   )
-  @test MultOperation("2*d₀(C)")[1] == App2(:*, Lit(Symbol("2")), App1(:d₀, DiagrammaticEquations.decapodes.Var(Symbol("C"))))
+  @test MultOperation("2*d₀(C)")[1] == App2(:*, Lit(Symbol("2")), App1(:d₀, Var(Symbol("C"))))
   @test MultOperation("f(n+1, N+2) * ∂ₜ(X)")[1] == App2(:*, 
     App2(:f,
-      Plus([DiagrammaticEquations.decapodes.Var(Symbol("n")), Lit(Symbol("1"))]),
-      Plus([DiagrammaticEquations.decapodes.Var(Symbol("N")), Lit(Symbol("2"))])),
-    Tan(DiagrammaticEquations.decapodes.Var(Symbol("X"))))
+      Plus([Var(Symbol("n")), Lit(Symbol("1"))]),
+      Plus([Var(Symbol("N")), Lit(Symbol("2"))])),
+    Tan(Var(Symbol("X"))))
 end
 
 @testset "Power Precedence Operations" begin
-  @test PrecPowerOperation("a^b")[1] == App2(:^, DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b")))
-  @test PrecPowerOperation("0.5^b")[1] == App2(:^, Lit(Symbol("0.5")), DiagrammaticEquations.decapodes.Var(Symbol("b")))
+  @test PrecPowerOperation("a^b")[1] == App2(:^, Var(Symbol("a")), Var(Symbol("b")))
+  @test PrecPowerOperation("0.5^b")[1] == App2(:^, Lit(Symbol("0.5")), Var(Symbol("b")))
 end
 
 @testset "Terms" begin
-  @test Term("∂ₜ(X)")[1] == Tan(DiagrammaticEquations.decapodes.Var(Symbol("X")))
-  @test Term("a")[1] == DiagrammaticEquations.decapodes.Var(Symbol("a"))
+  @test Term("∂ₜ(X)")[1] == Tan(Var(Symbol("X")))
+  @test Term("a")[1] == Var(Symbol("a"))
   @test Term("12")[1] == Lit(Symbol("12"))
-  @test Term("∘(a, b)(c)")[1] == AppCirc1([:a, :b], DiagrammaticEquations.decapodes.Var(:c))
-  @test Term("a(b)")[1] == App1(:a, DiagrammaticEquations.decapodes.Var(Symbol("b")))
+  @test Term("∘(a, b)(c)")[1] == AppCirc1([:a, :b], Var(:c))
+  @test Term("a(b)")[1] == App1(:a, Var(Symbol("b")))
 end
 
 @testset "Grouping" begin
-  @test Grouping("(a)")[1] == DiagrammaticEquations.decapodes.Var(Symbol("a"))
+  @test Grouping("(a)")[1] == Var(Symbol("a"))
   @test Grouping("(a + b)")[1] == Plus(
-    [DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b"))]
+    [Var(Symbol("a")), Var(Symbol("b"))]
   )
 end
 
 @testset "Derivatives" begin
-   @test Derivative("dt( X )")[1] == Tan(DiagrammaticEquations.decapodes.Var(Symbol("X")))
-   @test Derivative("∂ₜ(X)")[1] == Tan(DiagrammaticEquations.decapodes.Var(Symbol("X")))
+   @test Derivative("dt( X )")[1] == Tan(Var(Symbol("X")))
+   @test Derivative("∂ₜ(X)")[1] == Tan(Var(Symbol("X")))
 end
 
 @testset "Compose" begin
-  @test Compose("∘(a, b)(c)")[1] == AppCirc1([:a, :b], DiagrammaticEquations.decapodes.Var(:c))
-  @test Compose("(∘(a, b))(c)")[1] == AppCirc1([:a, :b], DiagrammaticEquations.decapodes.Var(:c))
-  @test Compose("∘(a, b, c)(d)")[1] == AppCirc1([:a, :b, :c], DiagrammaticEquations.decapodes.Var(:d))
-  @test Compose("∘(a)(∂ₜ(X))")[1] == AppCirc1([:a], Tan(DiagrammaticEquations.decapodes.Var(Symbol("X"))))
-  @test Compose("∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)")[1] == AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁], DiagrammaticEquations.decapodes.Var(:ϕ))
+  @test Compose("∘(a, b)(c)")[1] == AppCirc1([:a, :b], Var(:c))
+  @test Compose("(∘(a, b))(c)")[1] == AppCirc1([:a, :b], Var(:c))
+  @test Compose("∘(a, b, c)(d)")[1] == AppCirc1([:a, :b, :c], Var(:d))
+  @test Compose("∘(a)(∂ₜ(X))")[1] == AppCirc1([:a], Tan(Var(Symbol("X"))))
+  @test Compose("∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)")[1] == AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁], Var(:ϕ))
   @test Compose("(⋆ ∘ ⋆)(C ∧ dX)")[1] == AppCirc1(
-    [:⋆, :⋆], App2(:∧, DiagrammaticEquations.decapodes.Var(Symbol("C")), DiagrammaticEquations.decapodes.Var(Symbol("dX")))
+    [:⋆, :⋆], App2(:∧, Var(Symbol("C")), Var(Symbol("dX")))
   )
   @test Compose("((⋆ ∘ ⋆))(C ∧ dX)")[1] == AppCirc1(
-    [:⋆, :⋆], App2(:∧, DiagrammaticEquations.decapodes.Var(Symbol("C")), DiagrammaticEquations.decapodes.Var(Symbol("dX")))
+    [:⋆, :⋆], App2(:∧, Var(Symbol("C")), Var(Symbol("dX")))
   )
 end
 
 @testset "Function Call" begin
-  @test Call("a(b)")[1] == App1(:a, DiagrammaticEquations.decapodes.Var(Symbol("b")))
-  @test Call("a(b, c)")[1] == App2(:a, DiagrammaticEquations.decapodes.Var(Symbol("b")), DiagrammaticEquations.decapodes.Var(Symbol("c")))
+  @test Call("a(b)")[1] == App1(:a, Var(Symbol("b")))
+  @test Call("a(b, c)")[1] == App2(:a, Var(Symbol("b")), Var(Symbol("c")))
   @test Call("f(n + 1)")[1] == App1(:f, Plus(
-    [DiagrammaticEquations.decapodes.Var(Symbol("n")), Lit(Symbol("1"))]
+    [Var(Symbol("n")), Lit(Symbol("1"))]
   ))
   @test Call("f(n+1, N+2)")[1] == App2(:f,
-    Plus([DiagrammaticEquations.decapodes.Var(Symbol("n")), Lit(Symbol("1"))]),
-    Plus([DiagrammaticEquations.decapodes.Var(Symbol("N")), Lit(Symbol("2"))])
+    Plus([Var(Symbol("n")), Lit(Symbol("1"))]),
+    Plus([Var(Symbol("N")), Lit(Symbol("2"))])
   )
-  @test Call("⊕(a, b)")[1] == App2(:⊕, DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b")))
-  @test Call("⊕(a)")[1] == App1(:⊕, DiagrammaticEquations.decapodes.Var(Symbol("a")))
-  @test Call("HI(a, b)")[1] == App2(:HI, DiagrammaticEquations.decapodes.Var(Symbol("a")), DiagrammaticEquations.decapodes.Var(Symbol("b")))
-  @test Call("d(Ψ)")[1] == App1(:d, DiagrammaticEquations.decapodes.Var(Symbol("Ψ")))
-  @test Call("(d)(Ψ)")[1] == App1(:d, DiagrammaticEquations.decapodes.Var(Symbol("Ψ")))
+  @test Call("⊕(a, b)")[1] == App2(:⊕, Var(Symbol("a")), Var(Symbol("b")))
+  @test Call("⊕(a)")[1] == App1(:⊕, Var(Symbol("a")))
+  @test Call("HI(a, b)")[1] == App2(:HI, Var(Symbol("a")), Var(Symbol("b")))
+  @test Call("d(Ψ)")[1] == App1(:d, Var(Symbol("Ψ")))
+  @test Call("(d)(Ψ)")[1] == App1(:d, Var(Symbol("Ψ")))
 end
 
 @testset "Function Call Names" begin
@@ -235,13 +235,13 @@ end
 end
 
 @testset "Function Arguments" begin
-  @test Args("a")[1] == [DiagrammaticEquations.decapodes.Var(:a)]
-  @test Args("a, b")[1] == [DiagrammaticEquations.decapodes.Var(:a), DiagrammaticEquations.decapodes.Var(:b)]
-  @test Args("∂ₜ(X)")[1] == [Tan(DiagrammaticEquations.decapodes.Var(Symbol("X")))]
-  @test Args("∂ₜ(X), dt(Y)")[1] == [Tan(DiagrammaticEquations.decapodes.Var(Symbol("X"))), Tan(DiagrammaticEquations.decapodes.Var(Symbol("Y")))]
+  @test Args("a")[1] == [Var(:a)]
+  @test Args("a, b")[1] == [Var(:a), Var(:b)]
+  @test Args("∂ₜ(X)")[1] == [Tan(Var(Symbol("X")))]
+  @test Args("∂ₜ(X), dt(Y)")[1] == [Tan(Var(Symbol("X"))), Tan(Var(Symbol("Y")))]
   @test Args("n + 1, n + 2")[1] == [
-    Plus([DiagrammaticEquations.decapodes.Var(Symbol("n")), Lit(Symbol("1"))]),
-    Plus([DiagrammaticEquations.decapodes.Var(Symbol("n")), Lit(Symbol("2"))])
+    Plus([Var(Symbol("n")), Lit(Symbol("1"))]),
+    Plus([Var(Symbol("n")), Lit(Symbol("2"))])
   ]
 end
 
@@ -256,7 +256,7 @@ end
 end
 
 @testset "Atoms" begin
-  @test Atom("a")[1] == DiagrammaticEquations.decapodes.Var(Symbol("a"))
+  @test Atom("a")[1] == Var(Symbol("a"))
   @test Atom("23")[1] == Lit(Symbol("23"))
   @test Atom("-2")[1] == Lit(Symbol("-2"))
   @test Atom("32.23")[1] == Lit(Symbol("32.23"))
