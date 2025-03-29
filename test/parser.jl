@@ -16,125 +16,109 @@ using DiagrammaticEquations: DecapodeExpr, SingleLineComment, MultiLineComment, 
 #############
 
 @testset "Overall Decapode Expression" begin
-  @test DecapodeExpr("a::b\nc == d\ndt(X) == Y\n")[1] == DecaExpr(
-    [Judgement(:a, :b, :I)],
-    [Eq(Var(:c), Var(:d)),
-      Eq(Tan(Var(:X)), Var(:Y))]
-  )
+  @test DecapodeExpr("a::b\nc == d\ndt(X) == Y\n")[1] ==
+    DecaExpr([Judgement(:a, :b, :I)], [Eq(Var(:c), Var(:d)), Eq(Tan(Var(:X)), Var(:Y))])
   @test DecapodeExpr(" \n")[1] == DecaExpr([],[])
   @test DecapodeExpr("a::b\n")[1] == DecaExpr([Judgement(:a, :b, :I)],[])
   @test DecapodeExpr("a::b\nx::y\nz::l\na == b\n")[1] == DecaExpr(
     [Judgement(:a, :b, :I), Judgement(:x, :y, :I), Judgement(:z, :l, :I)],
-    [Eq(Var(:a), Var(:b))]
-  )
+    [Eq(Var(:a), Var(:b))])
 end
 
 @testset "Comments" begin
-  @test DecapodeExpr("a::b\n# This is a comment\n")[1] == DecaExpr([Judgement(:a, :b, :I)], [])
-  @test DecapodeExpr("a::b\n#a::b\n")[1] == DecaExpr([Judgement(:a, :b, :I)], [])
-  @test DecapodeExpr("# This is a comment\na::b\n")[1] == DecaExpr([Judgement(:a, :b, :I)], [])
-  @test DecapodeExpr("a::b\n# This is comment\nc == d\n")[1] == DecaExpr(
-    [Judgement(:a, :b, :I)], 
-    [Eq(Var(:c), Var(:d))]
-  )
-  @test DecapodeExpr("#= This is a multi-line comment\nspanning multiple lines\n=# a::b\n")[1] == DecaExpr(
-    [Judgement(:a, :b, :I)], []
-  )
-  @test DecapodeExpr("a::b\n#= Multi-line comment\nspanning lines\n=#\nc == d\n")[1] == DecaExpr(
-    [Judgement(:a, :b, :I)], [Eq(Var(:c), Var(:d))]
-  )
+  @test DecapodeExpr("a::b\n# This is a comment\n")[1] ==
+    DecaExpr([Judgement(:a, :b, :I)], [])
+  @test DecapodeExpr("a::b\n#a::b\n")[1] ==
+    DecaExpr([Judgement(:a, :b, :I)], [])
+  @test DecapodeExpr("# This is a comment\na::b\n")[1] ==
+    DecaExpr([Judgement(:a, :b, :I)], [])
+  @test DecapodeExpr("a::b\n# This is comment\nc == d\n")[1] ==
+    DecaExpr([Judgement(:a, :b, :I)], [Eq(Var(:c), Var(:d))])
+  @test DecapodeExpr("#= This is a multi-line comment\nspanning multiple lines\n=# a::b\n")[1] ==
+    DecaExpr([Judgement(:a, :b, :I)], [])
+  @test DecapodeExpr("a::b\n#= Multi-line comment\nspanning lines\n=#\nc == d\n")[1] ==
+    DecaExpr([Judgement(:a, :b, :I)], [Eq(Var(:c), Var(:d))])
 end
 
 @testset "Lines" begin
   @test Line("a::b\n")[1] == Judgement(:a, :b, :I)
   @test Line("alpha::beta\n")[1] == Judgement(:alpha, :beta, :I)
   @test Line("x::y\n")[1] == Judgement(:x, :y, :I)
-  @test Line("a == b\n")[1] == Eq(
-  Var(:a), Var(:b)
-  )
-  @test Line("Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)\n")[1] == Eq(
-  Var(Symbol("Ċ")), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁], Var(Symbol("ϕ")))
-  )
+  @test Line("a == b\n")[1] == Eq(Var(:a), Var(:b))
+  @test Line("Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)\n")[1] ==
+    Eq(Var(Symbol("Ċ")), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁], Var(Symbol("ϕ"))))
 end
 
 @testset "Statements" begin
   @test DiagrammaticEquations.Statement("a::b")[1] == Judgement(:a, :b, :I)
-  @test DiagrammaticEquations.Statement("a == b")[1] == Eq(
-  Var(:a), Var(:b)
-  )
+  @test DiagrammaticEquations.Statement("a == b")[1] == Eq(Var(:a), Var(:b))
 end
 
 @testset "Judgements" begin
   @test Judgement("alpha::beta")[1] == Judgement(:alpha, :beta, :I)
   @test Judgement("a::Form{X}")[1] == Judgement(:a, :Form, :X)
-  @test Judgement("(a, b, c)::d")[1] == [Judgement(:a, :d, :I), Judgement(:b, :d, :I), Judgement(:c, :d, :I)]
-  @test Judgement("(a, b, c)::Form{X}")[1] == [Judgement(:a, :Form, :X), Judgement(:b, :Form, :X), Judgement(:c, :Form, :X)]
+  @test Judgement("(a, b, c)::d")[1] ==
+    [Judgement(:a, :d, :I), Judgement(:b, :d, :I), Judgement(:c, :d, :I)]
+  @test Judgement("(a, b, c)::Form{X}")[1] ==
+    [Judgement(:a, :Form, :X), Judgement(:b, :Form, :X), Judgement(:c, :Form, :X)]
 end
 
 @testset "Type Naming" begin
   @test TypeName("Form0")[1] == :Form0
   @test TypeName("Form0{X}")[1] == [:Form0, :X]
-|end
+end
 
 @testset "Equation" begin
-  @test Equation("a == b")[1] == Eq(
-    Var(:a), Var(:b)
-  )
+  @test Equation("a == b")[1] == Eq(Var(:a), Var(:b))
   @test Equation("a 
   ==
-   b")[1] == Eq(
-  Var(:a), Var(:b)
-  )
-  @test Equation("dt( X ) == Y")[1] == Eq(
-    Tan(Var(:X)), Var(:Y)
-  )
+   b")[1] ==
+    Eq(Var(:a), Var(:b))
+  @test Equation("dt( X ) == Y")[1] == Eq(Tan(Var(:X)), Var(:Y))
   @test Equation("f(n+1, N+2) * ∂ₜ(X) == ∘(a, b)(c)")[1] == Eq(
     App2(:*, App2(:f,
       Plus([Var(Symbol("n")), Lit(Symbol("1"))]),
       Plus([Var(Symbol("N")), Lit(Symbol("2"))])),
     Tan(Var(Symbol("X")))),
-    AppCirc1([:a, :b], Var(:c))
-  )
+    AppCirc1([:a, :b], Var(:c)))
   @test Equation("Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)")[1] == Eq(
     Var(Symbol("Ċ")),
-    AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁], Var(Symbol("ϕ")))
-  )
+    AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁], Var(Symbol("ϕ"))))
 end
 
 @testset "Summation Operation" begin
-  @test SummationOperation("a + b")[1] == Plus(
-    [Var(Symbol("a")), Var(Symbol("b"))]
-  )
-  @test SummationOperation("a + b + c")[1] == Plus(
-    [Var(Symbol("a")), Var(Symbol("b")), Var(Symbol("c"))]
-  )
-  @test SummationOperation("dt(X) + ∂ₜ(X)")[1] == Plus(
-    [Tan(Var(Symbol("X"))), Tan(Var(Symbol("X")))]
-  )
-  @test SummationOperation("a * b + c")[1] == Plus(
-    [App2(:*, Var(Symbol("a")), Var(Symbol("b"))), Var(Symbol("c"))]
-  )
-  @test SummationOperation("3 * (5 + 2)")[1] == App2(:*,
-    Lit(Symbol("3")), Plus([Lit(Symbol("5")), Lit(Symbol("2"))])
-  )
-  @test SummationOperation("3 * 5 + 2")[1] == Plus(
-    [App2(:*, Lit(Symbol("3")), Lit(Symbol("5"))),Lit(Symbol("2"))]
-  )
-  @test SummationOperation("10 / 2 + 3")[1] == Plus(
-    [App2(:/, Lit(Symbol("10")), Lit(Symbol("2"))), Lit(Symbol("3"))]
-  ) 
-  @test SummationOperation("3 - 2 + 1")[1] == Plus(
-    [App2(:-, Lit(Symbol("3")), Lit(Symbol("2"))), Lit(Symbol("1"))]
-  )
+  @test SummationOperation("a + b")[1] ==
+    Plus([Var(Symbol("a")), Var(Symbol("b"))])
+  @test SummationOperation("a + b + c")[1] ==
+    Plus([Var(Symbol("a")), Var(Symbol("b")), Var(Symbol("c"))])
+  @test SummationOperation("dt(X) + ∂ₜ(X)")[1] ==
+    Plus([Tan(Var(Symbol("X"))), Tan(Var(Symbol("X")))])
+  @test SummationOperation("a * b + c")[1] ==
+    Plus([App2(:*, Var(Symbol("a")), Var(Symbol("b"))), Var(Symbol("c"))])
+  @test SummationOperation("3 * 5 + 2")[1] ==
+    Plus([App2(:*, Lit(Symbol("3")), Lit(Symbol("5"))),Lit(Symbol("2"))])
+  @test SummationOperation("10 / 2 + 3")[1] ==
+    Plus([App2(:/, Lit(Symbol("10")), Lit(Symbol("2"))), Lit(Symbol("3"))]) 
+  @test SummationOperation("3 - 2 + 1")[1] ==
+    Plus([App2(:-, Lit(Symbol("3")), Lit(Symbol("2"))), Lit(Symbol("1"))])
+
+  @test SummationOperation("3 * (5 + 2)")[1] ==
+    App2(:*, Lit(Symbol("3")), Plus([Lit(Symbol("5")), Lit(Symbol("2"))]))
 end
 
 @testset "Subtraction Precedence Operations" begin
-  @test PrecMinusOperation("3 - 2")[1] == App2(:-, Lit(Symbol("3")), Lit(Symbol("2")))
-  @test PrecMinusOperation("3 - 2 - 1")[1] ==  App2(:-, App2(:-, Lit(Symbol("3")), Lit(Symbol("2"))), Lit(Symbol("1")))
-  @test PrecMinusOperation("3 .- 2")[1] == App2(:.-, Lit(Symbol("3")), Lit(Symbol("2")))
-  @test PrecMinusOperation("3 ⊕₀₁ 4")[1] == App2(:⊕₀₁, Lit(Symbol("3")), Lit(Symbol("4")))
-  @test PrecMinusOperation("-3 - 4")[1] == App2(:-, Lit(Symbol("-3")), Lit(Symbol("4")))
-  @test PrecMinusOperation("3 - -4")[1] == App2(:-, Lit(Symbol("3")), Lit(Symbol("-4")))
+  @test PrecMinusOperation("3 - 2")[1] ==
+    App2(:-, Lit(Symbol("3")), Lit(Symbol("2")))
+  @test PrecMinusOperation("3 - 2 - 1")[1] ==
+    App2(:-, App2(:-, Lit(Symbol("3")), Lit(Symbol("2"))), Lit(Symbol("1")))
+  @test PrecMinusOperation("3 .- 2")[1] ==
+    App2(:.-, Lit(Symbol("3")), Lit(Symbol("2")))
+  @test PrecMinusOperation("3 ⊕₀₁ 4")[1] ==
+    App2(:⊕₀₁, Lit(Symbol("3")), Lit(Symbol("4")))
+  @test PrecMinusOperation("-3 - 4")[1] ==
+    App2(:-, Lit(Symbol("-3")), Lit(Symbol("4")))
+  @test PrecMinusOperation("3 - -4")[1] ==
+    App2(:-, Lit(Symbol("3")), Lit(Symbol("-4")))
 end
 
 @testset "Division Precedence Operations" begin
@@ -148,21 +132,22 @@ end
 @testset "Multiplication Operations" begin
   @test MultOperation("a * b")[1] == App2(:*, Var(Symbol("a")), Var(Symbol("b")))
   @test MultOperation("(a)b")[1] == App2(:*, Var(Symbol("a")), Var(Symbol("b")))
-  @test MultOperation("3(a)b")[1] == Mult(
-    [Lit(Symbol("3")), Var(Symbol("a")), Var(Symbol("b"))]
-  )
+  @test MultOperation("3(a)b")[1] ==
+    Mult([Lit(Symbol("3")), Var(Symbol("a")), Var(Symbol("b"))])
   @test MultOperation("(a) * b")[1] == App2(:*, Var(Symbol("a")), Var(Symbol("b")))
   @test MultOperation("a * 
-  b")[1] == App2(:*, Var(Symbol("a")), Var(Symbol("b")))
-  @test MultOperation("a * b * c")[1] == Mult(
-    [Var(Symbol("a")), Var(Symbol("b")), Var(Symbol("c"))]
-  )
-  @test MultOperation("2*d₀(C)")[1] == App2(:*, Lit(Symbol("2")), App1(:d₀, Var(Symbol("C"))))
-  @test MultOperation("f(n+1, N+2) * ∂ₜ(X)")[1] == App2(:*, 
-    App2(:f,
-      Plus([Var(Symbol("n")), Lit(Symbol("1"))]),
-      Plus([Var(Symbol("N")), Lit(Symbol("2"))])),
-    Tan(Var(Symbol("X"))))
+  b")[1] ==
+    App2(:*, Var(Symbol("a")), Var(Symbol("b")))
+  @test MultOperation("a * b * c")[1] ==
+    Mult([Var(Symbol("a")), Var(Symbol("b")), Var(Symbol("c"))])
+  @test MultOperation("2*d₀(C)")[1] ==
+    App2(:*, Lit(Symbol("2")), App1(:d₀, Var(Symbol("C"))))
+  @test MultOperation("f(n+1, N+2) * ∂ₜ(X)")[1] ==
+    App2(:*, 
+      App2(:f,
+        Plus([Var(Symbol("n")), Lit(Symbol("1"))]),
+        Plus([Var(Symbol("N")), Lit(Symbol("2"))])),
+      Tan(Var(Symbol("X"))))
 end
 
 @testset "Power Precedence Operations" begin
@@ -180,9 +165,7 @@ end
 
 @testset "Grouping" begin
   @test Grouping("(a)")[1] == Var(Symbol("a"))
-  @test Grouping("(a + b)")[1] == Plus(
-    [Var(Symbol("a")), Var(Symbol("b"))]
-  )
+  @test Grouping("(a + b)")[1] == Plus([Var(Symbol("a")), Var(Symbol("b"))])
 end
 
 @testset "Derivatives" begin
@@ -196,24 +179,21 @@ end
   @test Compose("∘(a, b, c)(d)")[1] == AppCirc1([:a, :b, :c], Var(:d))
   @test Compose("∘(a)(∂ₜ(X))")[1] == AppCirc1([:a], Tan(Var(Symbol("X"))))
   @test Compose("∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)")[1] == AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁], Var(:ϕ))
-  @test Compose("(⋆ ∘ ⋆)(C ∧ dX)")[1] == AppCirc1(
-    [:⋆, :⋆], App2(:∧, Var(Symbol("C")), Var(Symbol("dX")))
-  )
-  @test Compose("((⋆ ∘ ⋆))(C ∧ dX)")[1] == AppCirc1(
-    [:⋆, :⋆], App2(:∧, Var(Symbol("C")), Var(Symbol("dX")))
-  )
+  @test Compose("(⋆ ∘ ⋆)(C ∧ dX)")[1] ==
+    AppCirc1([:⋆, :⋆], App2(:∧, Var(Symbol("C")), Var(Symbol("dX"))))
+  @test Compose("((⋆ ∘ ⋆))(C ∧ dX)")[1] ==
+    AppCirc1([:⋆, :⋆], App2(:∧, Var(Symbol("C")), Var(Symbol("dX"))))
 end
 
 @testset "Function Call" begin
   @test Call("a(b)")[1] == App1(:a, Var(Symbol("b")))
   @test Call("a(b, c)")[1] == App2(:a, Var(Symbol("b")), Var(Symbol("c")))
-  @test Call("f(n + 1)")[1] == App1(:f, Plus(
-    [Var(Symbol("n")), Lit(Symbol("1"))]
-  ))
-  @test Call("f(n+1, N+2)")[1] == App2(:f,
-    Plus([Var(Symbol("n")), Lit(Symbol("1"))]),
-    Plus([Var(Symbol("N")), Lit(Symbol("2"))])
-  )
+  @test Call("f(n + 1)")[1] ==
+    App1(:f, Plus([Var(Symbol("n")), Lit(Symbol("1"))]))
+  @test Call("f(n+1, N+2)")[1] ==
+    App2(:f,
+      Plus([Var(Symbol("n")), Lit(Symbol("1"))]),
+      Plus([Var(Symbol("N")), Lit(Symbol("2"))]))
   @test Call("⊕(a, b)")[1] == App2(:⊕, Var(Symbol("a")), Var(Symbol("b")))
   @test Call("⊕(a)")[1] == App1(:⊕, Var(Symbol("a")))
   @test Call("HI(a, b)")[1] == App2(:HI, Var(Symbol("a")), Var(Symbol("b")))
@@ -239,10 +219,9 @@ end
   @test Args("a, b")[1] == [Var(:a), Var(:b)]
   @test Args("∂ₜ(X)")[1] == [Tan(Var(Symbol("X")))]
   @test Args("∂ₜ(X), dt(Y)")[1] == [Tan(Var(Symbol("X"))), Tan(Var(Symbol("Y")))]
-  @test Args("n + 1, n + 2")[1] == [
-    Plus([Var(Symbol("n")), Lit(Symbol("1"))]),
-    Plus([Var(Symbol("n")), Lit(Symbol("2"))])
-  ]
+  @test Args("n + 1, n + 2")[1] ==
+    [Plus([Var(Symbol("n")), Lit(Symbol("1"))]),
+     Plus([Var(Symbol("n")), Lit(Symbol("2"))])]
 end
 
 @testset "List" begin
@@ -266,7 +245,7 @@ end
 @testset "Identifiers" begin
   @test Ident("abc")[1] == :abc
   @test Ident("Ċ")[1] == Symbol("Ċ")
-  @test Ident("meep")[1] == :meep
+  @test Ident("abbc")[1] == :abbc
   @test Ident("a")[1] == :a
 end
 
@@ -320,589 +299,265 @@ function parse_fails_at(rule, input)
 end
 
 @testset "Exception Handling" begin
-  # Comparing byte # where parsing error occured.
-  # Tests random variety of different parsing exceptions.
+  @test parse_fails_at(List, "abcd efgh ijkl") == 6
+  @test parse_fails_at(List, "abcd efgh, ijkl") == 6
 
-  # Test List Exceptions - Missing comma
-  test_input = "meow bark woof"
-  @test parse_fails_at(List, test_input) == 6
+  @test parse_fails_at(Args, "ident, ident ident") == 14
+  @test parse_fails_at(Args, "ident ident") == 7
+  
+  @test parse_fails_at(Call, "ident(ident") == 12
+  @test parse_fails_at(Call, "ident ident)") == 6
+  @test parse_fails_at(Call, "ident()") == 7
 
-  # Test List Exceptions - Missing comma 2
-  test_input = "meow bark, woof"
-  @test parse_fails_at(List, test_input) == 6
+  @test parse_fails_at(Compose, "∘(ident)") == 11
+  @test parse_fails_at(Compose, "∘(ident)ident") == 11
+  @test parse_fails_at(Compose, "∘ident(ident)") == 4
+  
+  @test parse_fails_at(Derivative, "ident(X)") == 1
+  @test parse_fails_at(Derivative, "∂ₜident") == 7
+  @test parse_fails_at(Derivative, "∂ₜ(X") == 9
 
-  # Test Argument Exceptions - Extra Parameter
-  test_input = "ident, ident ident"
-  @test parse_fails_at(Args, test_input) == 14
+  @test parse_fails_at(Grouping, "(ident") == 7
 
-  # Test Argument Exceptions - Missing Comma
-  test_input = "ident ident"
-  @test parse_fails_at(Args, test_input) == 7
+  @test parse_fails_at(MultOperation, "ident *") == 8
+  @test parse_fails_at(MultOperation, "2 3") == 3
 
-  # Test Call Exceptions - Missing Closing Parenthesis
-  test_input = "ident(ident"
-  @test parse_fails_at(Call, test_input) == 12
+  @test parse_fails_at(SummationOperation, " + 3") == 1
 
-  # Test Call Exceptions - Missing Opening Parenthesis
-  test_input = "ident ident)"
-  @test parse_fails_at(Call, test_input) == 6
+  @test parse_fails_at(Statement, "A B") == 3
+  @test parse_fails_at(Statement, "A == ") == 6
+  @test parse_fails_at(Statement, "A == B == C") == 8
 
-  # Test Call Exceptions - Missing Parameters
-  test_input = "ident()"
-  @test parse_fails_at(Call, test_input) == 7
-
-  # Test Composure Exceptions - Missing Second Argument
-  test_input = "∘(ident)"
-  @test parse_fails_at(Compose, test_input) == 11
-
-  # Test Composure Exceptions - Missing Parenthesis
-  test_input = "∘(ident)ident"
-  @test parse_fails_at(Compose, test_input) == 11
-
-  # Test Composure Exceptions - Missing Parenthesis 2
-  test_input = "∘ident(ident)"
-  @test parse_fails_at(Compose, test_input) == 4
-
-  # Test Derivative Exceptions - Missing Derivative Symbol
-  test_input = "ident(X)"
-  @test parse_fails_at(Derivative, test_input) == 1
-
-  # Test Derivative Exceptions - Missing Parenthesis
-  test_input = "∂ₜident"
-  @test parse_fails_at(Derivative, test_input) == 7
-
-  # Test Derivative Exceptions - Missing Parenthesis 2
-  test_input = "∂ₜ(X"
-  @test parse_fails_at(Derivative, test_input) == 9
-
-  # Test Grouping Exceptions - Missing Parenthesis
-  test_input = "(ident"
-  @test parse_fails_at(Grouping, test_input) == 7
-
-  # Test Multiplication Exceptions - Missing Second Argument
-  test_input = "ident *"
-  @test parse_fails_at(MultOperation, test_input) == 8
-
-  # Test Multiplication Exceptions - Missing Operator
-  test_input = "2 3"
-  @test parse_fails_at(MultOperation, test_input) == 3
-
-  # Test Plus Exceptions - Missing Argument
-  test_input = " + 3"
-  @test parse_fails_at(SummationOperation, test_input) == 1
-
-  # Test Equation Exceptions - Missing Equation Symbol
-  test_input = "A B"
-  @test parse_fails_at(Statement, test_input) == 3
-
-  # Test Equation Exceptions - Missing RHS
-  test_input = "A == "
-  @test parse_fails_at(Statement, test_input) == 6
-
-  # Test Equation Exceptions - Too many equations
-  test_input = "A == B == C"
-  @test parse_fails_at(Statement, test_input) == 8
-
-  # Test TypeName Exceptions - Missing Bracket Argument
-  test_input = "Form0{}"
-  @test parse_fails_at(TypeName, test_input) == 7
-
-  # Test TypeName Exceptions - Missing Bracket
+  @test parse_fails_at(TypeName, "Form0{}") == 7
   # Interestingly fails at the identifier before the }.
   # Seems to be a handling difference with the PEG. 
-  test_input = "Form0{X "
-  @test parse_fails_at(TypeName, test_input) == 7
+  @test parse_fails_at(TypeName, "Form0{X ") == 7
 
-  # Test Judgement Exceptions - Missing Type
-  test_input = "ident::"
-  @test parse_fails_at(Statement, test_input) == 8
-
-  # Test Judgement Exceptions - Missing Var
-  test_input = "::ident"
-  @test parse_fails_at(Statement, test_input) == 1
+  @test parse_fails_at(Statement, "ident::") == 8
+  @test parse_fails_at(Statement, "::ident") == 1
 end
 
 # END-END Tests
 ##################
 
-(≃) = is_isomorphic
+function parsing_is_isomorphic(code)
+  macro_entry = parse_decapode(eval(Meta.parse("quote\n$(code)\nend")))
+  str_entry = parse_whole(DecapodeExpr, code * "\n")
+
+  @test is_isomorphic(SummationDecapode(macro_entry), SummationDecapode(str_entry))
+end
 
 @testset "End to End" begin
-  parsed_result = decapode"
-  (C, Ċ)::Form0
-  ϕ::Form1
-  ϕ ==  ∘(k, d₀)(C)
-  Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
-  ∂ₜ(C) == Ċ"
-
-  DiffusionExprBody1 = quote
-  (C, Ċ)::Form0
-  ϕ::Form1
-  ϕ ==  ∘(k, d₀)(C)
-  Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
-  ∂ₜ(C) == Ċ
-  end
-  ddp1 = SummationDecapode(parse_decapode(DiffusionExprBody1))
-  
-  @test parsed_result ≃ ddp1
-  
-  # Support parsing literals.
-  parsed_result = decapode"
-  (C, Ċ)::Form0
-  ϕ::Form1
-  ϕ ==  2*d₀(C)
-  Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
-  ∂ₜ(C) == Ċ"
-
-  DiffusionExprBody2 =  quote
-  (C, Ċ)::Form0
-  ϕ::Form1
-  ϕ ==  2*d₀(C)
-  Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
-  ∂ₜ(C) == Ċ
-  end
-
-  ddp2 = SummationDecapode(parse_decapode(DiffusionExprBody2))
-
-  @test parsed_result ≃ ddp2
-  
-  # Multiply without explicitly giving parentheses.
-  parsed_result = decapode"
-  (C, Ċ)::Form0
-  ϕ::Form1
-  ϕ ==  4*2*3*d₀(C)
-  Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
-  ∂ₜ(C) == Ċ"
-
-
-  DiffusionExprBody3 =  quote
-  (C, Ċ)::Form0
-  ϕ::Form1
-  ϕ ==  4*2*3*d₀(C)
-  Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
-  ∂ₜ(C) == Ċ
-  end
-
-  ddp3 = SummationDecapode(parse_decapode(DiffusionExprBody3))
-
-  @test parsed_result ≃ ddp3
-
-  # Variables need not be declared before use.
-  parsed_result = decapode"
-  Ċ::Form0
-  ϕ ==  4*2*3*d₀(C)
-  Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
-  ∂ₜ(C) == Ċ"
-
-  DiffusionExprBody4 =  quote
-  Ċ::Form0
-  ϕ ==  4*2*3*d₀(C)
-  Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
-  ∂ₜ(C) == Ċ
-  end
-  
-  ddp4 = SummationDecapode(parse_decapode(DiffusionExprBody4))
-  
-  @test parsed_result ≃ ddp4
-
-  parsed_result = decapode"
-    ϕ ==  2*d₀(C)
-    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
-    ∂ₜ(C) == Ċ"
-  
-  DiffusionExprBody5 =  quote
-    ϕ ==  2*d₀(C)
-    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
-    ∂ₜ(C) == Ċ
-  end
-
-  ddp5 = SummationDecapode(parse_decapode(DiffusionExprBody5))
-
-  @test parsed_result ≃ ddp5
-
-  # TVars can be parsed on either side of an equation.
-  parsed_result = decapode"
-    ϕ ==  2*d₀(C)
-    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
-    Ċ == ∂ₜ(C)"
-
-  DiffusionExprBody6 =  quote
-    ϕ ==  2*d₀(C)
-    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
-    Ċ == ∂ₜ(C)
-  end
-
-  ddp6 = SummationDecapode(parse_decapode(DiffusionExprBody6))
-
-  @test parsed_result ≃ ddp6
-
-  parsed_result = decapode"
-    ϕ ==  2*d₀(C)
-    ∂ₜ(C) == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)"
-
-  DiffusionExprBody7 =  quote
-    ϕ ==  2*d₀(C)
-    ∂ₜ(C) == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
-  end
-
-  ddp7 = SummationDecapode(parse_decapode(DiffusionExprBody7))
-
-  @test parsed_result ≃ ddp7
-
   # Vars can only be of certain types.
-  @test_throws ErrorException parsed_result = decapode"
+  @test_throws ErrorException decapode"
     (C)::Foo
     ϕ ==  2*d₀(C)
     Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
     Ċ == ∂ₜ(C)"
+
+  # decapode"" parses an inplace ∘ syntax without parentheses.
+  # This diverges from the behavior of the @decapode macro.
+  @test is_isomorphic(
+    decapode"
+      C::Form0
+      V::Form1
+      dX::Form1
+                
+      V == (⋆ ∘ ⋆)(C ∧ dX)",
+    @decapode begin
+      C::Form0
+      V::Form1
+      dX::Form1
+                
+      V == ((⋆) ∘ (⋆))(C ∧ dX)
+    end)
+
+  # Ensure the decapode"" string literal is explicitly called in this test file.
+  @test is_isomorphic(
+    decapode"
+      h::Form0
+      Γ::Form1
+      n::Constant
+                
+      ∂ₜ(h) == (∘(⋆, d, ⋆))(((Γ * d(h)) ∧ mag(♯(d(h))) ^ (n - 1)) ∧ h ^ (n + 2))",
+    @decapode begin
+      h::Form0
+      Γ::Form1
+      n::Constant
+                
+      ∂ₜ(h) == (∘(⋆, d, ⋆))(((Γ * d(h)) ∧ mag(♯(d(h))) ^ (n - 1)) ∧ h ^ (n + 2))
+    end)
   
-  # Just noting that the first decapode is denotes a X as an op1
+  # Support parsing literals.
+  parsing_is_isomorphic("
+    (C, Ċ)::Form0
+    ϕ::Form1
+    ϕ ==  2*d₀(C)
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    ∂ₜ(C) == Ċ")
+  
+  # Multiply without explicitly giving parentheses.
+  parsing_is_isomorphic("
+    (C, Ċ)::Form0
+    ϕ::Form1
+    ϕ ==  4*2*3*d₀(C)
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    ∂ₜ(C) == Ċ")
+
+  # Variables need not be declared before use.
+  parsing_is_isomorphic("
+    Ċ::Form0
+    ϕ ==  4*2*3*d₀(C)
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    ∂ₜ(C) == Ċ")
+
+  parsing_is_isomorphic("
+    ϕ ==  2*d₀(C)
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    ∂ₜ(C) == Ċ")
+
+  # TVars can be parsed on either side of an equation.
+  parsing_is_isomorphic("
+    ϕ ==  2*d₀(C)
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    Ċ == ∂ₜ(C)")
+
+  parsing_is_isomorphic("
+    ϕ ==  2*d₀(C)
+    ∂ₜ(C) == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)")
+
+  # Note that the first decapode types X as an op1,
   # while the second is a multiplication between X and F
-  parsed_result_1 = decapode"
+  parsing_is_isomorphic("
     (A, B, X)::Form0{X}
-    A == X(F)"
-
-  ParseTest2_1 = quote
+    A == X(F)")
+  parsing_is_isomorphic("
     (A, B, X)::Form0{X}
-    A == X(F)
-  end
-  pt2_1 = SummationDecapode(parse_decapode(ParseTest2_1))
-
-  @test parsed_result_1 ≃ pt2_1
-
-  parsed_result_2 = decapode"
-    (A, B, X)::Form0{X}
-    A == (X)F"
-
-  ParseTest2_2 = quote
-    (A, B, X)::Form0{X}
-    A == (X)F
-  end
-
-  pt2_2 = SummationDecapode(parse_decapode(ParseTest2_2))
-
-  @test parsed_result_2 ≃ pt2_2 
-
-  @test parsed_result_1 != parsed_result_2
-
-  # Chained Tvars test
-  parsed_result = decapode"
-    D == ∂ₜ(C)
-    E == ∂ₜ(D)"
-
-  ParseTest3 = quote
-    D == ∂ₜ(C)
-    E == ∂ₜ(D)
-  end
-
-  pt3 = SummationDecapode(parse_decapode(ParseTest3))
-
-  @test parsed_result ≃ pt3
-
-  # Do not rename TVars if they are given a name.
-  parsed_result = decapode"
-    X::Form0{Point}
-    V::Form0{Point}
-
-    k::Constant{Point}
-
-    ∂ₜ(X) == V
-    ∂ₜ(V) == -1*k*(X)"
-
-  pt5 = SummationDecapode(parse_decapode(quote
-    X::Form0{Point}
-    V::Form0{Point}
-
-    k::Constant{Point}
-
-    ∂ₜ(X) == V
-    ∂ₜ(V) == -1*k*(X)
-  end))
-
-  @test parsed_result ≃ pt5
-
-  # Recursive Expr
-  parse_result = decapode"
-    x::Form0{X}
-    y::Form0{X}
-    z::Form0{X}
-
-    ∂ₜ(z) == f1(x) + ∘(g, h)(y)
-    y == F(f2(x), ρ(x,z))"
-
-  Recursion = quote
-    x::Form0{X}
-    y::Form0{X}
-    z::Form0{X}
-
-    ∂ₜ(z) == f1(x) + ∘(g, h)(y)
-    y == F(f2(x), ρ(x,z))
-  end
-
-  rdp = SummationDecapode(parse_decapode(Recursion))
-
-  @test parse_result ≃ rdp
-
-  # Diffusion Diagram
-  parse_result = decapode"
-    (C, Ċ)::Form0{X}
-    ϕ::Form1{X}
-
-    # Fick's first law
-    ϕ ==  ∘(k, d₀)(C)
-    # Diffusion equation
-    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
-    ∂ₜ(C) == Ċ"
-
-  DiffusionExprBody =  quote
-    (C, Ċ)::Form0{X}
-    ϕ::Form1{X}
-
-    # Fick's first law
-    ϕ ==  ∘(k, d₀)(C)
-    # Diffusion equation
-    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
-    ∂ₜ(C) == Ċ
-  end
-
-  ddp = SummationDecapode(parse_decapode(DiffusionExprBody))
-
-  @test parse_result ≃ ddp
-
-  # Advection Diagram
-  parse_result = decapode"
-    C::Form0{X}
-    (V, ϕ)::Form1{X}
-
-    ϕ == ∧₀₁(C,V)"
-
-  Advection = quote
-    C::Form0{X}
-    (V, ϕ)::Form1{X}
-
-    ϕ == ∧₀₁(C,V)
-  end
-
-  advdp = SummationDecapode(parse_decapode(Advection))
-
-  @test parse_result ≃ advdp
-
-  # Superposition Diagram
-  parse_result = decapode"
-    (C, Ċ)::Form0{X}
-    (ϕ, ϕ₁, ϕ₂)::Form1{X}
-
-    ϕ == ϕ₁ + ϕ₂
-    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
-    ∂ₜ(C) == Ċ"
-
-  Superposition = quote
-    (C, Ċ)::Form0{X}
-    (ϕ, ϕ₁, ϕ₂)::Form1{X}
-
-    ϕ == ϕ₁ + ϕ₂
-    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
-    ∂ₜ(C) == Ċ
-  end
-
-  supdp = SummationDecapode(parse_decapode(Superposition))
-
-  @test parse_result ≃ supdp
+    A == (X)F")
 
   # Mixed Semicolon support test
-  parse_result_semi = decapode"
+  parsing_is_isomorphic("
     (C, Ċ)::Form0{X}; (ϕ, ϕ₁, ϕ₂)::Form1{X};
 
     ϕ == ϕ₁ + ϕ₂; Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ);
-    ∂ₜ(C) == Ċ"
+    ∂ₜ(C) == Ċ")
 
-  @test parse_result_semi ≃ supdp
+  # Generic Decapodes
+  #------------------
 
-  # Heat Transfer Model 
-  parse_result = decapode" 
+  parsing_is_isomorphic("
+    h::Form0
+    Γ::Form1
+    n::Constant
+              
+    ∂ₜ(h) == (∘(⋆, d, ⋆))(((Γ * d(h)) ∧ mag(♯(d(h))) ^ (n - 1)) ∧ h ^ (n + 2))")
+
+  parsing_is_isomorphic("
+    (C, Ċ)::Form0
+    (ϕ, ϕ₁, ϕ₂)::Form1
+
+    ϕ == ϕ₁ + ϕ₂
+    Ċ == (⋆₀⁻¹)(dual_d₁(⋆₁(ϕ)))
+    ∂ₜ(C) == Ċ")
+  
+  parsing_is_isomorphic("
+    (C, Ċ)::Form0
+    ϕ::Form1
+    ϕ ==  ∘(k, d₀)(C)
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    ∂ₜ(C) == Ċ")
+
+  parsing_is_isomorphic("
+    D == ∂ₜ(C)
+    E == ∂ₜ(D)")
+
+  parsing_is_isomorphic("
+    X::Form0{Point}
+    V::Form0{Point}
+
+    k::Constant{Point}
+
+    ∂ₜ(X) == V
+    ∂ₜ(V) == -1*k*(X)")
+
+  parsing_is_isomorphic("
+    x::Form0{X}
+    y::Form0{X}
+    z::Form0{X}
+
+    ∂ₜ(z) == f1(x) + ∘(g, h)(y)
+    y == F(f2(x), ρ(x,z))")
+
+  parsing_is_isomorphic("
+    (C, Ċ)::Form0{X}
+    ϕ::Form1{X}
+
+    # Fick's first law
+    ϕ ==  ∘(k, d₀)(C)
+    # Diffusion equation
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    ∂ₜ(C) == Ċ")
+
+  parsing_is_isomorphic("
+    C::Form0{X}
+    (V, ϕ)::Form1{X}
+
+    ϕ == ∧₀₁(C,V)")
+
+  parsing_is_isomorphic("
+    (C, Ċ)::Form0{X}
+    (ϕ, ϕ₁, ϕ₂)::Form1{X}
+
+    ϕ == ϕ₁ + ϕ₂
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    ∂ₜ(C) == Ċ")
+
+  parsing_is_isomorphic("
     (HT, Tₛ)::Form0
     (D, cosϕᵖ, cosϕᵈ)::Constant
     
-    HT == (D ./ cosϕᵖ) .* (⋆)(d(cosϕᵈ .* (⋆)(d(Tₛ))))"
+    HT == (D ./ cosϕᵖ) .* (⋆)(d(cosϕᵈ .* (⋆)(d(Tₛ))))")
 
-  HeatTransfer = quote
-    (HT, Tₛ)::Form0
-    (D, cosϕᵖ, cosϕᵈ)::Constant
-    
-    HT == (D ./ cosϕᵖ) .* (⋆)(d(cosϕᵈ .* (⋆)(d(Tₛ))))
-  end
-
-  htts = SummationDecapode(parse_decapode(HeatTransfer))
-
-  @test parse_result ≃ htts
-
-
-  # Outgoing Longwave Radiation Model
-  parse_result = decapode"
+  parsing_is_isomorphic("
     (Tₛ, OLR)::Form0
     (A, B)::Constant
     
-    OLR == A .+ B .* Tₛ"
+    OLR == A .+ B .* Tₛ")
 
-  OutgoingLongRadiation = quote
-    (Tₛ, OLR)::Form0
-    (A, B)::Constant
-    
-    OLR == A .+ B .* Tₛ
-  end
-
-  olr = SummationDecapode(parse_decapode(OutgoingLongRadiation))
-
-  @test parse_result ≃ olr
-
-  # Absorbed Shortwave Radiation Model
-  parse_result = decapode"
+  parsing_is_isomorphic("
     (Q, ASR)::Form0
     α::Constant
     
-    ASR == (1 .- α) .* Q"
+    ASR == (1 .- α) .* Q")
 
-  AbsorbedShortRadiation = quote
-    (Q, ASR)::Form0
-    α::Constant
-    
-    ASR == (1 .- α) .* Q
-  end
-
-  asr = SummationDecapode(parse_decapode(AbsorbedShortRadiation))
-
-  @test parse_result ≃ asr
-
-  #Advection Model
-  parse_result = decapode"
-    C::Form0
-    (ϕ, V)::Form1
-              
-    ϕ == C ∧₀₁ V"
-
-  Advection = quote
-    C::Form0
-    (ϕ, V)::Form1
-              
-    ϕ == C ∧₀₁ V
-  end
-
-  adv = SummationDecapode(parse_decapode(Advection))
-
-  @test parse_result ≃ adv
-
-  # Ficks Law Model
-  parse_result = decapode"
+  parsing_is_isomorphic("
     C::Form0
     ϕ::Form1
               
-    ϕ == k(d₀(C))"
+    ϕ == k(d₀(C))")
 
-  FicksLaw = quote
-    C::Form0
-    ϕ::Form1
-              
-    ϕ == k(d₀(C))
-  end
-
-  ficks = SummationDecapode(parse_decapode(FicksLaw))
-
-  @test parse_result ≃ ficks
-
-  # IceBlockingWater Model
-  parse_result = decapode"
+  parsing_is_isomorphic("
     h::Form0
     (𝐮, w)::DualForm1
               
-    w == (1 - σ(h)) ∧ᵖᵈ₀₁ 𝐮"
+    w == (1 - σ(h)) ∧ᵖᵈ₀₁ 𝐮")
 
-  IceBlockingWater = quote
-    h::Form0
-    (𝐮, w)::DualForm1
-              
-    w == (1 - σ(h)) ∧ᵖᵈ₀₁ 𝐮
-  end
-
-  ibw = SummationDecapode(parse_decapode(IceBlockingWater))
-
-  @test parse_result ≃ ibw
-
-  # Jordan-Kinderlehrer-Otto Model
-  parse_result = decapode"
-    (ρ, Ψ)::Form0
-    β⁻¹::Constant
-              
-    ∂ₜ(ρ) == (∘(⋆, d, ⋆))(d(Ψ) ∧ ρ) + β⁻¹ * Δ(ρ)"
-
-  JKO = quote
+  parsing_is_isomorphic("
     (ρ, Ψ)::Form0
     β⁻¹::Constant
 
-    ∂ₜ(ρ) == (∘(⋆, d, ⋆))(d(Ψ) ∧ ρ) + β⁻¹ * Δ(ρ)
-  end
+    ∂ₜ(ρ) == (∘(⋆, d, ⋆))(d(Ψ) ∧ ρ) + β⁻¹ * Δ(ρ)")
 
-  jko = SummationDecapode(parse_decapode(JKO))
-
-  @test parse_result ≃ jko
-    
-  # Lie Model
-  parse_result = decapode"
-    C::Form0
-    V::Form1
-    dX::Form1
-              
-    V == ((⋆ ∘ ⋆))(C ∧ dX)"
-
-  Lie = quote
-    C::Form0
-    V::Form1
-    dX::Form1
-              
-    V == ((⋆) ∘ (⋆))(C ∧ dX)
-  end
-
-  lie = SummationDecapode(parse_decapode(Lie))
-
-  @test parse_result ≃ lie
-
-  # Mohamed Eq. 10, N2
-  parse_result = decapode"
-    (𝐮, w)::DualForm1
-    (P, 𝑝ᵈ)::DualForm0
-    μ::Constant
-              
-    𝑝ᵈ == P + 0.5 * ι₁₁(w, w)
-              
-    ∂ₜ(𝐮) == μ * ∘(d, ⋆, d, ⋆)(w) + -1 * ⋆₁⁻¹(w ∧ᵈᵖ₁₀ ⋆(d(w))) + d(𝑝ᵈ)"
-
-  Mohamed = quote
+  parsing_is_isomorphic("
     (𝐮, w)::DualForm1
     (P, 𝑝ᵈ)::DualForm0
     μ::Constant
 
     𝑝ᵈ == P + 0.5 * ι₁₁(w, w)
 
-    ∂ₜ(𝐮) == μ * (∘(d, ⋆, d, ⋆))(w) + -1 * (⋆₁⁻¹)(w ∧ᵈᵖ₁₀ (⋆)(d(w))) + d(𝑝ᵈ)
-  end
+    ∂ₜ(𝐮) == μ * (∘(d, ⋆, d, ⋆))(w) + -1 * (⋆₁⁻¹)(w ∧ᵈᵖ₁₀ (⋆)(d(w))) + d(𝑝ᵈ)")
 
-  mohamed = SummationDecapode(parse_decapode(Mohamed))
-
-  @test parse_result ≃ mohamed
-
-  # Momentum Model
-  parse_result = decapode"
-    (f, b)::Form0
-    (v, V, g, Fᵥ, uˢ, v_up)::Form1
-    τ::Form2
-    U::Parameter
-              
-    uˢ̇ == ∂ₜ(uˢ)
-              
-    v_up == (((((((-1 * L(v, v) - L(V, v)) - L(v, V)) - f ∧ v) - ∘(⋆, d, ⋆)(uˢ) ∧ v) - d(p)) + b ∧ g) - ∘(⋆, d, ⋆)(τ)) + uˢ̇ + Fᵥ
-              
-    uˢ̇ == force(U)"
-
-  Momentum = quote
+  parsing_is_isomorphic("
     (f, b)::Form0
     (v, V, g, Fᵥ, uˢ, v_up)::Form1
     τ::Form2
@@ -910,77 +565,34 @@ end
 
     uˢ̇ == ∂ₜ(uˢ)
 
-    v_up == (((((((-1 * L(v, v) - L(V, v)) - L(v, V)) - f ∧ v) - (∘(⋆, d, ⋆))(uˢ) ∧ v) - d(p)) + b ∧ g) - (∘(⋆, d, ⋆))(τ)) + uˢ̇ + Fᵥ
+    v_up == (((((((-1 * L(v, v) - L(V, v)) - L(v, V)) - f ∧ v) -
+      (∘(⋆, d, ⋆))(uˢ) ∧ v) - d(p)) + b ∧ g) - (∘(⋆, d, ⋆))(τ)) + uˢ̇ + Fᵥ
 
-    uˢ̇ == force(U)
-  end
+    uˢ̇ == force(U)")
 
-  mom = SummationDecapode(parse_decapode(Momentum))
-
-  @test parse_result ≃ mom
-
-  # Navier-Stokes Model
-  parse_result = decapode"
-    (V, V̇, G)::Form1{X}
-    (ρ, ṗ, p)::Form0{X}
-              
-    V̇ == neg₁(L₁′(V, V)) + div₁(kᵥ(Δ₁(V) + third(d₀(δ₁(V)))), avg₀₁(ρ)) + d₀(half(i₁′(V, V))) + neg₁(div₁(d₀(p), avg₀₁(ρ))) + G
-    ∂ₜ(V) == V̇
-              
-    ṗ == neg₀(⋆₀⁻¹(L₀(V, ⋆₀(p))))
-    ∂ₜ(p) == ṗ"
-
-  NavierStokes = quote
+  parsing_is_isomorphic("
     (V, V̇, G)::Form1{X}
     (ρ, ṗ, p)::Form0{X}
 
-    V̇ == neg₁(L₁′(V, V)) + div₁(kᵥ(Δ₁(V) + third(d₀(δ₁(V)))), avg₀₁(ρ)) + d₀(half(i₁′(V, V))) + neg₁(div₁(d₀(p), avg₀₁(ρ))) + G
+    V̇ == neg₁(L₁′(V, V)) +
+      div₁(kᵥ(Δ₁(V) + third(d₀(δ₁(V)))), avg₀₁(ρ)) +
+      d₀(half(i₁′(V, V))) +
+      neg₁(div₁(d₀(p), avg₀₁(ρ))) +
+      G
     ∂ₜ(V) == V̇
 
     ṗ == neg₀((⋆₀⁻¹)(L₀(V, (⋆₀)(p))))
-    ∂ₜ(p) == ṗ
-  end
+    ∂ₜ(p) == ṗ")
 
-  navier = SummationDecapode(parse_decapode(NavierStokes))
-
-  @test parse_result ≃ navier
-
-  # Oscillator Model
-  parse_result = decapode"
+  parsing_is_isomorphic("
     X::Form0
     V::Form0
     k::Constant
     
     ∂ₜ(X) == V
-    ∂ₜ(V) == -k * X"
+    ∂ₜ(V) == -k * X")
 
-  Oscillator = quote
-    X::Form0
-    V::Form0
-    k::Constant
-    
-    ∂ₜ(X) == V
-    ∂ₜ(V) == -k * X
-  end
-
-  osc = SummationDecapode(parse_decapode(Oscillator))
-
-  @test parse_result ≃ osc
-
-  # Poiseuille Model
-  parse_result = decapode"
-    P::Form0
-    q::Form1
-    (R, μ̃)::Constant
-              
-    Δq == Δ(q)
-    ∇P == d(P)
-              
-    ∂ₜ(q) == q̇
-    
-    q̇ == μ̃ * ∂q(Δq) + ∇P + R * q"
-
-  Poiseuille = quote
+  parsing_is_isomorphic("
     P::Form0
     q::Form1
     (R, μ̃)::Constant
@@ -990,32 +602,9 @@ end
 
     ∂ₜ(q) == q̇
     
-    q̇ == μ̃ * ∂q(Δq) + ∇P + R * q
-  end
+    q̇ == μ̃ * ∂q(Δq) + ∇P + R * q")
 
-  pois = SummationDecapode(parse_decapode(Poiseuille))
-
-  @test parse_result ≃ pois
-
-  # Poiseuille Density Model
-  parse_result = decapode"
-    q::Form1
-    (P, ρ)::Form0
-    (k, R, μ̃)::Constant
-              
-    ∂ₜ(q) == q̇
-    ∇P == d(P)
-              
-    q̇ == (μ̃ * ∂q(Δ(q)) - ∇P) + R * q
-    P == k * ρ
-              
-    ∂ₜ(ρ) == ρ̇
-              
-    ρ_up == ∘(⋆, d, ⋆)(-1 * (ρ ∧₀₁ q))
-              
-    ρ̇ == ∂ρ(ρ_up)"
-
-  PoiseuilleDensity = quote
+  parsing_is_isomorphic("
     q::Form1
     (P, ρ)::Form0
     (k, R, μ̃)::Constant
@@ -1030,70 +619,16 @@ end
 
     ρ_up == (∘(⋆, d, ⋆))(-1 * (ρ ∧₀₁ q))
 
-    ρ̇ == ∂ρ(ρ_up)
-  end
-
-  poisden = SummationDecapode(parse_decapode(PoiseuilleDensity))
-
-  @test parse_result ≃ poisden
+    ρ̇ == ∂ρ(ρ_up)")
   
-  # Schroedinger Model
-  parse_result = decapode"
-    (i, h, m)::Constant
-    V::Parameter
-    Ψ::Form0
-              
-    ∂ₜ(Ψ) == (((-1 * h ^ 2) / (2*m)) * Δ(Ψ) + V * Ψ) / (i * h)"
-
-  Schroedinger = quote
+  parsing_is_isomorphic("
     (i, h, m)::Constant
     V::Parameter
     Ψ::Form0
 
-    ∂ₜ(Ψ) == (((-1 * h ^ 2) / (2m)) * Δ(Ψ) + V * Ψ) / (i * h)
-  end
+    ∂ₜ(Ψ) == (((-1 * h ^ 2) / (2m)) * Δ(Ψ) + V * Ψ) / (i * h)")
 
-  schroed = SummationDecapode(parse_decapode(Schroedinger))
-
-  @test parse_result ≃ schroed
-
-  # Superposition Model
-  parse_result = decapode"
-    (C, Ċ)::Form0
-    (ϕ, ϕ₁, ϕ₂)::Form1
-
-    ϕ == ϕ₁ + ϕ₂
-    Ċ == ⋆₀⁻¹(dual_d₁(⋆₁(ϕ)))
-    ∂ₜ(C) == Ċ"
-
-  Superposition = quote
-    (C, Ċ)::Form0
-    (ϕ, ϕ₁, ϕ₂)::Form1
-
-    ϕ == ϕ₁ + ϕ₂
-    Ċ == (⋆₀⁻¹)(dual_d₁((⋆₁)(ϕ)))
-    ∂ₜ(C) == Ċ
-  end
-
-  sup = SummationDecapode(parse_decapode(Superposition))
-
-  @test parse_result ≃ sup
-
-  # Gray-Scott Model
-  parse_result = decapode"
-    (U, V)::Form0
-    UV2::Form0
-    (U̇, V̇)::Form0
-    (f, k, rᵤ, rᵥ)::Constant
-              
-    UV2 == U .* (V .* V)
-    U̇ == (rᵤ * Δ(U) - UV2) + f * (1 .- U)
-    V̇ == (rᵥ * Δ(V) + UV2) - (f + k) .* V
-              
-    ∂ₜ(U) == U̇
-    ∂ₜ(V) == V̇"
-
-  GrayScott = quote
+  parsing_is_isomorphic("
     (U, V)::Form0
     UV2::Form0
     (U̇, V̇)::Form0
@@ -1104,29 +639,9 @@ end
     V̇ == (rᵥ * Δ(V) + UV2) - (f + k) .* V
 
     ∂ₜ(U) == U̇
-    ∂ₜ(V) == V̇
-  end
+    ∂ₜ(V) == V̇")
 
-  gs = SummationDecapode(parse_decapode(GrayScott))
-
-  @test parse_result ≃ gs
-
-  # Brusselator Model
-  parse_result = decapode"
-    (U, V)::Form0
-    U2V::Form0
-    (U̇, V̇)::Form0
-    α::Constant
-    F::Parameter
-              
-    U2V == (U .* U) .* V
-    U̇ == ((1 + U2V) - 4.4*U) + α * Δ(U) + F
-    V̇ == (3.4*U - U2V) + α * Δ(V)
-              
-    ∂ₜ(U) == U̇
-    ∂ₜ(V) == V̇"
-
-  Brusselator = quote
+  parsing_is_isomorphic("
     (U, V)::Form0
     U2V::Form0
     (U̇, V̇)::Form0
@@ -1138,124 +653,43 @@ end
     V̇ == (3.4U - U2V) + α * Δ(V)
 
     ∂ₜ(U) == U̇
-    ∂ₜ(V) == V̇
-  end
+    ∂ₜ(V) == V̇")
 
-  brussel = SummationDecapode(parse_decapode(Brusselator))
-
-  @test parse_result ≃ brussel
-
-  # Kealy Model
-  parse_result = decapode"
-    (n, w)::DualForm0
-    dX::Form1
-    (a, ν)::Constant
-              
-    ∂ₜ(w) == ((a - w) - w * n ^ 2) + ν * Δ(w)"
-
-  Kealy = quote
+  parsing_is_isomorphic("
     (n, w)::DualForm0
     dX::Form1
     (a, ν)::Constant
 
-    ∂ₜ(w) == ((a - w) - w * n ^ 2) + ν * Δ(w)
-  end
+    ∂ₜ(w) == ((a - w) - w * n ^ 2) + ν * Δ(w)")
 
-  kealy = SummationDecapode(parse_decapode(Kealy))
-
-  @test parse_result ≃ kealy
-
-  # Klausmeier (Eq. 2a) Model
-  parse_result = decapode"
-    (n, w)::DualForm0
-    dX::Form1
-    (a, ν)::Constant
-              
-    ∂ₜ(w) == ((a - w) - w * n ^ 2) + ν * ℒ(dX, w)"
-
-  Klausmeier = quote
+  parsing_is_isomorphic("
     (n, w)::DualForm0
     dX::Form1
     (a, ν)::Constant
 
-    ∂ₜ(w) == ((a - w) - w * n ^ 2) + ν * ℒ(dX, w)
-  end
+    ∂ₜ(w) == ((a - w) - w * n ^ 2) + ν * ℒ(dX, w)")
 
-  klaus = SummationDecapode(parse_decapode(Klausmeier))
-
-  @test parse_result ≃ klaus
-
-  # Klausmeier (Eq. 2b) Model
-  parse_result = decapode"
-    (n, w)::DualForm0
-    m::Constant
-              
-    ∂ₜ(n) == (w * n ^ 2 - m * n) + Δ(n)"
-
-  Klausmeier2 = quote
+  parsing_is_isomorphic("
     (n, w)::DualForm0
     m::Constant
 
-    ∂ₜ(n) == (w * n ^ 2 - m * n) + Δ(n)
-  end
+    ∂ₜ(n) == (w * n ^ 2 - m * n) + Δ(n)")
 
-  klaus2 = SummationDecapode(parse_decapode(Klausmeier2))
-
-  @test parse_result ≃ klaus2
-
-  # Lejeune Model
-  parse_result = decapode"
-    ρ::Form0
-    (μ, Λ, L)::Constant
-              
-    ∂ₜ(ρ) == (ρ * (((1 - μ) + (Λ - 1) * ρ) - ρ * ρ) + 0.5 * (L * L - ρ) * Δ(ρ)) - 0.125 * ρ * Δ(ρ) * Δ(ρ)"
-
-  Lejeune = quote
+  parsing_is_isomorphic("
     ρ::Form0
     (μ, Λ, L)::Constant
 
-    ∂ₜ(ρ) == (ρ * (((1 - μ) + (Λ - 1) * ρ) - ρ * ρ) + 0.5 * (L * L - ρ) * Δ(ρ)) - 0.125 * ρ * Δ(ρ) * Δ(ρ)
-  end
+    ∂ₜ(ρ) == (ρ * (((1 - μ) + (Λ - 1) * ρ) - ρ * ρ) + 0.5 * (L * L - ρ) * Δ(ρ)) -
+      0.125 * ρ * Δ(ρ) * Δ(ρ)")
 
-  lejeune = SummationDecapode(parse_decapode(Lejeune))
-
-  @test parse_result ≃ lejeune
-
-  # Turing Continuous Ring Model
-  parse_result = decapode"
-    (X, Y)::Form0
-    (μ, ν, a, b, c, d)::Constant
-              
-    ∂ₜ(X) == a * X + b * Y + μ * Δ(X)
-    ∂ₜ(Y) == c * X + d * Y + ν * Δ(X)"
-
-  TuringContinuousRing = quote
+  parsing_is_isomorphic("
     (X, Y)::Form0
     (μ, ν, a, b, c, d)::Constant
 
     ∂ₜ(X) == a * X + b * Y + μ * Δ(X)
-    ∂ₜ(Y) == c * X + d * Y + ν * Δ(X)
-  end
+    ∂ₜ(Y) == c * X + d * Y + ν * Δ(X)")
 
-  turing = SummationDecapode(parse_decapode(TuringContinuousRing))
-
-  @test parse_result ≃ turing
-
-  # Boundary Conditions Model
-  parse_result = decapode"
-    (S, T)::Form0
-    (Ṡ, T_up)::Form0
-    v::Form1
-    v_up::Form1
-              
-    Ṫ == ∂ₜ(T)
-    Ṡ == ∂ₜ(S)
-    v̇ == ∂ₜ(v)
-    
-    Ṫ == ∂_spatial(T_up)
-    v̇ == ∂_noslip(v_up)"
-
-  BoundaryConditions = quote
+  parsing_is_isomorphic("
     (S, T)::Form0
     (Ṡ, T_up)::Form0
     v::Form1
@@ -1266,143 +700,45 @@ end
     v̇ == ∂ₜ(v)
     
     Ṫ == ∂_spatial(T_up)
-    v̇ == ∂_noslip(v_up)
-  end
+    v̇ == ∂_noslip(v_up)")
 
-  bc = SummationDecapode(parse_decapode(BoundaryConditions))
-
-  @test parse_result ≃ bc
-
-  # Energy Balance Model
-  parse_result = decapode"
-    (Tₛ, ASR, OLR, HT)::Form0
-    C::Constant
-              
-    Tₛ̇ == ∂ₜ(Tₛ)
-              
-    Tₛ̇ == ((ASR - OLR) + HT) ./ C"
-
-  EnergyBalance = quote
+  parsing_is_isomorphic("
     (Tₛ, ASR, OLR, HT)::Form0
     C::Constant
 
     Tₛ̇ == ∂ₜ(Tₛ)
 
-    Tₛ̇ == ((ASR - OLR) + HT) ./ C
-  end
+    Tₛ̇ == ((ASR - OLR) + HT) ./ C")
 
-  eb = SummationDecapode(parse_decapode(EnergyBalance))
-
-  @test parse_result ≃ eb
-
-  # Equation of State Model
-  parse_result = decapode"
-    (b, T, S)::Form0
-    (g, α, β)::Constant
-              
-    b == g * (α * T - β * S)"
-
-  EquationOfState = quote
+  parsing_is_isomorphic("
     (b, T, S)::Form0
     (g, α, β)::Constant
 
-    b == g * (α * T - β * S)
-  end
+    b == g * (α * T - β * S)")
 
-  eos = SummationDecapode(parse_decapode(EquationOfState))
-
-  @test parse_result ≃ eos
-
-  # Glens Law
-  parse_result = decapode"
-    Γ::Form1
-    (A, ρ, g, n)::Constant
-              
-    Γ == (2 / (n + 2)) * A * (ρ * g) ^ n"
-
-  GlensLaw = quote
+  parsing_is_isomorphic("
     Γ::Form1
     (A, ρ, g, n)::Constant
 
-    Γ == (2 / (n + 2)) * A * (ρ * g) ^ n
-  end
+    Γ == (2 / (n + 2)) * A * (ρ * g) ^ n")
 
-  glens = SummationDecapode(parse_decapode(GlensLaw))
-
-  @test parse_result ≃ glens
-
-  # Halfar (Eq. 2) Model
-  parse_result = decapode"
-    h::Form0
-    Γ::Form1
-    n::Constant
-              
-    ∂ₜ(h) == ∘(⋆, d, ⋆)(((Γ * d(h)) ∧ mag(♯(d(h))) ^ (n - 1)) ∧ h ^ (n + 2))"
-
-  Halfar = quote
-    h::Form0
-    Γ::Form1
-    n::Constant
-
-    ∂ₜ(h) == (∘(⋆, d, ⋆))(((Γ * d(h)) ∧ mag(♯(d(h))) ^ (n - 1)) ∧ h ^ (n + 2))
-  end
-
-  halfar = SummationDecapode(parse_decapode(Halfar))
-
-  @test parse_result ≃ halfar
-
-  # Insolation Model
-  parse_result = decapode"
-    Q::Form0
-    cosϕᵖ::Constant
-              
-    Q == 450cosϕᵖ"
-
-  Insolation = quote
+  parsing_is_isomorphic("
     Q::Form0
     cosϕᵖ::Constant
 
-    Q == 450cosϕᵖ
-  end
+    Q == 450cosϕᵖ")
 
-  ins = SummationDecapode(parse_decapode(Insolation))
-
-  @test parse_result ≃ ins
-
-  # Tracer Model
-  parse_result = decapode"
+  parsing_is_isomorphic("
     (c, C, F, c_up)::Form0
     (v, V, q)::Form1
 
-    c_up == (((-1 * (⋆)(L(v, (⋆)(c))) - (⋆)(L(V, (⋆)(c)))) - (⋆)(L(v, (⋆)(C)))) - ∘(⋆, d, ⋆)(q)) + F"
+    c_up == (((-1 * (⋆)(L(v, (⋆)(c))) - (⋆)(L(V, (⋆)(c)))) - (⋆)(L(v, (⋆)(C))))
+      - (∘(⋆, d, ⋆))(q)) + F")
 
-  Tracer = quote
-    (c, C, F, c_up)::Form0
-    (v, V, q)::Form1
-
-    c_up == (((-1 * (⋆)(L(v, (⋆)(c))) - (⋆)(L(V, (⋆)(c)))) - (⋆)(L(v, (⋆)(C)))) - (∘(⋆, d, ⋆))(q)) + F
-  end
-
-  trac = SummationDecapode(parse_decapode(Tracer))
-
-  @test parse_result ≃ trac
-
-  # Warming Model
-  parse_result = decapode"
-    Tₛ::Form0
-    A::Form1
-              
-    A == avg₀₁(5.8282 * 10 ^ (-0.236*Tₛ) * 1.65e7)"
-
-  Warming = quote
+  parsing_is_isomorphic("
     Tₛ::Form0
     A::Form1
 
-    A == avg₀₁(5.8282 * 10 ^ (-0.236Tₛ) * 1.65e7)
-  end
-
-  warm = SummationDecapode(parse_decapode(Warming))
-
-  @test parse_result ≃ warm
-
+    A == avg₀₁(5.8282 * 10 ^ (-0.236Tₛ) * 1.65e7)")
 end
+

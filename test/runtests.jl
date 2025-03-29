@@ -45,4 +45,9 @@ end
   include("decasymbolic.jl")
 end
 
+@testset "PEG Parser" begin
+  include("parser.jl")
+end
+
 include("aqua.jl")
+
