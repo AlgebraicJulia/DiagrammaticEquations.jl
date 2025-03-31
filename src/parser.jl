@@ -67,12 +67,12 @@ macro. Those documents can be consulted further for information on Decapodes.
 # Lower Rules have higher precedence.
 @rule SummationOperation = PrecMinusOperation & (ws & "+" & ws & PrecMinusOperation)[*] |> v -> BuildSummationOperation(v)
 # Ex: -,¦,⊕,⊖,...
-@rule PrecMinusOperation = PrecDivOperation & (ws & PrecMinusOp & ws & PrecDivOperation)[*] |> v -> BuildApp2(v)
+@rule PrecMinusOperation = PrecDivOperation & (ws & PrecMinusOp & ws & PrecDivOperation)[*] |> v -> BuildApp2(v[1], v[2])
 # Ex: /,⌿,÷,...
-@rule PrecDivOperation = MultOperation & (ws & PrecDivOp & ws & MultOperation)[*] |> v -> BuildApp2(v)
+@rule PrecDivOperation = MultOperation & (ws & PrecDivOp & ws & MultOperation)[*] |> v -> BuildApp2(v[1], v[2])
 @rule MultOperation = (lparen & ws & PrecPowerOperation & ws & rparen , PrecPowerOperation) & ((ws & "*" & ws & PrecPowerOperation), PrecPowerOperation)[*] |> v -> BuildMultOperation(v)
 # Ex: ^,↑,↓,...
-@rule PrecPowerOperation = Term & (ws & PrecPowerOp & ws & Term)[*] |> v -> BuildApp2(v)
+@rule PrecPowerOperation = Term & (ws & PrecPowerOp & ws & Term)[*] |> v -> BuildApp2(v[1], v[2])
 
 # Terms can consist of groupings, deriatives, function compositions, function calls, and atomic elements such as digits/identifiers.
 @rule Term = Grouping , Derivative , Compose , Call , Atom
@@ -228,20 +228,18 @@ function BuildMultOperation(v)
   end
 end
 
-""" BuildApp2
-
-Takes in an input array (AST) for all binary operations except summation/multiplication and returns the result of the operation
-as an App2.
-"""
-function BuildApp2(v)
-    # Creates array of operations
-    result = vcat(v[1], map(x -> [x[2], x[end]], v[2])...)
-    # Converts array to tree structure
-    while length(result) > 1
-      Applied = App2(Symbol(result[2]), result[1], result[3])
-      result = vcat([Applied], result[4:end])
-    end
-    return result[1]
+# Given an array (AST) of binary operations (not summation/multiplication),
+# return an App2.
+# e.g.
+# pi₁ = Lit(Symbol("3"))
+# ops_pis = [[" ", "-", " ", Lit(Symbol("2"))],
+#            [" ", "-", " ", Lit(Symbol("1"))]]
+# App2(:-, App2(:-, Lit(Symbol("3")), Lit(Symbol("2"))), Lit(Symbol("1")))
+function BuildApp2(pi₁, ops_pis)
+  pi₁     == Any[] && return ops_pis
+  ops_pis == Any[] && return pi₁
+  _, op, _, pi₂ = popfirst!(ops_pis)
+  BuildApp2(App2(Symbol(op), pi₁, pi₂), ops_pis)
 end
 
 """ BuildCall
