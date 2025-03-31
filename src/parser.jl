@@ -94,8 +94,8 @@ macro. Those documents can be consulted further for information on Decapodes.
 
 # The call rule supports function calls of the form f(x) and g(x, y).
 @rule Call = (CallName, lparen & ws & CallName & ws & rparen) & lparen & ws & Args & ws & rparen |> v -> BuildCall(v)
-# A call name can be unaryoperators or identifiers
-@rule CallName = UnaryOperator , Ident
+# A call name can be Operators or identifiers
+@rule CallName = Operator , Ident
 
 # Argumennts represet a list of argument consisting of operationss within a function call
 @rule Args = (SummationOperation & ws & comma & SummationOperation) |> v -> [v[1], v[4]],
@@ -108,7 +108,7 @@ macro. Those documents can be consulted further for information on Decapodes.
 
 # Atoms are the smallest unit of a term and can be either digits or identifiers.
 # Identifiers can support unary operators on front Ex: Negation: '-K'.
-@rule Atom = Digit , (UnaryOperator & Ident |> v -> App1(Symbol(v[1]), decapodes.Var(v[2]))), (Ident |> v -> decapodes.Var(v))
+@rule Atom = Digit , ("-" & Ident |> v -> App1(Symbol(v[1]), decapodes.Var(v[2]))), (Ident |> v -> decapodes.Var(v))
 
 # Identifiers consists of non operator/reserved characters
 # They cannot start with digits
@@ -122,7 +122,7 @@ macro. Those documents can be consulted further for information on Decapodes.
 @rule Digit = r"([\-]?)([0-9]+)(\.[0-9]+(e[0-9]+)?)?" |> v -> Lit(Symbol(v))
 
 # Unary operators support operators that work on one operand
-@rule UnaryOperator = PrecMinusOp , PrecDivOp , PrecPowerOp
+@rule Operator = PrecMinusOp , PrecDivOp , PrecPowerOp
 
 # Unary operators with the same precedence as subtraction
 @rule PrecMinusOp = r"((\.?)(\-|−|¦|⊕|⊖|⊞|⊟|∪|∨|⊔|±|∓|∔|∸|≏|⊎|⊻|⊽|⋎|⋓|⟇|⧺|⧻|⨈|⨢|⨣|⨤|⨥|⨦|⨧|⨨|⨩|

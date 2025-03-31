@@ -9,7 +9,7 @@ using DiagrammaticEquations: Lit, AppCirc1, App1, App2, Plus, Mult, Tan, Eq
 using PEG
 using DiagrammaticEquations: DecapodeExpr, SingleLineComment, MultiLineComment, Line, Statement, 
   Judgement, TypeName, Equation, SummationOperation, PrecMinusOperation, PrecDivOperation, MultOperation,
-  PrecPowerOperation, Term, Grouping, Derivative, Compose, Call, CallName, UnaryOperator, Args, List, 
+  PrecPowerOperation, Term, Grouping, Derivative, Compose, Call, CallName, Operator, Args, List, 
   CallList, Atom, Ident, Digit, PrecMinusOp, PrecDivOp, PrecPowerOp, OpSuffixes
 
 # Unit Tests
@@ -228,10 +228,10 @@ end
   @test CallName("⊕")[1] == "⊕"
 end
 
-@testset "Unary Operators" begin
-  @test UnaryOperator("-")[1] == "-"
-  @test UnaryOperator("⊕")[1] == "⊕"
-  @test UnaryOperator("⊽")[1] == "⊽"
+@testset "Operators" begin
+  @test Operator("-")[1] == "-"
+  @test Operator("⊕")[1] == "⊕"
+  @test Operator("⊽")[1] == "⊽"
 end
 
 @testset "Function Arguments" begin
