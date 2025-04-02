@@ -64,7 +64,7 @@ end
 end
 
 @testset "Type Naming" begin
-  @test TypeName("Form0")[1] == :Form0
+  @test TypeName("Form0")[1] == [:Form0, :I]
   @test TypeName("Form0{X}")[1] == [:Form0, :X]
 end
 
