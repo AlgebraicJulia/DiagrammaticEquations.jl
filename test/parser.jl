@@ -285,6 +285,12 @@ end
   @test OpSuffixes("₁₂₃₄₅")[1] == "₁₂₃₄₅" 
 end
 
+@testset "Calls Versus Multiplication" begin
+  @test MultOperation("(d)(ψ)")[1] == App1(:d, Var(Symbol("ψ")))
+  @test MultOperation("d(ψ)")[1] == App1(:d, Var(Symbol("ψ")))
+  @test MultOperation("(d)ψ")[1] == App2(:*, Var(Symbol("d")), Var(Symbol("ψ")))
+end
+
 # Exception Handling Tests
 ##########################
 

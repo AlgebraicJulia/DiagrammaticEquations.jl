@@ -20,7 +20,7 @@ using Catlab.Parsers.ParserCore
 @rule Statement = Judgement , Equation
 
 # Highest precedence:
-@rule Term = Grouping , Derivative , Compose , Call , Atom
+@rule Term = Derivative , Compose , Call , Grouping , Atom
 
 # Parentheses enforce precedence.
 @rule Grouping = lparen & ws & PrecMinusOperation & ws & rparen |>
@@ -66,7 +66,7 @@ using Catlab.Parsers.ParserCore
 @rule PrecDivOperation = MultOperation & (ws & PrecDivOp & ws & MultOperation)[*] |>
   v -> BuildApp2(v[1], v[2])
 
-@rule MultOperation = (lparen & ws & PrecPowerOperation & ws & rparen , PrecPowerOperation) & ((ws & "*" & ws & PrecPowerOperation), PrecPowerOperation)[*] |>
+@rule MultOperation = (PrecPowerOperation, lparen & ws & PrecPowerOperation & ws & rparen) & ((ws & "*" & ws & PrecPowerOperation), PrecPowerOperation)[*] |>
   v -> BuildMultOperation(v[1], v[2])
 
 @rule PrecPowerOperation = Term & (ws & PrecPowerOp & ws & Term)[*] |>
