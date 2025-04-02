@@ -289,6 +289,7 @@ end
   @test MultOperation("(d)(ψ)")[1] == App1(:d, Var(Symbol("ψ")))
   @test MultOperation("d(ψ)")[1] == App1(:d, Var(Symbol("ψ")))
   @test MultOperation("(d)ψ")[1] == App2(:*, Var(Symbol("d")), Var(Symbol("ψ")))
+  @test MultOperation("(d)(a, b)")[1] == App2(:d, Var(Symbol("a")), Var(Symbol("b")))
 end
 
 # Exception Handling Tests
