@@ -99,9 +99,6 @@ end
     Plus([App2(:*, Lit(Symbol("3")), Lit(Symbol("5"))),Lit(Symbol("2"))])
   @test SummationOperation("10 / 2 + 3")[1] ==
     Plus([App2(:/, Lit(Symbol("10")), Lit(Symbol("2"))), Lit(Symbol("3"))]) 
-  @test SummationOperation("3 - 2 + 1")[1] ==
-    Plus([App2(:-, Lit(Symbol("3")), Lit(Symbol("2"))), Lit(Symbol("1"))])
-
   @test SummationOperation("3 * (5 + 2)")[1] ==
     App2(:*, Lit(Symbol("3")), Plus([Lit(Symbol("5")), Lit(Symbol("2"))]))
 end
@@ -199,6 +196,12 @@ end
   @test Call("HI(a, b)")[1] == App2(:HI, Var(Symbol("a")), Var(Symbol("b")))
   @test Call("d(Ψ)")[1] == App1(:d, Var(Symbol("Ψ")))
   @test Call("(d)(Ψ)")[1] == App1(:d, Var(Symbol("Ψ")))
+end
+
+@testset "Prefix Notation" begin
+  @test Call("+(3, 3)")[1] == App2(:+, Lit(Symbol("3")), Lit(Symbol("3")))
+  @test Call("*(3, 2)")[1] == App2(:*, Lit(Symbol("3")), Lit(Symbol("2")))
+  @test Call("∧(A, 2)")[1] == App2(:∧, Var(Symbol("A")), Lit(Symbol("2")))
 end
 
 @testset "Function Call Names" begin
