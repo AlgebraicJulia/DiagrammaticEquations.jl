@@ -60,15 +60,15 @@ macro. Those documents can be consulted further for information on Decapodes.
 @rule TypeName = Ident & ("{" & Ident & "}")[:?] |> v -> BuildTypeName(v)
  
 # An equation consists of two operations matched by an "==" operator.
-@rule Equation = SummationOperation & ws & "==" & ws & SummationOperation |> v -> Eq(v[1], v[5]) 
+@rule Equation = PrecMinusOperation & ws & "==" & ws & PrecMinusOperation |> v -> Eq(v[1], v[5]) 
 
 # Binary Operations are supported by the following rules.
 # They also support all known Julia binary operations and their corresponding precdences.
 # Lower Rules have higher precedence.
-@rule SummationOperation = PrecMinusOperation & (ws & "+" & ws & PrecMinusOperation)[*] |> v -> BuildSummationOperation(v)
-# Ex: -,¦,⊕,⊖,...
-@rule PrecMinusOperation = PrecDivOperation & (ws & PrecMinusOp & ws & PrecDivOperation)[*] |> v -> BuildApp2(v[1], v[2])
+@rule PrecMinusOperation = SummationOperation & (ws & PrecMinusOp & ws & SummationOperation)[*] |> v -> BuildApp2(v[1], v[2])
 # Ex: /,⌿,÷,...
+@rule SummationOperation = PrecDivOperation & (ws & "+" & ws & PrecDivOperation)[*] |> v -> BuildSummationOperation(v)
+# Ex: -,¦,⊕,⊖,...
 @rule PrecDivOperation = MultOperation & (ws & PrecDivOp & ws & MultOperation)[*] |> v -> BuildApp2(v[1], v[2])
 @rule MultOperation = (lparen & ws & PrecPowerOperation & ws & rparen , PrecPowerOperation) & ((ws & "*" & ws & PrecPowerOperation), PrecPowerOperation)[*] |> v -> BuildMultOperation(v)
 # Ex: ^,↑,↓,...
@@ -78,13 +78,13 @@ macro. Those documents can be consulted further for information on Decapodes.
 @rule Term = Grouping , Derivative , Compose , Call , Atom
 
 # The grouping rule supports the grouping of terms using parentheses. Highest Precdence '(...)'.
-@rule Grouping = lparen & ws & SummationOperation & ws & rparen |> v -> v[3]
+@rule Grouping = lparen & ws & PrecMinusOperation & ws & rparen |> v -> v[3]
 
 # The derivative rule supports derivatives of the form ∂ₜ(x) and dt(x).
 @rule Derivative = ("∂ₜ" , "dt") & lparen & ws & Ident & ws & rparen |> v -> Tan(decapodes.Var(Symbol(v[4])))
 
 # The composition rule supports the compostion of terms A... over term b.
-@rule Compose = composeCall & lparen & ws & SummationOperation & ws & rparen |> v -> AppCirc1(v[1], v[4])
+@rule Compose = composeCall & lparen & ws & PrecMinusOperation & ws & rparen |> v -> AppCirc1(v[1], v[4])
 # ComposeCall supports the function call name.
 @rule composeCall = lparen & ws & composeList & ws & rparen |> v -> v[3],
   composeList
@@ -98,8 +98,8 @@ macro. Those documents can be consulted further for information on Decapodes.
 @rule CallName = Operator , Ident
 
 # Argumennts represet a list of argument consisting of operationss within a function call
-@rule Args = (SummationOperation & ws & comma & SummationOperation) |> v -> [v[1], v[4]],
-  SummationOperation |> v -> [v]
+@rule Args = (PrecMinusOperation & ws & comma & PrecMinusOperation) |> v -> [v[1], v[4]],
+  PrecMinusOperation |> v -> [v]
 
 # A list is a comma seperated list of identifiers.
 @rule List = Ident & (ws & comma & Ident)[*] |> v -> vcat(Symbol(v[1]), Symbol.(last.(v[2])))
@@ -125,7 +125,7 @@ macro. Those documents can be consulted further for information on Decapodes.
 @rule Operator = PrecMinusOp , PrecDivOp , PrecPowerOp
 
 # Unary operators with the same precedence as subtraction
-@rule PrecMinusOp = r"((\.?)(\-|−|¦|⊕|⊖|⊞|⊟|∪|∨|⊔|±|∓|∔|∸|≏|⊎|⊻|⊽|⋎|⋓|⟇|⧺|⧻|⨈|⨢|⨣|⨤|⨥|⨦|⨧|⨨|⨩|
+@rule PrecMinusOp = r"((\.?)(\+|\-|−|¦|⊕|⊖|⊞|⊟|∪|∨|⊔|±|∓|∔|∸|≏|⊎|⊻|⊽|⋎|⋓|⟇|⧺|⧻|⨈|⨢|⨣|⨤|⨥|⨦|⨧|⨨|⨩|
   ⨪|⨫|⨬|⨭|⨮|⨹|⨺|⩁|⩂|⩅|⩊|⩌|⩏|⩐|⩒|⩔|⩖|⩗|⩛|⩝|⩡|⩢|⩣|\|\+\+\||\|\\\|\|))|(\.\+)"x & OpSuffixes |> v -> v[1]*v[2]
 
 # Unary operators with the same precedence as division
