@@ -255,6 +255,8 @@ end
   @test Literal("1.e1")[1] == LS("1.e1")
   @test Literal("1.E1")[1] == LS("1.E1")
   @test Literal("1.")[1] == LS("1.")
+  @test Literal("1_200.e1")[1] == LS("1_200.e1")
+  @test Literal("1_200.E1_300")[1] == LS("1_200.E1_300")
 end
 
 @testset "Subtraction Precedence Operator" begin
