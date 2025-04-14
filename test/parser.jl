@@ -7,10 +7,13 @@ using DiagrammaticEquations: Lit, AppCirc1, App1, App2, Plus, Mult, Tan, Eq
 
 # Import PEG Rules
 using PEG
-using DiagrammaticEquations: DecapodeExpr, SingleLineComment, MultiLineComment, Line, Statement, 
-  Judgement, TypeName, Equation, SummationOperation, PrecMinusOperation, PrecDivOperation, MultOperation,
-  PrecPowerOperation, Term, Grouping, Derivative, Compose, Call, CallName, Operator, Args, List, 
-  CallList, Atom, Ident, Digit, PrecMinusOp, PrecDivOp, PrecPowerOp, OpSuffixes
+using DiagrammaticEquations: DecapodeExpr, SingleLineComment, MultiLineComment,
+  Line, Statement, Judgement, TypeName, Equation, SumOperation,
+  PrecMinusOperation, PrecDivOperation, MultOperation, PrecPowerOperation, Term,
+  Grouping, Derivative, Compose, Call, CallName, Operator, List, CallList, Atom,
+  Ident, Literal, PrecMinusOp, PrecDivOp, PrecPowerOp, OpSuffixes
+
+LS = Lit ∘ Symbol
 
 # Unit Tests
 #############
@@ -46,7 +49,7 @@ end
   @test Line("x::y\n")[1] == Judgement(:x, :y, :I)
   @test Line("a == b\n")[1] == Eq(Var(:a), Var(:b))
   @test Line("Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)\n")[1] ==
-    Eq(Var(Symbol("Ċ")), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁], Var(Symbol("ϕ"))))
+    Eq(Var(Symbol("Ċ")), AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁], Var(:ϕ)))
 end
 
 @testset "Statements" begin
@@ -64,8 +67,8 @@ end
 end
 
 @testset "Type Naming" begin
-  @test TypeName("Form0")[1] == [:Form0, :I]
-  @test TypeName("Form0{X}")[1] == [:Form0, :X]
+  @test TypeName("Form0")[1] == (:Form0, :I)
+  @test TypeName("Form0{X}")[1] == (:Form0, :X)
 end
 
 @testset "Equation" begin
@@ -77,154 +80,145 @@ end
   @test Equation("dt( X ) == Y")[1] == Eq(Tan(Var(:X)), Var(:Y))
   @test Equation("f(n+1, N+2) * ∂ₜ(X) == ∘(a, b)(c)")[1] == Eq(
     App2(:*, App2(:f,
-      Plus([Var(Symbol("n")), Lit(Symbol("1"))]),
-      Plus([Var(Symbol("N")), Lit(Symbol("2"))])),
-    Tan(Var(Symbol("X")))),
+      Plus([Var(:n), LS("1")]),
+      Plus([Var(:N), LS("2")])),
+    Tan(Var(:X))),
     AppCirc1([:a, :b], Var(:c)))
   @test Equation("Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)")[1] == Eq(
     Var(Symbol("Ċ")),
-    AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁], Var(Symbol("ϕ"))))
+    AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁], Var(:ϕ)))
 end
 
 @testset "Summation Operation" begin
-  @test SummationOperation("a + b")[1] ==
-    Plus([Var(Symbol("a")), Var(Symbol("b"))])
-  @test SummationOperation("a + b + c")[1] ==
-    Plus([Var(Symbol("a")), Var(Symbol("b")), Var(Symbol("c"))])
-  @test SummationOperation("dt(X) + ∂ₜ(X)")[1] ==
-    Plus([Tan(Var(Symbol("X"))), Tan(Var(Symbol("X")))])
-  @test SummationOperation("a * b + c")[1] ==
-    Plus([App2(:*, Var(Symbol("a")), Var(Symbol("b"))), Var(Symbol("c"))])
-  @test SummationOperation("3 * 5 + 2")[1] ==
-    Plus([App2(:*, Lit(Symbol("3")), Lit(Symbol("5"))),Lit(Symbol("2"))])
-  @test SummationOperation("10 / 2 + 3")[1] ==
-    Plus([App2(:/, Lit(Symbol("10")), Lit(Symbol("2"))), Lit(Symbol("3"))]) 
-  @test SummationOperation("3 * (5 + 2)")[1] ==
-    App2(:*, Lit(Symbol("3")), Plus([Lit(Symbol("5")), Lit(Symbol("2"))]))
+  @test SumOperation("a + b")[1] ==
+    Plus([Var(:a), Var(:b)])
+  @test SumOperation("a + b + c")[1] ==
+    Plus([Var(:a), Var(:b), Var(:c)])
+  @test SumOperation("dt(X) + ∂ₜ(X)")[1] ==
+    Plus([Tan(Var(:X)), Tan(Var(:X))])
+  @test SumOperation("a * b + c")[1] ==
+    Plus([App2(:*, Var(:a), Var(:b)), Var(:c)])
+  @test SumOperation("3 * 5 + 2")[1] ==
+    Plus([App2(:*, LS("3"), LS("5")),LS("2")])
+  @test SumOperation("10 / 2 + 3")[1] ==
+    Plus([App2(:/, LS("10"), LS("2")), LS("3")]) 
+  @test SumOperation("3 * (5 + 2)")[1] ==
+    App2(:*, LS("3"), Plus([LS("5"), LS("2")]))
 end
 
 @testset "Subtraction Precedence Operations" begin
   @test PrecMinusOperation("3 - 2")[1] ==
-    App2(:-, Lit(Symbol("3")), Lit(Symbol("2")))
+    App2(:-, LS("3"), LS("2"))
   @test PrecMinusOperation("3 - 2 - 1")[1] ==
-    App2(:-, App2(:-, Lit(Symbol("3")), Lit(Symbol("2"))), Lit(Symbol("1")))
+    App2(:-, App2(:-, LS("3"), LS("2")), LS("1"))
   @test PrecMinusOperation("3 .- 2")[1] ==
-    App2(:.-, Lit(Symbol("3")), Lit(Symbol("2")))
+    App2(:.-, LS("3"), LS("2"))
   @test PrecMinusOperation("3 ⊕₀₁ 4")[1] ==
-    App2(:⊕₀₁, Lit(Symbol("3")), Lit(Symbol("4")))
+    App2(:⊕₀₁, LS("3"), LS("4"))
   @test PrecMinusOperation("-3 - 4")[1] ==
-    App2(:-, Lit(Symbol("-3")), Lit(Symbol("4")))
+    App2(:-, LS("-3"), LS("4"))
   @test PrecMinusOperation("3 - -4")[1] ==
-    App2(:-, Lit(Symbol("3")), Lit(Symbol("-4")))
+    App2(:-, LS("3"), LS("-4"))
 end
 
 @testset "Division Precedence Operations" begin
-  @test PrecDivOperation("10/2")[1] == App2(:/, Lit(Symbol("10")), Lit(Symbol("2")))
-  @test PrecDivOperation("10 / 2")[1] == App2(:/, Lit(Symbol("10")), Lit(Symbol("2")))
-  @test PrecDivOperation("10 ∧ 2")[1] == App2(:∧, Lit(Symbol("10")), Lit(Symbol("2")))
-  @test PrecDivOperation("C ∧₀₁ V")[1] == App2(:∧₀₁, Var(Symbol("C")), Var(Symbol("V")))
-  @test PrecDivOperation("A .* B")[1] == App2(:.*, Var(Symbol("A")), Var(Symbol("B")))
+  @test PrecDivOperation("10/2")[1] == App2(:/, LS("10"), LS("2"))
+  @test PrecDivOperation("10 / 2")[1] == App2(:/, LS("10"), LS("2"))
+  @test PrecDivOperation("10 ∧ 2")[1] == App2(:∧, LS("10"), LS("2"))
+  @test PrecDivOperation("C ∧₀₁ V")[1] == App2(:∧₀₁, Var(:C), Var(:V))
+  @test PrecDivOperation("A .* B")[1] == App2(:.*, Var(:A), Var(:B))
 end
 
 @testset "Multiplication Operations" begin
-  @test MultOperation("a * b")[1] == App2(:*, Var(Symbol("a")), Var(Symbol("b")))
-  @test MultOperation("(a)b")[1] == App2(:*, Var(Symbol("a")), Var(Symbol("b")))
+  @test MultOperation("a * b")[1] == App2(:*, Var(:a), Var(:b))
+  @test MultOperation("(a)b")[1] == App2(:*, Var(:a), Var(:b))
   @test MultOperation("3(a)b")[1] ==
-    Mult([Lit(Symbol("3")), Var(Symbol("a")), Var(Symbol("b"))])
-  @test MultOperation("(a) * b")[1] == App2(:*, Var(Symbol("a")), Var(Symbol("b")))
+    Mult([LS("3"), Var(:a), Var(:b)])
+  @test MultOperation("(a) * b")[1] == App2(:*, Var(:a), Var(:b))
   @test MultOperation("a * 
   b")[1] ==
-    App2(:*, Var(Symbol("a")), Var(Symbol("b")))
+    App2(:*, Var(:a), Var(:b))
   @test MultOperation("a * b * c")[1] ==
-    Mult([Var(Symbol("a")), Var(Symbol("b")), Var(Symbol("c"))])
+    Mult([Var(:a), Var(:b), Var(:c)])
   @test MultOperation("2*d₀(C)")[1] ==
-    App2(:*, Lit(Symbol("2")), App1(:d₀, Var(Symbol("C"))))
+    App2(:*, LS("2"), App1(:d₀, Var(:C)))
   @test MultOperation("f(n+1, N+2) * ∂ₜ(X)")[1] ==
     App2(:*, 
       App2(:f,
-        Plus([Var(Symbol("n")), Lit(Symbol("1"))]),
-        Plus([Var(Symbol("N")), Lit(Symbol("2"))])),
-      Tan(Var(Symbol("X"))))
+        Plus([Var(:n), LS("1")]),
+        Plus([Var(:N), LS("2")])),
+      Tan(Var(:X)))
 end
 
 @testset "Power Precedence Operations" begin
-  @test PrecPowerOperation("a^b")[1] == App2(:^, Var(Symbol("a")), Var(Symbol("b")))
-  @test PrecPowerOperation("0.5^b")[1] == App2(:^, Lit(Symbol("0.5")), Var(Symbol("b")))
+  @test PrecPowerOperation("a^b")[1] == App2(:^, Var(:a), Var(:b))
+  @test PrecPowerOperation("0.5^b")[1] == App2(:^, LS("0.5"), Var(:b))
 end
 
 @testset "Terms" begin
-  @test Term("∂ₜ(X)")[1] == Tan(Var(Symbol("X")))
-  @test Term("a")[1] == Var(Symbol("a"))
-  @test Term("12")[1] == Lit(Symbol("12"))
+  @test Term("∂ₜ(X)")[1] == Tan(Var(:X))
+  @test Term("a")[1] == Var(:a)
+  @test Term("12")[1] == LS("12")
   @test Term("∘(a, b)(c)")[1] == AppCirc1([:a, :b], Var(:c))
-  @test Term("a(b)")[1] == App1(:a, Var(Symbol("b")))
+  @test Term("a(b)")[1] == App1(:a, Var(:b))
 end
 
 @testset "Grouping" begin
-  @test Grouping("(a)")[1] == Var(Symbol("a"))
-  @test Grouping("(a + b)")[1] == Plus([Var(Symbol("a")), Var(Symbol("b"))])
+  @test Grouping("(a)")[1] == Var(:a)
+  @test Grouping("(a + b)")[1] == Plus([Var(:a), Var(:b)])
 end
 
 @testset "Derivatives" begin
-   @test Derivative("dt( X )")[1] == Tan(Var(Symbol("X")))
-   @test Derivative("∂ₜ(X)")[1] == Tan(Var(Symbol("X")))
+   @test Derivative("dt( X )")[1] == Tan(Var(:X))
+   @test Derivative("∂ₜ(X)")[1] == Tan(Var(:X))
 end
 
 @testset "Compose" begin
   @test Compose("∘(a, b)(c)")[1] == AppCirc1([:a, :b], Var(:c))
   @test Compose("(∘(a, b))(c)")[1] == AppCirc1([:a, :b], Var(:c))
   @test Compose("∘(a, b, c)(d)")[1] == AppCirc1([:a, :b, :c], Var(:d))
-  @test Compose("∘(a)(∂ₜ(X))")[1] == AppCirc1([:a], Tan(Var(Symbol("X"))))
-  @test Compose("∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)")[1] == AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁], Var(:ϕ))
+  @test Compose("∘(a)(∂ₜ(X))")[1] == AppCirc1([:a], Tan(Var(:X)))
+  @test Compose("∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)")[1] ==
+    AppCirc1([:⋆₀⁻¹, :dual_d₁, :⋆₁], Var(:ϕ))
   @test Compose("(⋆ ∘ ⋆)(C ∧ dX)")[1] ==
-    AppCirc1([:⋆, :⋆], App2(:∧, Var(Symbol("C")), Var(Symbol("dX"))))
+    AppCirc1([:⋆, :⋆], App2(:∧, Var(:C), Var(:dX)))
   @test Compose("((⋆ ∘ ⋆))(C ∧ dX)")[1] ==
-    AppCirc1([:⋆, :⋆], App2(:∧, Var(Symbol("C")), Var(Symbol("dX"))))
+    AppCirc1([:⋆, :⋆], App2(:∧, Var(:C), Var(:dX)))
 end
 
 @testset "Function Call" begin
-  @test Call("a(b)")[1] == App1(:a, Var(Symbol("b")))
-  @test Call("a(b, c)")[1] == App2(:a, Var(Symbol("b")), Var(Symbol("c")))
+  @test Call("a(b)")[1] == App1(:a, Var(:b))
+  @test Call("a(b, c)")[1] == App2(:a, Var(:b), Var(:c))
   @test Call("f(n + 1)")[1] ==
-    App1(:f, Plus([Var(Symbol("n")), Lit(Symbol("1"))]))
+    App1(:f, Plus([Var(:n), LS("1")]))
   @test Call("f(n+1, N+2)")[1] ==
     App2(:f,
-      Plus([Var(Symbol("n")), Lit(Symbol("1"))]),
-      Plus([Var(Symbol("N")), Lit(Symbol("2"))]))
-  @test Call("⊕(a, b)")[1] == App2(:⊕, Var(Symbol("a")), Var(Symbol("b")))
-  @test Call("⊕(a)")[1] == App1(:⊕, Var(Symbol("a")))
-  @test Call("HI(a, b)")[1] == App2(:HI, Var(Symbol("a")), Var(Symbol("b")))
-  @test Call("d(Ψ)")[1] == App1(:d, Var(Symbol("Ψ")))
-  @test Call("(d)(Ψ)")[1] == App1(:d, Var(Symbol("Ψ")))
+      Plus([Var(:n), LS("1")]),
+      Plus([Var(:N), LS("2")]))
+  @test Call("⊕(a, b)")[1] == App2(:⊕, Var(:a), Var(:b))
+  @test Call("⊕(a)")[1] == App1(:⊕, Var(:a))
+  @test Call("HI(a, b)")[1] == App2(:HI, Var(:a), Var(:b))
+  @test Call("d(Ψ)")[1] == App1(:d, Var(:Ψ))
+  @test Call("(d)(Ψ)")[1] == App1(:d, Var(:Ψ))
 end
 
 @testset "Prefix Notation" begin
-  @test Call("+(3, 3)")[1] == App2(:+, Lit(Symbol("3")), Lit(Symbol("3")))
-  @test Call("*(3, 2)")[1] == App2(:*, Lit(Symbol("3")), Lit(Symbol("2")))
-  @test Call("∧(A, 2)")[1] == App2(:∧, Var(Symbol("A")), Lit(Symbol("2")))
+  @test Call("+(3, 3)")[1] == App2(:+, LS("3"), LS("3"))
+  @test Call("*(3, 2)")[1] == App2(:*, LS("3"), LS("2"))
+  @test Call("∧(A, 2)")[1] == App2(:∧, Var(:A), LS("2"))
 end
 
 @testset "Function Call Names" begin
   # Identifier Case
   @test CallName("f")[1] == :f
   # Unary Case
-  @test CallName("⊕")[1] == "⊕"
+  @test CallName("⊕")[1] == :⊕
 end
 
 @testset "Operators" begin
-  @test Operator("-")[1] == "-"
-  @test Operator("⊕")[1] == "⊕"
-  @test Operator("⊽")[1] == "⊽"
-end
-
-@testset "Function Arguments" begin
-  @test Args("a")[1] == [Var(:a)]
-  @test Args("a, b")[1] == [Var(:a), Var(:b)]
-  @test Args("∂ₜ(X)")[1] == [Tan(Var(Symbol("X")))]
-  @test Args("∂ₜ(X), dt(Y)")[1] == [Tan(Var(Symbol("X"))), Tan(Var(Symbol("Y")))]
-  @test Args("n + 1, n + 2")[1] ==
-    [Plus([Var(Symbol("n")), Lit(Symbol("1"))]),
-     Plus([Var(Symbol("n")), Lit(Symbol("2"))])]
+  @test Operator("-")[1] == :-
+  @test Operator("⊕")[1] == :⊕
+  @test Operator("⊽")[1] == :⊽
 end
 
 @testset "List" begin
@@ -238,11 +232,11 @@ end
 end
 
 @testset "Atoms" begin
-  @test Atom("a")[1] == Var(Symbol("a"))
-  @test Atom("23")[1] == Lit(Symbol("23"))
-  @test Atom("-2")[1] == Lit(Symbol("-2"))
-  @test Atom("32.23")[1] == Lit(Symbol("32.23"))
-  @test Atom("1.65e7")[1] == Lit(Symbol("1.65e7"))
+  @test Atom("a")[1] == Var(:a)
+  @test Atom("23")[1] == LS("23")
+  @test Atom("-2")[1] == LS("-2")
+  @test Atom("32.23")[1] == LS("32.23")
+  @test Atom("1.65e7")[1] == LS("1.65e7")
 end
 
 @testset "Identifiers" begin
@@ -252,33 +246,38 @@ end
   @test Ident("a")[1] == :a
 end
 
-@testset "Digits" begin
-  @test Digit("1")[1] == Lit(Symbol("1"))
-  @test Digit("-2")[1] == Lit(Symbol("-2"))
-  @test Digit("1231232")[1] == Lit(Symbol("1231232"))
+@testset "Literals" begin
+  @test Literal("1")[1] == LS("1")
+  @test Literal("-2")[1] == LS("-2")
+  @test Literal("1231232")[1] == LS("1231232")
+  @test Literal("1e1")[1] == LS("1e1")
+  @test Literal("1E1")[1] == LS("1E1")
+  @test Literal("1.e1")[1] == LS("1.e1")
+  @test Literal("1.E1")[1] == LS("1.E1")
+  @test Literal("1.")[1] == LS("1.")
 end
 
 @testset "Subtraction Precedence Operator" begin
-  @test PrecMinusOp("-")[1] == "-"
-  @test PrecMinusOp("⊕")[1] == "⊕"
-  @test PrecMinusOp("⊕²³")[1] == "⊕²³"
-  @test PrecMinusOp("⨨")[1] == "⨨"
-  @test PrecMinusOp("⨪")[1] == "⨪"
+  @test PrecMinusOp("-")[1] == :-
+  @test PrecMinusOp("⊕")[1] == :⊕
+  @test PrecMinusOp("⊕²³")[1] == :⊕²³
+  @test PrecMinusOp("⨨")[1] == :⨨
+  @test PrecMinusOp("⨪")[1] == :⨪
 end
 
 @testset "Division Precedence Operator" begin
-  @test PrecDivOp("/")[1] == "/"
-  @test PrecDivOp("∧")[1] == "∧"
-  @test PrecDivOp(".*")[1] == ".*"
-  @test PrecDivOp("×₆₇")[1] == "×₆₇"
-  @test PrecDivOp("⋉")[1] == "⋉"
-  @test PrecDivOp("⦸")[1] == "⦸"
+  @test PrecDivOp("/")[1] == :/
+  @test PrecDivOp("∧")[1] == :∧
+  @test PrecDivOp(".*")[1] == :.*
+  @test PrecDivOp("×₆₇")[1] == :×₆₇
+  @test PrecDivOp("⋉")[1] == :⋉
+  @test PrecDivOp("⦸")[1] == :⦸
 end
 
 @testset "Power Precedence Operator" begin
-  @test PrecPowerOp("^")[1] == "^"
-  @test PrecPowerOp("↑")[1] == "↑"
-  @test PrecPowerOp("⤋ʷ")[1] == "⤋ʷ"
+  @test PrecPowerOp("^")[1] == :^
+  @test PrecPowerOp("↑")[1] == :↑
+  @test PrecPowerOp("⤋ʷ")[1] == :⤋ʷ
 end
 
 @testset "Operator Suffixes" begin
@@ -286,10 +285,10 @@ end
 end
 
 @testset "Calls Versus Multiplication" begin
-  @test MultOperation("(d)(ψ)")[1] == App1(:d, Var(Symbol("ψ")))
-  @test MultOperation("d(ψ)")[1] == App1(:d, Var(Symbol("ψ")))
-  @test MultOperation("(d)ψ")[1] == App2(:*, Var(Symbol("d")), Var(Symbol("ψ")))
-  @test MultOperation("(d)(a, b)")[1] == App2(:d, Var(Symbol("a")), Var(Symbol("b")))
+  @test MultOperation("(d)(ψ)")[1] == App1(:d, Var(:ψ))
+  @test MultOperation("d(ψ)")[1] == App1(:d, Var(:ψ))
+  @test MultOperation("(d)ψ")[1] == App2(:*, Var(:d), Var(:ψ))
+  @test MultOperation("(d)(a, b)")[1] == App2(:d, Var(:a), Var(:b))
 end
 
 # Exception Handling Tests
@@ -312,9 +311,6 @@ end
   @test parse_fails_at(List, "abcd efgh ijkl") == 6
   @test parse_fails_at(List, "abcd efgh, ijkl") == 6
 
-  @test parse_fails_at(Args, "ident, ident ident") == 14
-  @test parse_fails_at(Args, "ident ident") == 7
-  
   @test parse_fails_at(Call, "ident(ident") == 12
   @test parse_fails_at(Call, "ident ident)") == 6
   @test parse_fails_at(Call, "ident()") == 7
@@ -332,7 +328,7 @@ end
   @test parse_fails_at(MultOperation, "ident *") == 8
   @test parse_fails_at(MultOperation, "2 3") == 3
 
-  @test parse_fails_at(SummationOperation, " + 3") == 1
+  @test parse_fails_at(SumOperation, " + 3") == 1
 
   @test parse_fails_at(Statement, "A B") == 3
   @test parse_fails_at(Statement, "A == ") == 6
@@ -451,6 +447,20 @@ end
 
     ϕ == ϕ₁ + ϕ₂; Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ);
     ∂ₜ(C) == Ċ")
+
+  # Ensure (f)(x) syntax is parsed as a unary operation.
+  # i.e. The `Call` rule is matched before the multiplication rule.
+  parsing_is_isomorphic("
+    A == (d)(ψ)")
+
+  # Note that literals are not evaluated before being parsed.
+  # i.e. "2E9" would not be expanded to :2.0e9 until `parse` is finally
+  # called during `gensim`.
+  parsing_is_isomorphic("
+    Γ::Form1
+    (A, ρ, g, n)::Constant
+
+    Γ == (2.0e9 / (n + 2)) * A * (ρ * g) ^ n")
 
   # Generic Decapodes
   #------------------
@@ -725,12 +735,6 @@ end
     (g, α, β)::Constant
 
     b == g * (α * T - β * S)")
-
-  parsing_is_isomorphic("
-    Γ::Form1
-    (A, ρ, g, n)::Constant
-
-    Γ == (2 / (n + 2)) * A * (ρ * g) ^ n")
 
   parsing_is_isomorphic("
     Q::Form0
