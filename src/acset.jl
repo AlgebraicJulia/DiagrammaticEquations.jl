@@ -3,9 +3,15 @@ using Catlab.DenseACSets
 using DataStructures
 using ACSets.InterTypes
 
-@intertypes "decapodeacset.it" module decapodeacset end
-
-using .decapodeacset
+module intertypes_wrapper
+  using ACSets
+  using ACSets.InterTypes
+  export AbstractDecapode, AbstractNamedDecapode, Decapode, NamedDecapode,
+         SchDecapode, SchNamedDecapode, SchSummationDecapode, SummationDecapode
+  @intertypes "decapodeacset.it" module decapodeacset end
+  using .decapodeacset
+end
+using .intertypes_wrapper
 
 # Transferring pointers
 # --------------------
