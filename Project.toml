@@ -20,7 +20,7 @@ SymbolicUtils = "d1185830-fcd6-423d-90d6-eec64667417b"
 Unicode = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
 [compat]
-ACSets = "0.2"
+ACSets = "0.2.21"
 Catlab = "0.15, 0.16"
 Colors = "0.12.11, 0.13.0"
 ColorSchemeTools = "1.6.0"
