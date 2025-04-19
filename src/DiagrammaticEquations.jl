@@ -23,9 +23,9 @@ apply_inference_rule_op1!, apply_inference_rule_op2!,
 transfer_parents!, transfer_children!,
 unique_lits!,
 ## language
-@decapode, Term, parse_decapode, term, Eq, DecaExpr,
+@decapode, Term, parse_decapode, term, Eq, DecaExpr, Judgement,
 # ~~~~~
-Plus, AppCirc1, Var, Tan, App1, App2,
+Plus, AppCirc1, Var, Tan, App1, App2, Lit, Mult,
 ## visualization
 to_graphviz_property_graph, typename, draw_composition,
 to_graphviz, # Re-exported from Catlab
@@ -34,6 +34,7 @@ average_rewrite,
 ## openoperators
 transfer_parents!, transfer_children!, replace_op1!, replace_op2!, replace_all_op1s!, replace_all_op2s!
 
+using AutoHashEquals
 using Catlab.Theories
 import Catlab.Theories: otimes, oplus, compose, ⊗, ⊕, ⋅, associate, associate_unit, Ob, Hom, dom, codom
 using Catlab.Programs
@@ -67,10 +68,10 @@ include("openoperators.jl")
 include("symbolictheoryutils.jl")
 include("graph_traversal.jl")
 include("deca/Deca.jl")
+@reexport using .Deca
 include("learn/Learn.jl")
 include("SymbolicUtilsInterop.jl")
 
-@reexport using .Deca
 @reexport using .SymbolicUtilsInterop
 
 include("acset2symbolic.jl")

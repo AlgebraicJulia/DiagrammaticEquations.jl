@@ -1,6 +1,8 @@
-using DiagrammaticEquations
+using ..DiagrammaticEquations: Judgement, Eq, Plus, Var, AppCirc1, App1, App2, SummationDecapode, DecaExpr, Tan
 using Catlab
 using Catlab.CategoricalAlgebra
+
+import ..DiagrammaticEquations: Term
 
 function Term(s::SummationDecapode)
   # s = expand_operators(s)
@@ -35,5 +37,6 @@ function Term(s::SummationDecapode)
     terms = map(Var, s[incident(s, σ, :summation), [:summand, :name]])
     Eq(Var(s[σ, [:sum,:name]]), Plus(terms))
   end
-  DiagrammaticEquations.DecaExpr(judgements, vcat(op1s, op2s, sums))
+  DecaExpr(judgements, vcat(op1s, op2s, sums))
 end
+

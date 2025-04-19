@@ -81,3 +81,4 @@ end)
 HalfarDecapode = SummationDecapode(halfar_terms)
 # Observe that expand_operators is called:
 @test SummationDecapode(Term(HalfarDecapode)) == HalfarDecapode
+

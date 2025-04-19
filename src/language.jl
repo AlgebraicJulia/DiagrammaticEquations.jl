@@ -1,5 +1,23 @@
-@intertypes "decapodes.it" module decapodes end
-using .decapodes
+@data Term begin
+  Var(name::Symbol)
+  Lit(name::Symbol)
+  Judgement(var::Symbol, dim::Symbol, space::Symbol) # Symbol 1: Form0 Symbol 2: X
+  AppCirc1(fs::Vector{Symbol}, arg::Term)
+  App1(f::Symbol, arg::Term)
+  App2(f::Symbol, arg1::Term, arg2::Term)
+  Plus(args::Vector{Term})
+  Mult(args::Vector{Term})
+  Tan(var::Term)
+end
+
+@data Equation begin
+  Eq(lhs::Term, rhs::Term)
+end
+
+@auto_hash_equals struct DecaExpr
+  context::Vector{Judgement}
+  equations::Vector{Equation}
+end
 
 term(s::Symbol) = Var(normalize_unicode(s))
 term(s::Number) = Lit(Symbol(s))

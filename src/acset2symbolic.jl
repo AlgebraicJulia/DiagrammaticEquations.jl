@@ -15,7 +15,7 @@ function symbolics_lookup(d::SummationDecapode)
 end
 
 function decavar_to_symbolics(var_name::Symbol, var_type::Symbol, space = :I)
-  new_type = SymbolicUtils.symtype(Deca.DECQuantity, var_type, space)
+  new_type = SymbolicUtils.symtype(DECQuantity, var_type, space)
   SymbolicUtils.Sym{new_type}(var_name)
 end
 

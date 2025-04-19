@@ -4,7 +4,9 @@ using ACSets
 using ..DiagrammaticEquations: AbstractDecapode, Quantity, DerivOp
 using ..DiagrammaticEquations: recognize_types, fill_names!, make_sum_mult_unique!
 import ..DiagrammaticEquations: eval_eq!, SummationDecapode
-using ..decapodes
+
+using ..DiagrammaticEquations: Var, Lit, AppCirc1, App1, App2, Plus, Mult, Tan, Term, DecaExpr, DECQuantity, Eq, Judgement
+
 using ..Deca
 
 using MLStyle
@@ -38,23 +40,23 @@ Base.show(io::IO, d::SymbolicContext) = begin
   end
 
 ## BasicSymbolic -> DecaExpr
-function decapodes.Term(t::SymbolicUtils.BasicSymbolic)
+function Term(t::SymbolicUtils.BasicSymbolic)
     if SymbolicUtils.issym(t)
-        decapodes.Var(nameof(t))
+        Var(nameof(t))
     else
         op = SymbolicUtils.head(t)
         args = SymbolicUtils.arguments(t)
         termargs = Term.(args)
         if op == +
-            decapodes.Plus(termargs)
+            Plus(termargs)
         elseif op == *
-            decapodes.Mult(termargs)
+            Mult(termargs)
         elseif op ∈ [DerivOp, ∂ₜ]
-            decapodes.Tan(only(termargs))
+            Tan(only(termargs))
         elseif length(args) == 1
-            decapodes.App1(nameof(op, symtype.(args)...), termargs...)
+            App1(nameof(op, symtype.(args)...), termargs...)
         elseif length(args) == 2
-            decapodes.App2(nameof(op, symtype.(args)...), termargs...)
+            App2(nameof(op, symtype.(args)...), termargs...)
         else
             error("was unable to convert $t into a Term")
         end
@@ -64,16 +66,16 @@ end
 # a, b = @syms a::Scalar b::Scalar
 # Term(a-b) = Plus(Term[Var(:a), Mult(Term[Lit(Symbol("-1")), Var(:b)]))
 
-decapodes.Term(x::Real) = decapodes.Lit(Symbol(x))
+Term(x::Real) = Lit(Symbol(x))
 
-function decapodes.DecaExpr(d::SymbolicContext)
+function DecaExpr(d::SymbolicContext)
     context = map(d.vars) do var
-        decapodes.Judgement(nameof(var), nameof(symtype(var)), :I)
+        Judgement(nameof(var), nameof(symtype(var)), :I)
     end
     equations = map(d.equations) do eq
-        decapodes.Eq(decapodes.Term(eq.lhs), decapodes.Term(eq.rhs))
+        Eq(Term(eq.lhs), Term(eq.rhs))
     end
-    decapodes.DecaExpr(context, equations)
+    DecaExpr(context, equations)
 end
 
 """
@@ -86,7 +88,7 @@ Example:
   SymbolicUtils.BasicSymbolic(context, Term(a))
 ```
 """
-function SymbolicUtils.BasicSymbolic(context::Dict{Symbol,DataType}, t::decapodes.Term)
+function SymbolicUtils.BasicSymbolic(context::Dict{Symbol,DataType}, t::Term)
     # user must import symbols into scope
     ! = (f -> getfield(@__MODULE__, f))
     @match t begin
@@ -109,10 +111,10 @@ function SymbolicUtils.BasicSymbolic(context::Dict{Symbol,DataType}, t::decapode
     end
 end
 
-function SymbolicContext(d::decapodes.DecaExpr)
+function SymbolicContext(d::DecaExpr)
     # associates each var to its sort...
     context = map(d.context) do j
-        j.var => symtype(Deca.DECQuantity, j.dim, j.space)
+        j.var => symtype(DECQuantity, j.dim, j.space)
     end
     # ... which we then produce a vector of symbolic vars
     vars = map(context) do (v, s)

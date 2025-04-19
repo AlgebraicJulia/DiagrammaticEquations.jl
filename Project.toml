@@ -6,6 +6,7 @@ version = "0.1.8"
 
 [deps]
 ACSets = "227ef7b5-1206-438b-ac65-934d6da304b8"
+AutoHashEquals = "15f4f7f2-30c1-5605-9d31-71845cf9641f"
 Catlab = "134e5e36-593f-5add-ad60-77f754baafbe"
 ColorSchemeTools = "d3e213a1-5e82-5c18-bb32-2a58a99f8c46"
 ColorSchemes = "35d6a980-a343-548e-a6ea-1d62b119f2f4"
@@ -21,10 +22,11 @@ Unicode = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
 [compat]
 ACSets = "0.2"
+AutoHashEquals = "2.2.0"
 Catlab = "0.15, 0.16"
-Colors = "0.12.11, 0.13.0"
 ColorSchemeTools = "1.6.0"
 ColorSchemes = "3.28.0"
+Colors = "0.12.11, 0.13.0"
 DataStructures = "0.18.20"
 LinearAlgebra = "1.10.8, 1.11.0"
 MLStyle = "0.4.17"

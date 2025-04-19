@@ -1,7 +1,6 @@
 using Test
 using MLStyle
 using DiagrammaticEquations
-using DiagrammaticEquations.decapodes
 
 @testset "Pretty Printing" begin
 mdl = parse_decapode(quote

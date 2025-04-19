@@ -1,7 +1,6 @@
 using Test
 using DiagrammaticEquations
 using DiagrammaticEquations.Deca.ThDEC
-using DiagrammaticEquations.decapodes
 using SymbolicUtils
 using SymbolicUtils: symtype, promote_symtype, Symbolic
 using MLStyle
@@ -157,14 +156,14 @@ end
   @test Term(∘(d, d)(u)) == App1(:d₁, App1(:d₀, Var(:u)))
 
   # test binary operator conversion to decaexpr
-  @test Term(a + b) == Plus(Term[Var(:a), Var(:b)])
+  @test all(Term(a + b).args == Plus(Term[Var(:a), Var(:b)]).args)
 
   # TODO: Currently parses as addition
   @test_broken Term(a - b) == App2(:-, Var(:a), Var(:b))
-  @test Term(a * b) == Mult(Term[Var(:a), Var(:b)])
+  @test all(Term(a * b).args .== Mult(Term[Var(:a), Var(:b)]).args)
   @test Term(ω ∧ du) == App2(:∧₁₁, Var(:ω), Var(:du))
 
-  @test Term(ω + du + d(u)) == Plus(Term[App1(:d₀, Var(:u)), Var(:du), Var(:ω)])
+  @test all(Term(ω + du + d(u)).args .== Plus(Term[App1(:d₀, Var(:u)), Var(:du), Var(:ω)]).args)
 
   let
     @syms f(x, y, z)
