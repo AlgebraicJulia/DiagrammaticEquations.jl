@@ -3,7 +3,7 @@ using Catlab.Theories: FreeSchema
 using Catlab.DenseACSets
 using DataStructures
 
-@present SchDecapode(FreeSchema) begin
+@present SchSummationDecapode(FreeSchema) begin
     (Var, TVar, Op1, Op2)::Ob
     (Type, Operator)::AttrType
     src::Hom(Op1, Var)
@@ -15,26 +15,19 @@ using DataStructures
     op1::Attr(Op1, Operator)
     op2::Attr(Op2, Operator)
     type::Attr(Var, Type)
-end
-@present SchNamedDecapode <: SchDecapode begin
+
     Name::AttrType
     name::Attr(Var, Name)
-end
-@present SchSummationDecapode <: SchNamedDecapode begin
-  (Σ, Summand)::Ob
-  summand::Hom(Summand, Var)
-  summation::Hom(Summand, Σ)
-  sum::Hom(Σ, Var)
+
+    (Σ, Summand)::Ob
+    summand::Hom(Summand, Var)
+    summation::Hom(Summand, Σ)
+    sum::Hom(Σ, Var)
 end
 
 @abstract_acset_type AbstractDecapode
-@acset_type Decapode(SchDecapode,
-  index=[:src, :tgt, :res, :incl, :op1, :op2, :type]) <: AbstractDecapode
-@abstract_acset_type AbstractNamedDecapode <: AbstractDecapode
-@acset_type NamedDecapode(SchNamedDecapode,
-  index=[:src, :tgt, :res, :incl, :op1, :op2, :type, :name]) <: AbstractNamedDecapode
 @acset_type SummationDecapode(SchSummationDecapode,
-  index=[:src, :tgt, :res, :incl, :op1, :op2, :type]) <: AbstractNamedDecapode
+  index=[:src, :tgt, :res, :incl, :op1, :op2, :type]) <: AbstractDecapode
 
 # Transferring pointers
 # --------------------
@@ -106,11 +99,11 @@ function transfer_children!(d::SummationDecapode, x, y)
 end
 
 
-"""    function fill_names!(d::AbstractNamedDecapode; lead_symbol::Symbol = Symbol("•"))
+"""    function fill_names!(d::AbstractDecapode; lead_symbol::Symbol = Symbol("•"))
 
 Provide a variable name to all the variables that don't have names.
 """
-function fill_names!(d::AbstractNamedDecapode; lead_symbol::Symbol = Symbol("•"))
+function fill_names!(d::AbstractDecapode; lead_symbol::Symbol = Symbol("•"))
   bulletcount = 1
   for i in parts(d, :Var)
     if !isassigned(d[:,:name],i) || isnothing(d[i, :name])
@@ -127,11 +120,11 @@ function fill_names!(d::AbstractNamedDecapode; lead_symbol::Symbol = Symbol("•
   d
 end
 
-"""    find_dep_and_order(d::AbstractNamedDecapode)
+"""    find_dep_and_order(d::AbstractDecapode)
 
 Find the order of each tangent variable in the Decapode, and the index of the variable that it is dependent on. Returns a tuple of (dep, order), both of which respecting the order in which incident(d, :∂ₜ, :op1) returns Vars.
 """
-function find_dep_and_order(d::AbstractNamedDecapode)
+function find_dep_and_order(d::AbstractDecapode)
   dep = d[incident(d, :∂ₜ, :op1), :src]
   order = ones(Int, nparts(d, :TVar))
   found = true
@@ -149,7 +142,7 @@ function find_dep_and_order(d::AbstractNamedDecapode)
   (dep, order)
 end
 
-"""    dot_rename!(d::AbstractNamedDecapode)
+"""    dot_rename!(d::AbstractDecapode)
 
 Rename tangent variables by their depending variable appended with a dot.
 e.g. If D == ∂ₜ(C), then rename D to Ċ.
@@ -157,7 +150,7 @@ e.g. If D == ∂ₜ(C), then rename D to Ċ.
 If a tangent variable updates multiple vars, choose one arbitrarily.
 e.g. If D == ∂ₜ(C) and D == ∂ₜ(B), then rename D to either Ċ or B ̇.
 """
-function dot_rename!(d::AbstractNamedDecapode)
+function dot_rename!(d::AbstractDecapode)
   dep, order = find_dep_and_order(d)
   for (i,e) in enumerate(incident(d, :∂ₜ, :op1))
     t = d[e, :tgt]
@@ -170,7 +163,7 @@ function dot_rename!(d::AbstractNamedDecapode)
   d
 end
 
-function make_sum_mult_unique!(d::AbstractNamedDecapode)
+function make_sum_mult_unique!(d::AbstractDecapode)
   snum = 1
   mnum = 1
   for (i, name) in enumerate(d[:name])
@@ -210,7 +203,7 @@ end
 
 # Note: This hard-bakes in Form0 through Form2, and higher Forms are not
 # allowed.
-function recognize_types(d::AbstractNamedDecapode)
+function recognize_types(d::AbstractDecapode)
   types = d[:type]
   unrecognized_types = get_unsupportedtypes(types)
   isempty(unrecognized_types) ||
@@ -218,17 +211,17 @@ function recognize_types(d::AbstractNamedDecapode)
 end
 export recognize_types
 
-"""    is_expanded(d::AbstractNamedDecapode)
+"""    is_expanded(d::AbstractDecapode)
 
 Check that no unary operator is a composition of unary operators.
 """
-is_expanded(d::AbstractNamedDecapode) = !any(x -> x isa AbstractVector, d[:op1])
+is_expanded(d::AbstractDecapode) = !any(x -> x isa AbstractVector, d[:op1])
 
-"""    function expand_operators(d::AbstractNamedDecapode)
+"""    function expand_operators(d::AbstractDecapode)
 
 If any unary operator is a composition, expand it out using intermediate variables.
 """
-function expand_operators(d::AbstractNamedDecapode)
+function expand_operators(d::AbstractDecapode)
   #e = SummationDecapode{Symbol, Symbol, Symbol}()
   e = SummationDecapode{Any, Any, Symbol}()
   copy_parts!(e, d, (:Var, :TVar, :Op2))
@@ -236,7 +229,7 @@ function expand_operators(d::AbstractNamedDecapode)
   return e
 end
 
-function expand_operators!(e::AbstractNamedDecapode, d::AbstractNamedDecapode)
+function expand_operators!(e::AbstractDecapode, d::AbstractDecapode)
   newvar = 0
   for op in parts(d, :Op1)
     if !isa(d[op,:op1], AbstractArray)
@@ -429,11 +422,11 @@ function find_chains(d::SummationDecapode;
   return chains
 end
 
-function add_constant!(d::AbstractNamedDecapode, k::Symbol)
+function add_constant!(d::AbstractDecapode, k::Symbol)
     return add_part!(d, :Var, type=:Constant, name=k)
 end
 
-function add_parameter(d::AbstractNamedDecapode, k::Symbol)
+function add_parameter(d::AbstractDecapode, k::Symbol)
     return add_part!(d, :Var, type=:Parameter, name=k)
 end
 
@@ -633,7 +626,7 @@ end
 # Return a dict of Literals and the indices of Vars equal to that Literal.
 # XXX: Does not copy the result of incident.
 # XXX: A generalization for given subpart must be type stable.
-function group_lits_by_name(d::SummationDecapode{Any,Any,Symbol})
+function group_lits_by_name(d::SummationDecapode{Any,Any})
   dict = Dict{Symbol,Vector{Int}}()
   for v in incident(d, :Literal, :type)
     lit = d[v,:name]
