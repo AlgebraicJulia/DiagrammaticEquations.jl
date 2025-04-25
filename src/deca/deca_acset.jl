@@ -363,15 +363,15 @@ resolve_overloads!(d::SummationDecapode) =
 function SummationDecapode(uuidlg::UUIDLabeledGraph)
     @acset SummationDecapode{Any, Any, Symbol} begin
         Var = nparts(uuidlg, :V)
-        type = something.(uuidlg[:vtype], :infer)
+        type = Symbol.(something.(uuidlg[:vtype], :infer))
         name = Symbol.(uuidlg[:vlabel])
 
         Op1 = nparts(uuidlg, :E)
         src = uuidlg[:src]
         tgt = uuidlg[:tgt]
-        op1 = uuidlg[:elabel]
+        op1 = Symbol.(uuidlg[:elabel])
 
         TVar = count(==("∂ₜ"), uuidlg[:elabel])
-        incl = findall(==("∂ₜ"), uuidlg[:elabel])
+        incl = uuidlg[:tgt][findall(==("∂ₜ"), uuidlg[:elabel])]
     end
 end
