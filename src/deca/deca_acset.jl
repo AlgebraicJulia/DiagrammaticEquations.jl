@@ -359,3 +359,19 @@ Resolve function overloads based on types of src and tgt.
 """
 resolve_overloads!(d::SummationDecapode) =
   resolve_overloads!(d, op1_res_rules_2D, op2_res_rules_2D)
+
+function SummationDecapode(uuidlg::UUIDLabeledGraph)
+    @acset SummationDecapode{Any, Any, Symbol} begin
+        Var = nparts(uuidlg, :V)
+        type = Symbol.(something.(uuidlg[:vtype], :infer))
+        name = Symbol.(uuidlg[:vlabel])
+
+        Op1 = nparts(uuidlg, :E)
+        src = uuidlg[:src]
+        tgt = uuidlg[:tgt]
+        op1 = Symbol.(uuidlg[:elabel])
+
+        TVar = count(==("∂ₜ"), uuidlg[:elabel])
+        incl = uuidlg[:tgt][findall(==("∂ₜ"), uuidlg[:elabel])]
+    end
+end
