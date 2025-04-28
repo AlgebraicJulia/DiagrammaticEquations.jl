@@ -41,6 +41,10 @@ end
     DecaExpr([Judgement(:a, :b, :I)], [])
   @test DecapodeExpr("a::b\n#= Multi-line comment\nspanning lines\n=#\nc == d\n")[1] ==
     DecaExpr([Judgement(:a, :b, :I)], [Eq(Var(:c), Var(:d))])
+  @test DecapodeExpr("#=\nMulti-line comment\nspanning lines\n=#\nA == d(B)\n")[1] ==
+    DecaExpr([], [Eq(Var(:A), App1(:d, Var(:B)))])
+  @test DecapodeExpr("A == d(B)\n#=\nMulti-line comment\nspanning lines\n=#\n")[1] ==
+    DecaExpr([], [Eq(Var(:A), App1(:d, Var(:B)))])
 end
 
 @testset "Lines" begin
@@ -756,5 +760,26 @@ end
     A::Form1
 
     A == avg₀₁(5.8282 * 10 ^ (-0.236Tₛ) * 1.65e7)")
-end
 
+  # Multiline Test
+  parsing_is_isomorphic("
+    #=
+      Multi-line comment
+    =#
+    A == d(B)
+    ")
+
+  parsing_is_isomorphic("
+    A == d(B)
+    #=
+      Multi-line comment
+    =#
+    ")
+  parsing_is_isomorphic("
+    A::Form0
+    #=
+      Multi-line comment
+    =#
+    A == d(B)
+    ")
+end

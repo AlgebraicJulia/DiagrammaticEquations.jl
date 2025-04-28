@@ -31,7 +31,7 @@ using Catlab.Parsers.ParserCore
 @rule SingleLineComment = "#" & r"[^\r\n]*" |>
   v -> nothing
 
-@rule MultiLineComment = "#=" & r"(?:[^=]|=(?!#)|\s)*" & "=#" |>
+@rule MultiLineComment = ws & "#=" & r"(?:[^=]|=(?!#)|\s)*" & "=#" |>
   v -> nothing
 
 # Type assignments
