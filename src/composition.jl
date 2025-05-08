@@ -1,3 +1,4 @@
+using Catlab.ADTs
 import Catlab.CategoricalAlgebra: apex, feet, legs
 import Catlab.WiringDiagrams: oapply
 
@@ -233,12 +234,10 @@ function find_duplicates(vs::Vector{T}) where T
   twice
 end
 
-# TODO: Upstream this to Catlab?
 function construct_relation_diagram(boxes::Vector{Symbol}, junctions::Vector{Vector{Symbol}})
-  tables = map(boxes, junctions) do b, j
-    Expr(:call, b, j...)
-  end
-  parse_relation_diagram(:(), :($(tables...),))
+  context = Untyped.(boxes)
+  statements = map((b, j) -> Statement(b, Untyped.(j)), zip(boxes, junctions))
+  RelationTerm.construct(RelationDiagram, UWDExpr([], context, statements))
 end
 
 # TODO: Add a macro which provides names for boxes via the Symbol of the Decapode.
