@@ -418,7 +418,7 @@ This function accepts an original type and a new type and determines if the orig
 """
 function safe_modifytype(org_type::Symbol, new_type::Symbol)
   modify = (org_type in INFER_TYPES && !(new_type in NONINFERABLE_TYPES))
-  return (modify, modify ? new_type : org_type)
+  (modify, modify ? new_type : org_type)
 end
 
 """    safe_modifytype!(d::SummationDecapode, var_idx::Int, new_type::Symbol)
@@ -427,7 +427,7 @@ This function calls `safe_modifytype` to safely modify a Decapode's variable typ
 """
 function safe_modifytype!(d::SummationDecapode, var_idx::Int, new_type::Symbol)
   modify, d[var_idx, :type] = safe_modifytype(d[var_idx, :type], new_type)
-  return modify
+  modify
 end
 
 """    filterfor_ec_types(types::AbstractVector{Symbol})
@@ -487,35 +487,27 @@ end
 # TODO: Add printing of rules which are ambigious with each other
 function check_rule_ambiguity(type_rules::AbstractVector{Operator{Symbol}})
   ntype_rules = length(type_rules)
-  for idx1 in 1:ntype_rules
-    for idx2 in idx1+1:ntype_rules
+  for (idx, rule1) in enumerate(type_rules)
+    for rule2 in type_rules[idx:end]
+      types1 = vcat(rule1.res_type, rule1.src_types)
+      types2 = vcat(rule2.res_type, rule2.src_types)
+      names1 = vcat(rule1.op_name, rule1.aliases)
+      names2 = vcat(rule2.op_name, rule2.aliases)
 
-      rule1 = type_rules[idx1]
-      rule2 = type_rules[idx2]
+      # Rules do not share a name.
+      isempty(names1 ∩ names2) && continue
 
-      if rule1.op_name == rule2.op_name || !isempty(intersect(rule1.aliases, rule2.aliases))
-        types1 = vcat(rule1.res_type, rule1.src_types)
-        types2 = vcat(rule2.res_type, rule2.src_types)
+      # Rules do not have the same arity.
+      length(types1) != length(types2) && continue
 
-        if length(types1) != length(types2)
-          continue
-        end
-
-        score = mapreduce(+, types1, types2; init = 0) do type1, type2
-          if type1 == type2
-            return 0
-          elseif type1 in NONINFERABLE_TYPES || type2 in NONINFERABLE_TYPES
-            return Inf
-          else
-            return 1
-          end
-        end
-
-        if score == 1 # Criteria for inferring a type
-          return false
-        end
+      # Rules differ by non-inferable type.
+      noninferable_mismatches = map(types1, types2) do type1, type2
+        type1 != type2 && (type1 in NONINFERABLE_TYPES || type2 in NONINFERABLE_TYPES)
       end
+      any(noninferable_mismatches) && continue
 
+      # A type can be inferred.
+      count(types1 .!= types2) == 1 && return false
     end
   end
   return true
@@ -563,9 +555,7 @@ function check_operator(d::SummationDecapode, op_id, rule, edge_val; check_name:
   deca_types = vcat(d[inputs, :type], d[output, :type])
 
   score = mapreduce(+, rule_types, deca_types; init = 0) do rule_t, deca_t
-    if ignore_infers && deca_t in INFER_TYPES
-      return 1
-    elseif ignore_usertypes && deca_t in USER_TYPES
+    if (ignore_infers && deca_t in INFER_TYPES) || (ignore_usertypes && deca_t in USER_TYPES)
       return 1
     else
       return rule_t == deca_t
@@ -581,30 +571,23 @@ function check_operator(d::SummationDecapode, op_id, rule, edge_val; check_name:
 end
 
 function apply_inference_rule!(d::SummationDecapode, op_id, rule, edge_val)
-
   type_diff = check_operator(d, op_id, rule, edge_val; check_name = true, check_aliases = true)
+  type_diff != 1 && return false
 
-  if type_diff == 1
-    vars = vcat(edge_inputs(d, op_id, edge_val), edge_output(d, op_id, edge_val))
-    types = vcat(rule.src_types, rule.res_type)
-    return any(map(vars, types) do var, type
-      safe_modifytype!(d, var, type)
-    end)
+  vars = vcat(edge_inputs(d, op_id, edge_val), edge_output(d, op_id, edge_val))
+  types = vcat(rule.src_types, rule.res_type)
+  applied = map(vars, types) do var, type
+    safe_modifytype!(d, var, type)
   end
-
-  return false
+  any(applied)
 end
 
 function apply_overloading_rule!(d::SummationDecapode, op_id, rule, edge_val)
-
   type_diff = check_operator(d, op_id, rule, edge_val; check_aliases = true)
+  type_diff != 0 && return false
 
-  if type_diff == 0
-    set_edge_label!(d, op_id, rule.op_name, edge_val)
-    return true
-  end
-
-  return false
+  set_edge_label!(d, op_id, rule.op_name, edge_val)
+  return true
 end
 
 struct DecaTypeError{T}
@@ -624,24 +607,14 @@ function Base.show(io::IO, type_except::DecaTypeExeception{T}) where T
 end
 
 function run_typechecking(d::SummationDecapode, type_rules::AbstractVector{Operator{Symbol}})
-
-  type_errors = DecaTypeError{Symbol}[]
-
-  for table in [:Op1, :Op2]
-    for op_idx in parts(d, table)
-      type_error = run_typechecking_for_op(d, op_idx, type_rules, Val(table))
-      if type_error !== nothing
-        push!(type_errors, type_error)
-      end
-    end
-  end
-
-  return type_errors
+  op1_errors = map(x -> run_typechecking_for_op(d, x, type_rules, :Op1), parts(d, :Op1))
+  op2_errors = map(x -> run_typechecking_for_op(d, x, type_rules, :Op2), parts(d, :Op2))
+  filter(!isnothing, [op1_errors..., op2_errors...])
 end
 
-function run_typechecking_for_op(d::SummationDecapode, op_id, type_rules, edge_val::Val{table}) where table
+function run_typechecking_for_op(d::SummationDecapode, op_id, type_rules, table)
   min_diff, min_rule_idx = findmin(type_rules) do rule
-    check_operator(d, op_id, rule, edge_val; check_name = true, check_aliases = true, ignore_infers = true, ignore_usertypes = true)
+    check_operator(d, op_id, rule, Val(table); check_name = true, check_aliases = true, ignore_infers = true, ignore_usertypes = true)
   end
   min_diff in [0,Inf] ? nothing : DecaTypeError{Symbol}(type_rules[min_rule_idx], op_id, table)
 end
@@ -672,7 +645,6 @@ function infer_types!(d::SummationDecapode, type_rules::AbstractVector{Operator{
 
   while true
     applied = false
-
 
     for table in [:Op1, :Op2]
       for op_idx in parts(d, table)
