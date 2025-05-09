@@ -26,6 +26,7 @@ op1_operators = [
   # Rules for ♯
   Operator(:PVF, :Form1, :♯ᵖᵖ, [:♯]),
   Operator(:DVF, :DualForm1, :♯ᵈᵈ, [:♯]),
+  # Operator(:DVF, :Form1, :♯ᵖᵈ, [:♯]),
 
   # Rules for ♭
   Operator(:Form1, :DVF, :♭ᵈᵖ, [:♭]),
