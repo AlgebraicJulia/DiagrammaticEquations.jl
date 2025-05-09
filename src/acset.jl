@@ -5,6 +5,8 @@ using ACSets.InterTypes
 
 @intertypes "decapodeacset.it" module decapodeacset end
 
+import Base.show
+
 using .decapodeacset
 
 # Transferring pointers
@@ -362,7 +364,7 @@ function find_chains(d::SummationDecapode;
 
   filter!(x -> passes_white_list(d[x, :op1]), chain_starts)
   filter!(x -> passes_black_list(d[x, :op1]), chain_starts)
-  
+
   s = Stack{Int64}()
   foreach(x -> push!(s, x), chain_starts)
   while !isempty(s)
@@ -409,35 +411,106 @@ function add_parameter(d::AbstractNamedDecapode, k::Symbol)
 end
 
 
-"""
-    safe_modifytype(org_type::Symbol, new_type::Symbol)
+"""    safe_modifytype(org_type::Symbol, new_type::Symbol)
 
 This function accepts an original type and a new type and determines if the original type
   can be safely overwritten by the new type.
 """
 function safe_modifytype(org_type::Symbol, new_type::Symbol)
   modify = (org_type in INFER_TYPES && !(new_type in NONINFERABLE_TYPES))
-  return (modify, modify ? new_type : org_type)
+  (modify, modify ? new_type : org_type)
 end
 
-"""
-    safe_modifytype!(d::SummationDecapode, var_idx::Int, new_type::Symbol)
+"""    safe_modifytype!(d::SummationDecapode, var_idx::Int, new_type::Symbol)
 
 This function calls `safe_modifytype` to safely modify a Decapode's variable type.
 """
 function safe_modifytype!(d::SummationDecapode, var_idx::Int, new_type::Symbol)
   modify, d[var_idx, :type] = safe_modifytype(d[var_idx, :type], new_type)
-  return modify
+  modify
 end
 
-"""
-    filterfor_ec_types(types::AbstractVector{Symbol})
+"""    filterfor_ec_types(types::AbstractVector{Symbol})
 
 Return any form or vector-field type symbols.
 """
 function filterfor_ec_types(types::AbstractVector{Symbol})
   conditions = x -> !(x in NON_EC_TYPES)
   filter(conditions, types)
+end
+
+struct Operator{T}
+  res_type::T
+  src_types::AbstractVector{T}
+  op_name::Symbol
+  aliases::AbstractVector{Symbol}
+
+  function Operator{T}(res_type::T, src_types::AbstractVector{T}, op_name, aliases = Symbol[]) where T
+    new(res_type, src_types, op_name, aliases)
+  end
+
+  function Operator{T}(res_type::T, src_type::T, op_name, aliases = Symbol[]) where T
+    new(res_type, T[src_type], op_name, aliases)
+  end
+
+  function Operator(res_type::Symbol, src_type::Union{Symbol, AbstractVector{Symbol}}, op_name, aliases = Symbol[])
+    Operator{Symbol}(res_type, src_type, op_name, aliases)
+  end
+end
+
+function same_type_rules_op(op_name::Symbol, types::AbstractVector{Symbol}, arity::Int, g_aliases::AbstractVector{Symbol} = Symbol[], sp_aliases::AbstractVector = Symbol[])
+  @assert isempty(sp_aliases) || length(types) == length(sp_aliases)
+  map(1:length(types)) do i
+    aliases = isempty(sp_aliases) ? g_aliases : vcat(g_aliases, sp_aliases[i])
+    Operator{Symbol}(types[i], repeat([types[i]], arity), op_name, aliases)
+  end
+end
+
+function arithmetic_operators(op_name::Symbol, broadcasted::Bool, arity::Int = 2)
+  @match (broadcasted, arity) begin
+    (true, 2) => bin_broad_arith_ops(op_name)
+    _ => error("This type of arithmetic operator is not yet supported or may not be valid.")
+  end
+end
+
+function bin_broad_arith_ops(op_name)
+  all_ops = map(t -> Operator{Symbol}(t, [t, t], op_name), FORM_TYPES)
+  for type in vcat(USER_TYPES, NUMBER_TYPES)
+    append!(all_ops, map(t -> Operator{Symbol}(t, [t, type], op_name), FORM_TYPES))
+    append!(all_ops, map(t -> Operator{Symbol}(t, [type, t], op_name), FORM_TYPES))
+  end
+
+  all_ops
+end
+
+# TODO: This could probably be implemented using a better version of `check_operator`
+# TODO: Add printing of rules which are ambigious with each other
+function check_rule_ambiguity(type_rules::AbstractVector{Operator{Symbol}})
+  ntype_rules = length(type_rules)
+  for (idx, rule1) in enumerate(type_rules)
+    for rule2 in type_rules[idx:end]
+      types1 = vcat(rule1.res_type, rule1.src_types)
+      types2 = vcat(rule2.res_type, rule2.src_types)
+      names1 = vcat(rule1.op_name, rule1.aliases)
+      names2 = vcat(rule2.op_name, rule2.aliases)
+
+      # Rules do not share a name.
+      isempty(names1 ∩ names2) && continue
+
+      # Rules do not have the same arity.
+      length(types1) != length(types2) && continue
+
+      # Rules differ by non-inferable type.
+      noninferable_mismatches = map(types1, types2) do type1, type2
+        type1 != type2 && (type1 in NONINFERABLE_TYPES || type2 in NONINFERABLE_TYPES)
+      end
+      any(noninferable_mismatches) && continue
+
+      # A type can be inferred.
+      count(types1 .!= types2) == 1 && return false
+    end
+  end
+  return true
 end
 
 function infer_sum_types!(d::SummationDecapode, Σ_idx::Int)
@@ -466,36 +539,85 @@ function infer_sum_types!(d::SummationDecapode, Σ_idx::Int)
   return applied
 end
 
-function apply_inference_rule_op1!(d::SummationDecapode, op1_id, rule)
-  score_src = (rule.src_type == d[d[op1_id, :src], :type])
-  score_tgt = (rule.tgt_type == d[d[op1_id, :tgt], :type])
+"""    check_operator(d::SummationDecapode, op_id, rule, edge_val; check_name::Bool = false, check_aliases::Bool = false, ignore_infers::Bool = false, ignore_usertypes::Bool = false)
 
-  check_op = (d[op1_id, :op1] in rule.op_names)
-  if(check_op && (score_src + score_tgt == 1))
-    mod_src = safe_modifytype!(d, d[op1_id, :src], rule.src_type)
-    mod_tgt = safe_modifytype!(d, d[op1_id, :tgt], rule.tgt_type)
-    return mod_src || mod_tgt
+Cross references a given operator's name and its input/ouput types with a given rule. It
+reutrns the number of differences in the types. If the rule does not apply to this operator,
+which is checked by naming matching, the type difference is Inf.
+"""
+function check_operator(d::SummationDecapode, op_id, rule, edge_val; check_name::Bool = false, check_aliases::Bool = false, ignore_infers::Bool = false, ignore_usertypes::Bool = false)
+  inputs = edge_inputs(d, op_id, edge_val)
+  output = edge_output(d, op_id, edge_val)
+
+  max_score = length(inputs) + length(output)
+
+  rule_types = vcat(rule.src_types, rule.res_type)
+  deca_types = vcat(d[inputs, :type], d[output, :type])
+
+  score = mapreduce(+, rule_types, deca_types; init = 0) do rule_t, deca_t
+    if (ignore_infers && deca_t in INFER_TYPES) || (ignore_usertypes && deca_t in USER_TYPES)
+      return 1
+    else
+      return rule_t == deca_t
+    end
   end
 
-  return false
+  dop_name = edge_function(d, op_id, edge_val)
+
+  named = check_name && dop_name == rule.op_name
+  aliased = check_aliases && dop_name in rule.aliases
+
+  return (named || aliased) ? max_score - score : Inf
 end
 
-function apply_inference_rule_op2!(d::SummationDecapode, op2_id, rule)
-  score_proj1 = (rule.proj1_type == d[d[op2_id, :proj1], :type])
-  score_proj2 = (rule.proj2_type == d[d[op2_id, :proj2], :type])
-  score_res = (rule.res_type == d[d[op2_id, :res], :type])
+function apply_inference_rule!(d::SummationDecapode, op_id, rule, edge_val)
+  type_diff = check_operator(d, op_id, rule, edge_val; check_name = true, check_aliases = true)
+  type_diff != 1 && return false
 
-  check_op = (d[op2_id, :op2] in rule.op_names)
-  if check_op && (score_proj1 + score_proj2 + score_res == 2)
-    mod_proj1 = safe_modifytype!(d, d[op2_id, :proj1], rule.proj1_type)
-    mod_proj2 = safe_modifytype!(d, d[op2_id, :proj2], rule.proj2_type)
-    mod_res   = safe_modifytype!(d, d[op2_id, :res], rule.res_type)
-    return mod_proj1 || mod_proj2 || mod_res
+  vars = vcat(edge_inputs(d, op_id, edge_val), edge_output(d, op_id, edge_val))
+  types = vcat(rule.src_types, rule.res_type)
+  applied = map(vars, types) do var, type
+    safe_modifytype!(d, var, type)
   end
-
-  return false
+  any(applied)
 end
 
+function apply_overloading_rule!(d::SummationDecapode, op_id, rule, edge_val)
+  type_diff = check_operator(d, op_id, rule, edge_val; check_aliases = true)
+  type_diff != 0 && return false
+
+  set_edge_label!(d, op_id, rule.op_name, edge_val)
+  return true
+end
+
+struct DecaTypeError{T}
+  rule::Operator{T}
+  idx::Int
+  table::Symbol
+end
+
+Base.show(io::IO, type_error::DecaTypeError{T}) where T = println("Operator at index $(type_error.idx) in table $(type_error.table) is not correctly typed. Perhaps the operator was meant to be $(type_error.rule)?")
+
+struct DecaTypeExeception{T} <: Exception
+  type_errors::Vector{DecaTypeError{T}}
+end
+
+function Base.show(io::IO, type_except::DecaTypeExeception{T}) where T
+  map(x -> Base.show(io, x), type_except.type_errors)
+end
+
+function run_typechecking(d::SummationDecapode, type_rules::AbstractVector{Operator{Symbol}})
+  op1_errors = map(x -> run_typechecking_for_op(d, x, type_rules, :Op1), parts(d, :Op1))
+  op2_errors = map(x -> run_typechecking_for_op(d, x, type_rules, :Op2), parts(d, :Op2))
+  filter(!isnothing, [op1_errors..., op2_errors...])
+end
+
+function run_typechecking_for_op(d::SummationDecapode, op_id, type_rules, table)
+  min_diff, min_rule_idx = findmin(type_rules) do rule
+    check_operator(d, op_id, rule, Val(table); check_name = true, check_aliases = true, ignore_infers = true, ignore_usertypes = true)
+  end
+  min_diff in [0,Inf] ? nothing : DecaTypeError{Symbol}(type_rules[min_rule_idx], op_id, table)
+end
 
 # TODO: Although the big-O complexity is the same, it might be more efficent on
 # average to iterate over edges then rules, instead of rules then edges. This
@@ -506,7 +628,7 @@ end
 
 Infer types of Vars given rules wherein one type is known and the other not.
 """
-function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :op_names), Tuple{Symbol, Symbol, Vector{Symbol}}}}, op2_rules::Vector{NamedTuple{(:proj1_type, :proj2_type, :res_type, :op_names), Tuple{Symbol, Symbol, Symbol, Vector{Symbol}}}})
+function infer_types!(d::SummationDecapode, type_rules::AbstractVector{Operator{Symbol}})
 
   # This is an optimization so we do not "visit" a row which has no infer types.
   # It could be deleted if found to be not worth maintainability tradeoff.
@@ -519,28 +641,22 @@ function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_t
   types_known_op2[incident(d, :infer, [:proj2, :type])] .= false
   types_known_op2[incident(d, :infer, [:res, :type])] .= false
 
+  types_known = Dict{Symbol, Vector{Bool}}(:Op1 => types_known_op1, :Op2 => types_known_op2)
+
   while true
     applied = false
 
-    for rule in op1_rules
-      for op1_idx in parts(d, :Op1)
-        types_known_op1[op1_idx] && continue
+    for table in [:Op1, :Op2]
+      for op_idx in parts(d, table)
+        types_known[table][op_idx] && continue
 
-        this_applied = apply_inference_rule_op1!(d, op1_idx, rule)
+        for rule in type_rules
+          this_applied = apply_inference_rule!(d, op_idx, rule, Val(table))
 
-        types_known_op1[op1_idx] = this_applied
-        applied |= this_applied
-      end
-    end
+          types_known[table][op_idx] = this_applied
+          applied |= this_applied
+        end
 
-    for rule in op2_rules
-      for op2_idx in parts(d, :Op2)
-        types_known_op2[op2_idx] && continue
-
-        this_applied = apply_inference_rule_op2!(d, op2_idx, rule)
-
-        types_known_op2[op2_idx] = this_applied
-        applied |= this_applied
       end
     end
 
@@ -554,31 +670,15 @@ function infer_types!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_t
   d
 end
 
-
-
 """    function resolve_overloads!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :resolved_name, :op), NTuple{4, Symbol}}})
 
 Resolve function overloads based on types of src and tgt.
 """
-function resolve_overloads!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(:src_type, :tgt_type, :resolved_name, :op), NTuple{4, Symbol}}}, op2_rules::Vector{NamedTuple{(:proj1_type, :proj2_type, :res_type, :resolved_name, :op), NTuple{5, Symbol}}})
-  for op1_idx in parts(d, :Op1)
-    src = d[:src][op1_idx]; tgt = d[:tgt][op1_idx]; op1 = d[:op1][op1_idx]
-    src_type = d[:type][src]; tgt_type = d[:type][tgt]
-    for rule in op1_rules
-      if op1 == rule[:op] && src_type == rule[:src_type] && tgt_type == rule[:tgt_type]
-        d[op1_idx, :op1] = rule[:resolved_name]
-        break
-      end
-    end
-  end
-
-  for op2_idx in parts(d, :Op2)
-    proj1 = d[:proj1][op2_idx]; proj2 = d[:proj2][op2_idx]; res = d[:res][op2_idx]; op2 = d[:op2][op2_idx]
-    proj1_type = d[:type][proj1]; proj2_type = d[:type][proj2]; res_type = d[:type][res]
-    for rule in op2_rules
-      if op2 == rule[:op] && proj1_type == rule[:proj1_type] && proj2_type == rule[:proj2_type] && res_type == rule[:res_type]
-        d[op2_idx, :op2] = rule[:resolved_name]
-        break
+function resolve_overloads!(d::SummationDecapode, resolve_rules::AbstractVector{Operator{Symbol}})
+  for rule in resolve_rules
+    for table in [:Op1, :Op2]
+      for op_idx in parts(d, table)
+        apply_overloading_rule!(d, op_idx, rule, Val(table))
       end
     end
   end
@@ -586,6 +686,35 @@ function resolve_overloads!(d::SummationDecapode, op1_rules::Vector{NamedTuple{(
   d
 end
 
+"""    type_check(d::SummationDecapode, type_rules::AbstractVector{Operator{Symbol}})
+
+Takes a Decapode and a set of rules and checks to see if the operators that are in the Decapode
+contain a valid configuration of input/output types. If an operator in the Decapode does not
+contain a rule in the rule set it will be seen as valid.
+
+In the case of a type error a DecaTypeExeception is thrown. Otherwise true is returned.
+"""
+function type_check(d::SummationDecapode, type_rules::AbstractVector{Operator{Symbol}})
+  type_errors = run_typechecking(d, type_rules)
+
+  isempty(type_errors) && return true
+
+  throw(DecaTypeExeception{Symbol}(type_errors))
+  return false
+end
+
+
+"""    infer_resolve!(d::SummationDecapode, operators::AbstractVector{Operator{Symbol}})
+
+Runs type inference, overload resolution and type checking in that order.
+"""
+function infer_resolve!(d::SummationDecapode, operators::AbstractVector{Operator{Symbol}})
+  infer_types!(d, operators)
+  resolve_overloads!(d, operators)
+  type_check(d, operators)
+
+  d
+end
 
 function replace_names!(d::SummationDecapode, op1_repls::Vector{Pair{Symbol, Any}}, op2_repls::Vector{Pair{Symbol, Symbol}})
   for (orig,repl) in op1_repls
