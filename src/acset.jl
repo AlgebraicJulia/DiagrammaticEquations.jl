@@ -483,34 +483,40 @@ function bin_broad_arith_ops(op_name)
   all_ops
 end
 
-# TODO: This could probably be implemented using a better version of `check_operator`
-# TODO: Add printing of rules which are ambigious with each other
-function check_rule_ambiguity(type_rules::AbstractVector{Operator{Symbol}})
-  ntype_rules = length(type_rules)
-  for (idx, rule1) in enumerate(type_rules)
-    for rule2 in type_rules[idx:end]
-      types1 = vcat(rule1.res_type, rule1.src_types)
-      types2 = vcat(rule2.res_type, rule2.src_types)
-      names1 = vcat(rule1.op_name, rule1.aliases)
-      names2 = vcat(rule2.op_name, rule2.aliases)
+function ambiguous(rule1::Operator{Symbol}, rule2::Operator{Symbol})
+  names1 = [rule1.op_name, rule1.aliases...]
+  names2 = [rule2.op_name, rule2.aliases...]
+  types1 = [rule1.res_type, rule1.src_types...]
+  types2 = [rule2.res_type, rule2.src_types...]
 
-      # Rules do not share a name.
-      isempty(names1 ∩ names2) && continue
+  # Rules do not share a name.
+  isempty(names1 ∩ names2) && return false
 
-      # Rules do not have the same arity.
-      length(types1) != length(types2) && continue
+  # Rules do not have the same arity.
+  length(types1) != length(types2) && return false
 
-      # Rules differ by non-inferable type.
-      noninferable_mismatches = map(types1, types2) do type1, type2
-        type1 != type2 && (type1 in NONINFERABLE_TYPES || type2 in NONINFERABLE_TYPES)
-      end
-      any(noninferable_mismatches) && continue
-
-      # A type can be inferred.
-      count(types1 .!= types2) == 1 && return false
-    end
+  # Rules differ by a non-inferable type.
+  noninferable_mismatches = map(types1, types2) do type1, type2
+    type1 != type2 && (type1 in NONINFERABLE_TYPES || type2 in NONINFERABLE_TYPES)
   end
+  any(noninferable_mismatches) && return false
+
+  # Rules would never both be applicable.
+  count(types1 .!= types2) != 1 && return false
+
   return true
+end
+
+function ambiguous_pairs(rules::AbstractVector{Operator{Symbol}})
+  n = length(rules)
+  pairs = ((rules[i], rules[j]) for i in 1:n for j in i+1:n)
+  Iterators.filter(p -> ambiguous(p...), pairs)
+end
+
+function check_rule_ambiguity(rules::AbstractVector{Operator{Symbol}})
+  pairs = ambiguous_pairs(rules)
+  isempty(pairs) || @debug "Ambiguous pairs found: $(collect(pairs))"
+  isempty(pairs)
 end
 
 function infer_sum_types!(d::SummationDecapode, Σ_idx::Int)
