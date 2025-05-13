@@ -439,7 +439,9 @@ function filterfor_ec_types(types::AbstractVector{Symbol})
   filter(conditions, types)
 end
 
-struct Operator{T}
+abstract type AbstractOperator{T} end
+
+struct Operator{T} <: AbstractOperator{T}
   res_type::T
   src_types::AbstractVector{T}
   op_name::Symbol
@@ -457,6 +459,15 @@ struct Operator{T}
     Operator{Symbol}(res_type, src_type, op_name, aliases)
   end
 end
+
+struct UserOperator{T} <: AbstractOperator{T}
+  res_type::T
+  src_types::AbstractVector{T}
+  op_name::Union{T, AbstractVector{T}}
+  aliases::AbstractVector{T}
+end
+
+op_types(op::AbstractOperator) = [op.res_type, op.src_types...]
 
 function same_type_rules_op(op_name::Symbol, types::AbstractVector{Symbol}, arity::Int, g_aliases::AbstractVector{Symbol} = Symbol[], sp_aliases::AbstractVector = Symbol[])
   @assert isempty(sp_aliases) || length(types) == length(sp_aliases)
@@ -483,42 +494,6 @@ function bin_broad_arith_ops(op_name)
   all_ops
 end
 
-function ambiguous(rule1::Operator{Symbol}, rule2::Operator{Symbol})
-  names1 = [rule1.op_name, rule1.aliases...]
-  names2 = [rule2.op_name, rule2.aliases...]
-  types1 = [rule1.res_type, rule1.src_types...]
-  types2 = [rule2.res_type, rule2.src_types...]
-
-  # Rules do not share a name.
-  isempty(names1 ∩ names2) && return false
-
-  # Rules do not have the same arity.
-  length(types1) != length(types2) && return false
-
-  # Rules differ by a non-inferable type.
-  noninferable_mismatches = map(types1, types2) do type1, type2
-    type1 != type2 && (type1 in NONINFERABLE_TYPES || type2 in NONINFERABLE_TYPES)
-  end
-  any(noninferable_mismatches) && return false
-
-  # Rules would never both be applicable.
-  count(types1 .!= types2) != 1 && return false
-
-  return true
-end
-
-function ambiguous_pairs(rules::AbstractVector{Operator{Symbol}})
-  n = length(rules)
-  pairs = ((rules[i], rules[j]) for i in 1:n for j in i+1:n)
-  Iterators.filter(p -> ambiguous(p...), pairs)
-end
-
-function check_rule_ambiguity(rules::AbstractVector{Operator{Symbol}})
-  pairs = ambiguous_pairs(rules)
-  isempty(pairs) || @debug "Ambiguous pairs found: $(collect(pairs))"
-  isempty(pairs)
-end
-
 function infer_sum_types!(d::SummationDecapode, Σ_idx::Int)
   # Note that we are not doing any type checking here for users!
   # i.e. We are not checking the underlying types of Constant or Parameter
@@ -530,7 +505,7 @@ function infer_sum_types!(d::SummationDecapode, Σ_idx::Int)
   types = d[idxs, :type]
   all(t != :infer for t in types) && return applied # We need not infer
 
-  ec_types = unique(filterfor_ec_types(types))
+  ec_types = unique!(filterfor_ec_types(types))
 
   ec_type = @match length(ec_types) begin
     0 => return applied # We can not infer
@@ -547,33 +522,58 @@ end
 
 """    check_operator(d::SummationDecapode, op_id, rule, edge_val; check_name::Bool = false, check_aliases::Bool = false, ignore_infers::Bool = false, ignore_usertypes::Bool = false)
 
-Cross references a given operator's name and its input/ouput types with a given rule. It
-reutrns the number of differences in the types. If the rule does not apply to this operator,
-which is checked by naming matching, the type difference is Inf.
+Return the number of differences in types between a given `user` operator and a `rule` operator.
+If the rule does not apply to this operator, or they differ by a non-inferable type, the type difference is `Inf`.
+
+The `ignore_infers` and `ignore_usertypes` flags apply to the `user` operator.
 """
-function check_operator(d::SummationDecapode, op_id, rule, edge_val; check_name::Bool = false, check_aliases::Bool = false, ignore_infers::Bool = false, ignore_usertypes::Bool = false)
-  inputs = edge_inputs(d, op_id, edge_val)
-  output = edge_output(d, op_id, edge_val)
+function check_operator(user::AbstractOperator, rule::AbstractOperator; check_name::Bool = false, check_aliases::Bool = false, ignore_infers::Bool = false, ignore_usertypes::Bool = false)
+  # Neither names nor aliases match.
+  name_matches  = check_name    && user.op_name == rule.op_name
+  alias_matches = check_aliases && !isempty([user.op_name, user.aliases...] ∩ rule.aliases)
+  !(name_matches || alias_matches) && return Inf
 
-  max_score = length(inputs) + length(output)
+  # Arities do not match.
+  length(op_types(user)) != length(op_types(rule)) && return Inf
 
-  rule_types = vcat(rule.src_types, rule.res_type)
-  deca_types = vcat(d[inputs, :type], d[output, :type])
-
-  score = mapreduce(+, rule_types, deca_types; init = 0) do rule_t, deca_t
-    if (ignore_infers && deca_t in INFER_TYPES) || (ignore_usertypes && deca_t in USER_TYPES)
-      return 1
-    else
-      return rule_t == deca_t
-    end
+  # Operations differ by an non-inferable type.
+  noninferable_mismatches = mapreduce(+, op_types(user), op_types(rule)) do user_t, rule_t
+    (rule_t in NONINFERABLE_TYPES || user_t in NONINFERABLE_TYPES) && 
+    rule_t != user_t
   end
+  sum(noninferable_mismatches) > 0 && return Inf
 
-  dop_name = edge_function(d, op_id, edge_val)
+  # Count the mismatches between the types.
+  mismatches = mapreduce(+, op_types(user), op_types(rule)) do user_t, rule_t
+    !((ignore_infers && user_t in INFER_TYPES) || (ignore_usertypes && user_t in USER_TYPES)) &&
+    rule_t != user_t
+  end
+  sum(mismatches)
+end
 
-  named = check_name && dop_name == rule.op_name
-  aliased = check_aliases && dop_name in rule.aliases
+function check_operator(d::SummationDecapode, op_id, rule, edge_val; args...)
+  user = UserOperator(d[edge_output(d, op_id, edge_val), :type],
+                      d[edge_inputs(d, op_id, edge_val), :type],
+                      edge_function(d, op_id, edge_val),
+                      Symbol[])
+  check_operator(user, rule; args...)
+end
 
-  return (named || aliased) ? max_score - score : Inf
+# Return true if both rules can be applied.
+function ambiguous(rule1::Operator{Symbol}, rule2::Operator{Symbol})
+  check_operator(rule1, rule2, check_name = true, check_aliases = true) == 1
+end
+
+function ambiguous_pairs(rules::AbstractVector{Operator{Symbol}})
+  n = length(rules)
+  pairs = ((rules[i], rules[j]) for i in 1:n for j in i+1:n)
+  Iterators.filter(p -> ambiguous(p...), pairs)
+end
+
+function check_rule_ambiguity(rules::AbstractVector{Operator{Symbol}})
+  pairs = ambiguous_pairs(rules)
+  isempty(pairs) || @debug "Ambiguous pairs found: $(collect(pairs))"
+  isempty(pairs)
 end
 
 function apply_inference_rule!(d::SummationDecapode, op_id, rule, edge_val)
@@ -763,3 +763,4 @@ function unique_lits!(d::SummationDecapode)
   rem_parts!(d, :Var, sort!(reduce(vcat, to_remove)))
   d
 end
+
