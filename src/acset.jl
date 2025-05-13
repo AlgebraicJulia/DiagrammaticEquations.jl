@@ -530,22 +530,21 @@ function infer_sum_types!(d::SummationDecapode, Σ_idx::Int)
   return applied
 end
 
-"""    check_operator(d::SummationDecapode, op_id, rule, edge_val; check_name::Bool = false, check_aliases::Bool = false, ignore_infers::Bool = false, ignore_usertypes::Bool = false)
+"""    function check_operator(user::AbstractOperator, rule::Rule; check_name::Bool = false, ignore_nonapplicable_types::Bool = false)
 
 Return the number of differences in types between a given `user` operator and a `rule` operator.
 If the rule does not apply to this operator, or they differ by a non-inferable type, the type difference is `Inf`.
 
-The `ignore_infers` and `ignore_usertypes` flags apply to the `user` operator.
+The `ignore_nonapplicable_types` flags apply to the `user` operator.
 """
-function check_operator(user::AbstractOperator, rule::Rule; check_name::Bool = false, check_aliases::Bool = false, ignore_infers::Bool = false, ignore_usertypes::Bool = false)
+function check_operator(user::AbstractOperator, rule::Rule; check_name::Bool = false, ignore_nonapplicable_types::Bool = false)
   # Type wrappers:
-  is_noninferable(t) = true             && t in NONINFERABLE_TYPES
-  is_infer(t)        = ignore_infers    && t in INFER_TYPES
-  is_usertype(t)     = ignore_usertypes && t in USER_TYPES
+  is_noninferable(t) = t in NONINFERABLE_TYPES
+  can_infer_through(t) = !ignore_nonapplicable_types || (t ∉ INFER_TYPES ∪ USER_TYPES)
 
   # Neither names nor aliases match.
-  name_matches  = check_name    && user.op_name == rule.op_name
-  alias_matches = check_aliases && !isempty([user.op_name, user.aliases...] ∩ rule.aliases)
+  name_matches  = check_name && user.op_name == rule.op_name
+  alias_matches = !isempty([user.op_name, user.aliases...] ∩ rule.aliases)
   !(name_matches || alias_matches) && return Inf
 
   # Arities do not match.
@@ -560,7 +559,7 @@ function check_operator(user::AbstractOperator, rule::Rule; check_name::Bool = f
 
   # Count the mismatches between the types.
   mismatches = map(op_types(user), op_types(rule)) do user_t, rule_t
-    !(is_infer(user_t) || is_usertype(user_t)) &&
+    can_infer_through(user_t) &&
     rule_t != user_t
   end
   sum(mismatches)
@@ -575,19 +574,19 @@ end
 
 # Return true if both rules could be applied.
 ambiguous(rule1::Rule{Symbol}, rule2::Rule{Symbol}) =
-  check_operator(rule1, rule2, check_name = true, check_aliases = true) == 1
+  check_operator(rule1, rule2, check_name = true) == 1
 
 # Return true if you can infer a type with a rule.
 can_infer(user::UserOperator{Symbol}, rule::Rule{Symbol}) =
-  check_operator(user, rule; check_name = true, check_aliases = true) == 1
+  check_operator(user, rule; check_name = true) == 1
 
 # Return true if you can perform function resolution with a rule.
 can_resolve(user::UserOperator{Symbol}, rule::Rule{Symbol}) =
-  check_operator(user, rule; check_aliases = true) == 0
+  check_operator(user, rule;) == 0
 
 # Return the number of matches between all types that are not INFER or NONINFERABLE.
 applicable_difference(user::UserOperator{Symbol}, rule::Rule{Symbol}) =
-  check_operator(user, rule; check_name = true, check_aliases = true, ignore_infers = true, ignore_usertypes = true)
+  check_operator(user, rule; check_name = true, ignore_nonapplicable_types = true)
 
 function ambiguous_pairs(rules::AbstractVector{Rule{Symbol}})
   n = length(rules)
