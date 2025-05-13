@@ -441,39 +441,49 @@ end
 
 abstract type AbstractOperator{T} end
 
-struct Operator{T} <: AbstractOperator{T}
+""" Rule{T}
+
+`Rule`s are `AbstractOperator`s which contain type signatures that may be used for type inference or function resolution.
+"""
+struct Rule{T} <: AbstractOperator{T}
   res_type::T
   src_types::AbstractVector{T}
   op_name::Symbol
   aliases::AbstractVector{Symbol}
 
-  function Operator{T}(res_type::T, src_types::AbstractVector{T}, op_name, aliases = Symbol[]) where T
+  function Rule{T}(res_type::T, src_types::AbstractVector{T}, op_name, aliases = Symbol[]) where T
     new(res_type, src_types, op_name, aliases)
   end
 
-  function Operator{T}(res_type::T, src_type::T, op_name, aliases = Symbol[]) where T
+  function Rule{T}(res_type::T, src_type::T, op_name, aliases = Symbol[]) where T
     new(res_type, T[src_type], op_name, aliases)
   end
 
-  function Operator(res_type::Symbol, src_type::Union{Symbol, AbstractVector{Symbol}}, op_name, aliases = Symbol[])
-    Operator{Symbol}(res_type, src_type, op_name, aliases)
+  function Rule(res_type::Symbol, src_type::Union{Symbol, AbstractVector{Symbol}}, op_name, aliases = Symbol[])
+    Rule{Symbol}(res_type, src_type, op_name, aliases)
   end
 end
 
+""" `UserOperator`{T}
+
+`UserOperator`s are `AbstractOperator`s which store unary or binary operators to be checked against `Rule`s.
+"""
 struct UserOperator{T} <: AbstractOperator{T}
   res_type::T
   src_types::AbstractVector{T}
+  # User-defined operators can be vectors, such as [⋆,d,⋆].
   op_name::Union{T, AbstractVector{T}}
   aliases::AbstractVector{T}
 end
 
 op_types(op::AbstractOperator) = [op.res_type, op.src_types...]
+arity(op::AbstractOperator) = length(op_types(op))
 
 function same_type_rules_op(op_name::Symbol, types::AbstractVector{Symbol}, arity::Int, g_aliases::AbstractVector{Symbol} = Symbol[], sp_aliases::AbstractVector = Symbol[])
   @assert isempty(sp_aliases) || length(types) == length(sp_aliases)
   map(1:length(types)) do i
     aliases = isempty(sp_aliases) ? g_aliases : vcat(g_aliases, sp_aliases[i])
-    Operator{Symbol}(types[i], repeat([types[i]], arity), op_name, aliases)
+    Rule{Symbol}(types[i], repeat([types[i]], arity), op_name, aliases)
   end
 end
 
@@ -485,10 +495,10 @@ function arithmetic_operators(op_name::Symbol, broadcasted::Bool, arity::Int = 2
 end
 
 function bin_broad_arith_ops(op_name)
-  all_ops = map(t -> Operator{Symbol}(t, [t, t], op_name), FORM_TYPES)
+  all_ops = map(t -> Rule{Symbol}(t, [t, t], op_name), FORM_TYPES)
   for type in vcat(USER_TYPES, NUMBER_TYPES)
-    append!(all_ops, map(t -> Operator{Symbol}(t, [t, type], op_name), FORM_TYPES))
-    append!(all_ops, map(t -> Operator{Symbol}(t, [type, t], op_name), FORM_TYPES))
+    append!(all_ops, map(t -> Rule{Symbol}(t, [t, type], op_name), FORM_TYPES))
+    append!(all_ops, map(t -> Rule{Symbol}(t, [type, t], op_name), FORM_TYPES))
   end
 
   all_ops
@@ -527,61 +537,76 @@ If the rule does not apply to this operator, or they differ by a non-inferable t
 
 The `ignore_infers` and `ignore_usertypes` flags apply to the `user` operator.
 """
-function check_operator(user::AbstractOperator, rule::AbstractOperator; check_name::Bool = false, check_aliases::Bool = false, ignore_infers::Bool = false, ignore_usertypes::Bool = false)
+function check_operator(user::AbstractOperator, rule::Rule; check_name::Bool = false, check_aliases::Bool = false, ignore_infers::Bool = false, ignore_usertypes::Bool = false)
+  # Type wrappers:
+  is_noninferable(t) = true             && t in NONINFERABLE_TYPES
+  is_infer(t)        = ignore_infers    && t in INFER_TYPES
+  is_usertype(t)     = ignore_usertypes && t in USER_TYPES
+
   # Neither names nor aliases match.
   name_matches  = check_name    && user.op_name == rule.op_name
   alias_matches = check_aliases && !isempty([user.op_name, user.aliases...] ∩ rule.aliases)
   !(name_matches || alias_matches) && return Inf
 
   # Arities do not match.
-  length(op_types(user)) != length(op_types(rule)) && return Inf
+  arity(user) != arity(rule) && return Inf
 
-  # Operations differ by an non-inferable type.
-  noninferable_mismatches = mapreduce(+, op_types(user), op_types(rule)) do user_t, rule_t
-    (rule_t in NONINFERABLE_TYPES || user_t in NONINFERABLE_TYPES) && 
+  # Operations differ by a non-inferable type.
+  noninferable_mismatches = map(op_types(user), op_types(rule)) do user_t, rule_t
+    (is_noninferable(user_t) || is_noninferable(rule_t)) && 
     rule_t != user_t
   end
   sum(noninferable_mismatches) > 0 && return Inf
 
   # Count the mismatches between the types.
-  mismatches = mapreduce(+, op_types(user), op_types(rule)) do user_t, rule_t
-    !((ignore_infers && user_t in INFER_TYPES) || (ignore_usertypes && user_t in USER_TYPES)) &&
+  mismatches = map(op_types(user), op_types(rule)) do user_t, rule_t
+    !(is_infer(user_t) || is_usertype(user_t)) &&
     rule_t != user_t
   end
   sum(mismatches)
 end
 
-function check_operator(d::SummationDecapode, op_id, rule, edge_val; args...)
-  user = UserOperator(d[edge_output(d, op_id, edge_val), :type],
-                      d[edge_inputs(d, op_id, edge_val), :type],
-                      edge_function(d, op_id, edge_val),
-                      Symbol[])
-  check_operator(user, rule; args...)
+function UserOperator(d::SummationDecapode, op_id, table; args...)
+  UserOperator(d[edge_output(d, op_id, table), :type],
+               d[edge_inputs(d, op_id, table), :type],
+               edge_function(d, op_id, table),
+               Symbol[])
 end
 
-# Return true if both rules can be applied.
-function ambiguous(rule1::Operator{Symbol}, rule2::Operator{Symbol})
+# Return true if both rules could be applied.
+ambiguous(rule1::Rule{Symbol}, rule2::Rule{Symbol}) =
   check_operator(rule1, rule2, check_name = true, check_aliases = true) == 1
-end
 
-function ambiguous_pairs(rules::AbstractVector{Operator{Symbol}})
+# Return true if you can infer a type with a rule.
+can_infer(user::UserOperator{Symbol}, rule::Rule{Symbol}) =
+  check_operator(user, rule; check_name = true, check_aliases = true) == 1
+
+# Return true if you can perform function resolution with a rule.
+can_resolve(user::UserOperator{Symbol}, rule::Rule{Symbol}) =
+  check_operator(user, rule; check_aliases = true) == 0
+
+# Return the number of matches between all types that are not INFER or NONINFERABLE.
+applicable_difference(user::UserOperator{Symbol}, rule::Rule{Symbol}) =
+  check_operator(user, rule; check_name = true, check_aliases = true, ignore_infers = true, ignore_usertypes = true)
+
+function ambiguous_pairs(rules::AbstractVector{Rule{Symbol}})
   n = length(rules)
   pairs = ((rules[i], rules[j]) for i in 1:n for j in i+1:n)
   Iterators.filter(p -> ambiguous(p...), pairs)
 end
 
-function check_rule_ambiguity(rules::AbstractVector{Operator{Symbol}})
+function check_rule_ambiguity(rules::AbstractVector{Rule{Symbol}})
   pairs = ambiguous_pairs(rules)
   isempty(pairs) || @debug "Ambiguous pairs found: $(collect(pairs))"
   isempty(pairs)
 end
 
 function apply_inference_rule!(d::SummationDecapode, op_id, rule, edge_val)
-  type_diff = check_operator(d, op_id, rule, edge_val; check_name = true, check_aliases = true)
-  type_diff != 1 && return false
+  user = UserOperator(d, op_id, edge_val)
+  !can_infer(user, rule) && return false
 
-  vars = vcat(edge_inputs(d, op_id, edge_val), edge_output(d, op_id, edge_val))
-  types = vcat(rule.src_types, rule.res_type)
+  vars = [edge_output(d, op_id, edge_val), edge_inputs(d, op_id, edge_val)...]
+  types = op_types(rule)
   applied = map(vars, types) do var, type
     safe_modifytype!(d, var, type)
   end
@@ -589,15 +614,15 @@ function apply_inference_rule!(d::SummationDecapode, op_id, rule, edge_val)
 end
 
 function apply_overloading_rule!(d::SummationDecapode, op_id, rule, edge_val)
-  type_diff = check_operator(d, op_id, rule, edge_val; check_aliases = true)
-  type_diff != 0 && return false
+  user = UserOperator(d, op_id, edge_val)
+  !can_resolve(user, rule) && return false
 
   set_edge_label!(d, op_id, rule.op_name, edge_val)
   return true
 end
 
 struct DecaTypeError{T}
-  rule::Operator{T}
+  rule::Rule{T}
   idx::Int
   table::Symbol
 end
@@ -612,16 +637,18 @@ function Base.show(io::IO, type_except::DecaTypeExeception{T}) where T
   map(x -> Base.show(io, x), type_except.type_errors)
 end
 
-function run_typechecking(d::SummationDecapode, type_rules::AbstractVector{Operator{Symbol}})
+function run_typechecking(d::SummationDecapode, type_rules::AbstractVector{Rule{Symbol}})
   op1_errors = map(x -> run_typechecking_for_op(d, x, type_rules, :Op1), parts(d, :Op1))
   op2_errors = map(x -> run_typechecking_for_op(d, x, type_rules, :Op2), parts(d, :Op2))
   filter(!isnothing, [op1_errors..., op2_errors...])
 end
 
 function run_typechecking_for_op(d::SummationDecapode, op_id, type_rules, table)
+  user = UserOperator(d, op_id, Val(table))
   min_diff, min_rule_idx = findmin(type_rules) do rule
-    check_operator(d, op_id, rule, Val(table); check_name = true, check_aliases = true, ignore_infers = true, ignore_usertypes = true)
+    applicable_difference(user, rule)
   end
+  # 0 => An exact match was found. Inf => No rules are applicable.
   min_diff in [0,Inf] ? nothing : DecaTypeError{Symbol}(type_rules[min_rule_idx], op_id, table)
 end
 
@@ -634,7 +661,7 @@ end
 
 Infer types of Vars given rules wherein one type is known and the other not.
 """
-function infer_types!(d::SummationDecapode, type_rules::AbstractVector{Operator{Symbol}})
+function infer_types!(d::SummationDecapode, type_rules::AbstractVector{Rule{Symbol}})
 
   # This is an optimization so we do not "visit" a row which has no infer types.
   # It could be deleted if found to be not worth maintainability tradeoff.
@@ -680,7 +707,7 @@ end
 
 Resolve function overloads based on types of src and tgt.
 """
-function resolve_overloads!(d::SummationDecapode, resolve_rules::AbstractVector{Operator{Symbol}})
+function resolve_overloads!(d::SummationDecapode, resolve_rules::AbstractVector{Rule{Symbol}})
   for rule in resolve_rules
     for table in [:Op1, :Op2]
       for op_idx in parts(d, table)
@@ -692,7 +719,7 @@ function resolve_overloads!(d::SummationDecapode, resolve_rules::AbstractVector{
   d
 end
 
-"""    type_check(d::SummationDecapode, type_rules::AbstractVector{Operator{Symbol}})
+"""    type_check(d::SummationDecapode, type_rules::AbstractVector{Rule{Symbol}})
 
 Takes a Decapode and a set of rules and checks to see if the operators that are in the Decapode
 contain a valid configuration of input/output types. If an operator in the Decapode does not
@@ -700,7 +727,7 @@ contain a rule in the rule set it will be seen as valid.
 
 In the case of a type error a DecaTypeExeception is thrown. Otherwise true is returned.
 """
-function type_check(d::SummationDecapode, type_rules::AbstractVector{Operator{Symbol}})
+function type_check(d::SummationDecapode, type_rules::AbstractVector{Rule{Symbol}})
   type_errors = run_typechecking(d, type_rules)
 
   isempty(type_errors) && return true
@@ -710,11 +737,11 @@ function type_check(d::SummationDecapode, type_rules::AbstractVector{Operator{Sy
 end
 
 
-"""    infer_resolve!(d::SummationDecapode, operators::AbstractVector{Operator{Symbol}})
+"""    infer_resolve!(d::SummationDecapode, operators::AbstractVector{Rule{Symbol}})
 
 Runs type inference, overload resolution and type checking in that order.
 """
-function infer_resolve!(d::SummationDecapode, operators::AbstractVector{Operator{Symbol}})
+function infer_resolve!(d::SummationDecapode, operators::AbstractVector{Rule{Symbol}})
   infer_types!(d, operators)
   resolve_overloads!(d, operators)
   type_check(d, operators)

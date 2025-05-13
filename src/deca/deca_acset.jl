@@ -6,96 +6,96 @@ These are the default rules used to do type inference/function resolution in the
 """
 op1_operators = [
   # Rules for ∂ₜ
-  Operator(:Form0, :Form0, :∂ₜ, [:dt]),
-  Operator(:Form1, :Form1, :∂ₜ, [:dt]),
-  Operator(:Form2, :Form2, :∂ₜ, [:dt]),
-  Operator(:DualForm0, :DualForm0, :∂ₜ, [:dt]),
-  Operator(:DualForm1, :DualForm1, :∂ₜ, [:dt]),
-  Operator(:DualForm2, :DualForm2, :∂ₜ, [:dt]),
+  Rule(:Form0, :Form0, :∂ₜ, [:dt]),
+  Rule(:Form1, :Form1, :∂ₜ, [:dt]),
+  Rule(:Form2, :Form2, :∂ₜ, [:dt]),
+  Rule(:DualForm0, :DualForm0, :∂ₜ, [:dt]),
+  Rule(:DualForm1, :DualForm1, :∂ₜ, [:dt]),
+  Rule(:DualForm2, :DualForm2, :∂ₜ, [:dt]),
 
   # Rules for d.
-  Operator(:Form1, :Form0, :d₀, [:d]),
-  Operator(:Form2, :Form1, :d₁, [:d]),
-  Operator(:DualForm1, :DualForm0, :dual_d₀, [:d, :d̃₀]),
-  Operator(:DualForm2, :DualForm1, :dual_d₁, [:d, :d̃₁]),
+  Rule(:Form1, :Form0, :d₀, [:d]),
+  Rule(:Form2, :Form1, :d₁, [:d]),
+  Rule(:DualForm1, :DualForm0, :dual_d₀, [:d, :d̃₀]),
+  Rule(:DualForm2, :DualForm1, :dual_d₁, [:d, :d̃₁]),
 
   # Rules for δ
-  Operator(:Form0, :Form1, :δ₁, [:δ, :codif]),
-  Operator(:Form1, :Form2, :δ₂, [:δ, :codif]),
+  Rule(:Form0, :Form1, :δ₁, [:δ, :codif]),
+  Rule(:Form1, :Form2, :δ₂, [:δ, :codif]),
 
   # Rules for ♯
-  Operator(:PVF, :Form1, :♯ᵖᵖ, [:♯]),
-  Operator(:DVF, :DualForm1, :♯ᵈᵈ, [:♯]),
-  # Operator(:DVF, :Form1, :♯ᵖᵈ, [:♯]),
+  Rule(:PVF, :Form1, :♯ᵖᵖ, [:♯]),
+  Rule(:DVF, :DualForm1, :♯ᵈᵈ, [:♯]),
+  # Rule(:DVF, :Form1, :♯ᵖᵈ, [:♯]),
 
   # Rules for ♭
-  Operator(:Form1, :DVF, :♭ᵈᵖ, [:♭]),
+  Rule(:Form1, :DVF, :♭ᵈᵖ, [:♭]),
 
   # Rules for Δ
-  Operator(:Form0, :Form0, :Δ₀, [:Δ, :∇², :lapl]),
-  Operator(:Form1, :Form1, :Δ₁, [:Δ, :∇², :lapl]),
-  Operator(:Form2, :Form2, :Δ₂, [:Δ, :∇², :lapl]),
+  Rule(:Form0, :Form0, :Δ₀, [:Δ, :∇², :lapl]),
+  Rule(:Form1, :Form1, :Δ₁, [:Δ, :∇², :lapl]),
+  Rule(:Form2, :Form2, :Δ₂, [:Δ, :∇², :lapl]),
 
   # Rules for Δᵈ
-  Operator(:DualForm0, :DualForm0, :Δᵈ₀, [:Δ, :∇², :lapl]),
-  Operator(:DualForm1, :DualForm1, :Δᵈ₁, [:Δ, :∇², :lapl]),
+  Rule(:DualForm0, :DualForm0, :Δᵈ₀, [:Δ, :∇², :lapl]),
+  Rule(:DualForm1, :DualForm1, :Δᵈ₁, [:Δ, :∇², :lapl]),
 
-  Operator(:Form0, :Form0, :(-), [:neg]),
-  Operator(:Form1, :Form1, :(-), [:neg]),
-  Operator(:Form2, :Form2, :(-), [:neg]),
-  Operator(:DualForm0, :DualForm0, :(-), [:neg]),
-  Operator(:DualForm1, :DualForm1, :(-), [:neg]),
-  Operator(:DualForm2, :DualForm2, :(-), [:neg]),
+  Rule(:Form0, :Form0, :(-), [:neg]),
+  Rule(:Form1, :Form1, :(-), [:neg]),
+  Rule(:Form2, :Form2, :(-), [:neg]),
+  Rule(:DualForm0, :DualForm0, :(-), [:neg]),
+  Rule(:DualForm1, :DualForm1, :(-), [:neg]),
+  Rule(:DualForm2, :DualForm2, :(-), [:neg]),
 
   # Rules for the averaging operator
-  Operator(:Form1, :Form0, :avg₀₁, [:avg_01]),
+  Rule(:Form1, :Form0, :avg₀₁, [:avg_01]),
 
-  Operator(:Form0, :PVF, :norm, [:mag]),
-  Operator(:DualForm0, :DVF, :norm, [:mag])
+  Rule(:Form0, :PVF, :norm, [:mag]),
+  Rule(:DualForm0, :DVF, :norm, [:mag])
 ]
 
 op1_1D_bound_operators = [
 
   # Rules for ⋆
-  Operator(:DualForm1, :Form0, :⋆₀, [:★, :⋆, :star]),
-  Operator(:DualForm0, :Form1, :⋆₁, [:★, :⋆, :star]),
-  Operator(:Form0, :DualForm1, :⋆₀⁻¹, [:★, :⋆, :star, :star_inv]),
-  Operator(:Form1, :DualForm0, :⋆₁⁻¹, [:★, :⋆, :star, :star_inv])
+  Rule(:DualForm1, :Form0, :⋆₀, [:★, :⋆, :star]),
+  Rule(:DualForm0, :Form1, :⋆₁, [:★, :⋆, :star]),
+  Rule(:Form0, :DualForm1, :⋆₀⁻¹, [:★, :⋆, :star, :star_inv]),
+  Rule(:Form1, :DualForm0, :⋆₁⁻¹, [:★, :⋆, :star, :star_inv])
 ]
 
 op1_2D_bound_operators = [
 
   # Rules for ⋆
-  Operator(:DualForm2, :Form0, :⋆₀, [:★, :⋆, :star]),
-  Operator(:DualForm1, :Form1, :⋆₁, [:★, :⋆, :star]),
-  Operator(:DualForm0, :Form2, :⋆₂, [:★, :⋆, :star]),
-  Operator(:Form0, :DualForm2, :⋆₀⁻¹, [:★, :⋆, :star, :star_inv]),
-  Operator(:Form1, :DualForm1, :⋆₁⁻¹, [:★, :⋆, :star, :star_inv]),
-  Operator(:Form2, :DualForm0, :⋆₂⁻¹, [:★, :⋆, :star, :star_inv])
+  Rule(:DualForm2, :Form0, :⋆₀, [:★, :⋆, :star]),
+  Rule(:DualForm1, :Form1, :⋆₁, [:★, :⋆, :star]),
+  Rule(:DualForm0, :Form2, :⋆₂, [:★, :⋆, :star]),
+  Rule(:Form0, :DualForm2, :⋆₀⁻¹, [:★, :⋆, :star, :star_inv]),
+  Rule(:Form1, :DualForm1, :⋆₁⁻¹, [:★, :⋆, :star, :star_inv]),
+  Rule(:Form2, :DualForm0, :⋆₂⁻¹, [:★, :⋆, :star, :star_inv])
 ]
 
 op2_operators = [
   # Rules for ∧.
-  Operator(:Form0, [:Form0, :Form0], :∧₀₀, [:∧, :wedge]),
-  Operator(:Form1, [:Form1, :Form0], :∧₁₀, [:∧, :wedge]),
-  Operator(:Form1, [:Form0, :Form1], :∧₀₁, [:∧, :wedge]),
-  Operator(:Form2, [:Form1, :Form1], :∧₁₁, [:∧, :wedge]),
-  Operator(:Form2, [:Form2, :Form0], :∧₂₀, [:∧, :wedge]),
-  Operator(:Form2, [:Form0, :Form2], :∧₀₂, [:∧, :wedge]),
+  Rule(:Form0, [:Form0, :Form0], :∧₀₀, [:∧, :wedge]),
+  Rule(:Form1, [:Form1, :Form0], :∧₁₀, [:∧, :wedge]),
+  Rule(:Form1, [:Form0, :Form1], :∧₀₁, [:∧, :wedge]),
+  Rule(:Form2, [:Form1, :Form1], :∧₁₁, [:∧, :wedge]),
+  Rule(:Form2, [:Form2, :Form0], :∧₂₀, [:∧, :wedge]),
+  Rule(:Form2, [:Form0, :Form2], :∧₀₂, [:∧, :wedge]),
 
   # Rules for L.
-  Operator(:DualForm0, [:Form1, :DualForm0], :L₀, [:L]),
-  Operator(:DualForm1, [:Form1, :DualForm1], :L₁, [:L]),
-  Operator(:DualForm2, [:Form1, :DualForm2], :L₂, [:L]),
+  Rule(:DualForm0, [:Form1, :DualForm0], :L₀, [:L]),
+  Rule(:DualForm1, [:Form1, :DualForm1], :L₁, [:L]),
+  Rule(:DualForm2, [:Form1, :DualForm2], :L₂, [:L]),
 
   # TODO: Make consistent with other Lie's
-  Operator(:DualForm1, [:DualForm1, :DualForm1], :ℒ₁),
+  Rule(:DualForm1, [:DualForm1, :DualForm1], :ℒ₁),
 
   # Rules for i.
-  Operator(:DualForm0, [:Form1, :DualForm1], :i₁, [:i]),
-  Operator(:DualForm1, [:Form1, :DualForm2], :i₂, [:i]),
-  Operator(:DualForm0, [:DualForm1, :DualForm1], :ι₁₁),
-  Operator(:DualForm1, [:DualForm1, :DualForm2], :ι₁₂),
+  Rule(:DualForm0, [:Form1, :DualForm1], :i₁, [:i]),
+  Rule(:DualForm1, [:Form1, :DualForm2], :i₂, [:i]),
+  Rule(:DualForm0, [:DualForm1, :DualForm1], :ι₁₁),
+  Rule(:DualForm1, [:DualForm1, :DualForm2], :ι₁₂),
 
   # Arthimetic rules
   arithmetic_operators(:.-, true)...,
@@ -111,10 +111,10 @@ op2_operators = [
   arithmetic_operators(:^, true)...,
 
   # TODO: Add some intermediate result type to avoid having infers
-  # Operator(:Form0, [:Form0, :infer], :^),
-  # Operator(:Form0, [:Form0, :infer], :.^),
-  # Operator(:Form1, [:Form1, :infer], :^),
-  # Operator(:Form1, [:Form1, :infer], :.^)
+  # Rule(:Form0, [:Form0, :infer], :^),
+  # Rule(:Form0, [:Form0, :infer], :.^),
+  # Rule(:Form1, [:Form1, :infer], :^),
+  # Rule(:Form1, [:Form1, :infer], :.^)
 ]
 
 # TODO: When SummationDecapodes are annotated with the degree of their space,
