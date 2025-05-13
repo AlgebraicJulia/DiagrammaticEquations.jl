@@ -1019,6 +1019,19 @@ end
   @test op2s_5 == op2s_expected_5
   @test type_check(t5)
 
+  t6 = @decapode begin
+    A::Form1
+    B::Form1
+
+    Y == ♯ᵖᵈ(A)
+    Z == ♯(B)
+  end
+  resolve_overloads!(infer_types!(t6))
+  op1s_6 = t6[:op1]
+  op1s_expected_6 = [:♯ᵖᵈ, :♯ᵖᵖ]
+  @test op1s_6 == op1s_expected_6
+  @test type_check(t6)
+
   op_not_in_rules = @decapode begin
     A::Form0
     B::Form0

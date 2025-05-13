@@ -26,7 +26,8 @@ op1_operators = [
   # Rules for ♯
   Rule(:PVF, :Form1, :♯ᵖᵖ, [:♯]),
   Rule(:DVF, :DualForm1, :♯ᵈᵈ, [:♯]),
-  # Rule(:DVF, :Form1, :♯ᵖᵈ, [:♯]),
+  # TODO: Special case. ♯ᵖᵈ is opted-in in the eDSL.
+  Rule(:DVF, :Form1, :♯ᵖᵈ, []),
 
   # Rules for ♭
   Rule(:Form1, :DVF, :♭ᵈᵖ, [:♭]),
