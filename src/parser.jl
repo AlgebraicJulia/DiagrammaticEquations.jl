@@ -152,9 +152,9 @@ using Catlab.Parsers.ParserCore
 #---------------------
 
 # Atoms are the bottom-most unit of a term.
-@rule Atom = Literal , Variable , NegatedVariable
+@rule Atom = SciSciLiteral , Variable , NegatedVariable
 
-@rule Literal = r"(\-)?(\d)+(\_\d+)*(\.)?(\d+)?([eE]\d+(\_\d+)*)?" |>
+@rule SciLiteral = r"(\-)?(\d)+(\_\d+)*(\.)?(\d+)?([eE]\d+(\_\d+)*)?" |>
   v -> Lit(Symbol(v))
 
 @rule Variable = Ident |>
