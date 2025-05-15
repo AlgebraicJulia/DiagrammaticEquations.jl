@@ -11,7 +11,7 @@ using DiagrammaticEquations: DecapodeExpr, SingleLineComment, MultiLineComment,
   Line, Statement, Judgement, TypeName, Equation, SumOperation,
   PrecMinusOperation, PrecDivOperation, MultOperation, PrecPowerOperation, Term,
   Grouping, Derivative, Compose, Call, CallName, Operator, List, CallList, Atom,
-  Ident, Literal, PrecMinusOp, PrecDivOp, PrecPowerOp, OpSuffixes
+  Ident, SciLiteral, PrecMinusOp, PrecDivOp, PrecPowerOp, OpSuffixes
 
 LS = Lit ∘ Symbol
 
@@ -251,16 +251,16 @@ end
 end
 
 @testset "Literals" begin
-  @test Literal("1")[1] == LS("1")
-  @test Literal("-2")[1] == LS("-2")
-  @test Literal("1231232")[1] == LS("1231232")
-  @test Literal("1e1")[1] == LS("1e1")
-  @test Literal("1E1")[1] == LS("1E1")
-  @test Literal("1.e1")[1] == LS("1.e1")
-  @test Literal("1.E1")[1] == LS("1.E1")
-  @test Literal("1.")[1] == LS("1.")
-  @test Literal("1_200.e1")[1] == LS("1_200.e1")
-  @test Literal("1_200.E1_300")[1] == LS("1_200.E1_300")
+  @test SciLiteral("1")[1] == LS("1")
+  @test SciLiteral("-2")[1] == LS("-2")
+  @test SciLiteral("1231232")[1] == LS("1231232")
+  @test SciLiteral("1e1")[1] == LS("1e1")
+  @test SciLiteral("1E1")[1] == LS("1E1")
+  @test SciLiteral("1.e1")[1] == LS("1.e1")
+  @test SciLiteral("1.E1")[1] == LS("1.E1")
+  @test SciLiteral("1.")[1] == LS("1.")
+  @test SciLiteral("1_200.e1")[1] == LS("1_200.e1")
+  @test SciLiteral("1_200.E1_300")[1] == LS("1_200.E1_300")
 end
 
 @testset "Subtraction Precedence Operator" begin
