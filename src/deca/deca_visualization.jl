@@ -9,8 +9,6 @@ using Catlab.Graphs.BasicGraphs
 import LinearAlgebra: norm
 using StatsBase
 using Colors
-using ColorSchemes
-using ColorSchemeTools
 
 # TODO: Change orientation to print 
 # TODO: generalize ok??
@@ -56,8 +54,13 @@ varname(d, v, verbose) = begin
   return "$name:$(spacename(d, v))"
 end
 
-# XXX: Diagrams with more than 256 namespaces will throw an error.
-const colors = ColorSchemes.cyclic_mygbm_30_95_c78_n256 # A nice pastel scheme
+#const colors = ColorSchemes.cyclic_mygbm_30_95_c78_n256 # A nice pastel scheme
+# Approximate the above color-scheme with a piecewise polynomial in RGB space.
+const corners = [[0.90, 0.90, 0.10],
+                 [0.20, 0.70, 0.15],
+                 [0.20, 0.10, 0.90],
+                 [0.90, 0.35, 0.95]]
+const poly_line = [[1,2], [2,3], [3,4], [4,1]]
 
 """    get_colors(d::SummationDecapode)
 
@@ -69,7 +72,11 @@ function get_colors(d::SummationDecapode)
     paths = split.(names, "_")
     spaces = first.(filter(p -> length(p) > 1, paths))
     setdiff!(spaces, ["sum", ""])
-    swatches = sample(colors.colors, length(spaces), replace=false)
+    swatches = map(spaces) do space
+      line = corners[sample(poly_line)]
+      point_on_line = rand()
+      swatch = Colors.RGB((line[1]*point_on_line + line[2]*(1-point_on_line))...)
+    end
     Dict([space => "#" * Colors.hex(swatch) for (space, swatch) in zip(spaces, swatches)])
 end
 
