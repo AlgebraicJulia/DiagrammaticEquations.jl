@@ -1,7 +1,9 @@
+import Catlab.WiringDiagrams.RelationDiagrams: UntypedUnnamedRelationDiagram
+
 struct Collage
   src::SummationDecapode{Any,Any,Symbol}
   tgt::SummationDecapode{Any,Any,Symbol}
-  uwd::Catlab.RelationDiagrams.UntypedUnnamedRelationDiagram{Symbol, Symbol}
+  uwd::UntypedUnnamedRelationDiagram{Symbol, Symbol}
   symbols::Dict{Symbol, Symbol}
 end
 
