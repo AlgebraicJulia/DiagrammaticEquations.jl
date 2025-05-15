@@ -1,5 +1,6 @@
 using ACSets
 using DiagrammaticEquations
+using DiagrammaticEquations.Deca
 using Test
 
 @testset "Open Operators" begin
@@ -237,5 +238,100 @@ using Test
   @test replace_all_op2s!(copy(Interior), LHS, RHS) ==
     replace_all_op2s!(copy(Interior), LHS, RHS,
       only(incident(RHS, :p1, :name)), only(incident(RHS, :p2, :name)))
+end
+
+@testset "Rewrite Rules" begin
+  # Explicit Rule Application
+  # -------------------------
+
+  # Test expanding the Heat equation.
+  rule = Op1SDRule(
+  @decapode begin
+    (X,y,Z)::Form0
+    y == Δ(X)
+  end
+  ,
+  @decapode begin
+    (X,y)::Form0
+    y == -1*∘(d,⋆,d,⋆)(X)
+  end)
+  Heat = @decapode begin
+    C::Form0
+    ∂ₜ(C) == Δ(C)
+  end
+  apply_rule!(Heat, rule)
+  @test Heat == @acset SummationDecapode{Any,Any,Symbol} begin
+    Var=4
+    type=[:infer, :Literal, :Form0, :infer]
+    name=[Symbol("•1"), Symbol("-1"), :C, :Ċ]
+    TVar=1
+    incl=[4]
+    Op1=2
+    src=[3,3]
+    tgt=[4,1]
+    op1=[:∂ₜ, [:d, :⋆, :d, :⋆]]
+    Op2=1
+    proj1=[2]
+    proj2=[1]
+    res=[4]
+    op2=[:*]
+  end
+
+  # Test expanding the vector laplacian.
+  rule = Op1SDRule(
+  @decapode begin
+    (X,y)::Form1
+    y == Δ(X)
+  end
+  ,
+  @decapode begin
+    (X,y)::Form1
+    y == ∘(d,⋆,d,⋆)(X) + ∘(⋆,d,⋆,d)(X)
+  end)
+  VectorHeat = @decapode begin
+    V::Form1
+    ∂ₜ(V) == -1*Δ(V)
+  end
+  apply_rule!(VectorHeat, rule)
+  @test VectorHeat == @acset SummationDecapode{Any,Any,Symbol} begin
+    Var = 6
+    TVar = 1
+    Op1 = 3
+    Op2 = 1
+    Σ = 1
+    Summand = 2
+    src = [5, 5, 5]
+    tgt = [2, 3, 1]
+    proj1 = [4]
+    proj2 = [6]
+    res = [2]
+    incl = [2]
+    summand = [1, 3]
+    summation = [1, 1]
+    sum = [6]
+    op1 = Any[:∂ₜ, [:⋆, :d, :⋆, :d], [:d, :⋆, :d, :⋆]]
+    op2 = [:*]
+    type = [:infer, :infer, :infer, :Literal, :Form1, :infer]
+    name = [Symbol("•1"), :V̇, Symbol("•2"), Symbol("-1"), :V, Symbol("•2")]
+  end
+
+  # Default Rules Application
+  # -------------------------
+
+  # Test expanding the Brusselator.
+  Brusselator = @decapode begin
+    (U, V)::Form0
+    U2V::Form0
+    (U̇, V̇)::Form0
+    (α)::Constant
+    F::Parameter
+    U2V == (U .* U) .* V
+    U̇ == 1 + U2V - (4.4 * U) + (α * Δ(U)) + F
+    V̇ == (3.4 * U) - U2V + (α * Δ(V))
+    ∂ₜ(U) == U̇
+    ∂ₜ(V) == V̇
+  end
+  rewrite!(Brusselator)
+  @test Brusselator[:op1] == Any[[:d,:⋆,:d,:⋆], [:d,:⋆,:d,:⋆], :∂ₜ, :∂ₜ]
 end
 
