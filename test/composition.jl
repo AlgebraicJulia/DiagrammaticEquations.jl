@@ -21,6 +21,8 @@ deep_copies = deepcopy(otrivial)
 trivial_comp_from_vector = oapply(trivial_relation, [otrivial])
 trivial_comp_from_single = oapply(trivial_relation, otrivial)
 
+@test trivial_relation(otrivial) == apex(trivial_comp_from_single)
+
 # Test the oapply is correct.
 @test apex(trivial_comp_from_vector)    == Trivial
 @test apex(trivial_comp_from_single) == Trivial
@@ -42,6 +44,7 @@ adv_relation = @relation () begin
   advection(C,V,ϕ)
 end
 adv_comp = oapply(adv_relation, [Open(Advection, [:C,:V,:ϕ])])
+
 adv_comp_expected = @acset SummationDecapode{Any, Any, Symbol} begin
   Var = 3
   type = [:Form0, :Form1, :Form1]
@@ -52,6 +55,7 @@ adv_comp_expected = @acset SummationDecapode{Any, Any, Symbol} begin
   res = [3]
   op2 = [:∧₀₁]
 end
+@test adv_relation(Open(Advection, [:C, :V, :ϕ])) == adv_comp_expected
 @test apex(adv_comp) == adv_comp_expected
 
 # This is the example from the "Overview" page in the docs.
@@ -103,6 +107,7 @@ original_apexes = map(apex, decapodes_vars)
 deep_copies = deepcopy(decapodes_vars) # This is to test none of the decapodes are mutated.
 
 dif_adv_sup = oapply(compose_diff_adv, decapodes_vars)
+@test compose_diff_adv(decapodes_vars) == apex(dif_adv_sup)
 
 dif_adv_sup_expected = @acset SummationDecapode{Any, Any, Symbol} begin
   Var = 6

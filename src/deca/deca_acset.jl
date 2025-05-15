@@ -2,300 +2,147 @@ using ..DiagrammaticEquations
 
 # TODO: You could write a method which auto-generates these rules given degree N.
 """
-These are the default rules used to do type inference in the 1D exterior calculus.
+These are the default rules used to do type inference/function resolution in the 1D/2D exterior calculus.
 """
-op1_inf_rules_1D = [
-  # Rules for ∂ₜ 
-  (src_type = :Form0, tgt_type = :Form0, op_names = [:∂ₜ,:dt]),
-  (src_type = :Form1, tgt_type = :Form1, op_names = [:∂ₜ,:dt]),
+op1_operators = [
+  # Rules for ∂ₜ
+  Rule(:Form0, :Form0, :∂ₜ, [:dt]),
+  Rule(:Form1, :Form1, :∂ₜ, [:dt]),
+  Rule(:Form2, :Form2, :∂ₜ, [:dt]),
+  Rule(:DualForm0, :DualForm0, :∂ₜ, [:dt]),
+  Rule(:DualForm1, :DualForm1, :∂ₜ, [:dt]),
+  Rule(:DualForm2, :DualForm2, :∂ₜ, [:dt]),
 
-  # Rules for d
-  (src_type = :Form0, tgt_type = :Form1, op_names = [:d, :d₀]),
-  (src_type = :DualForm0, tgt_type = :DualForm1, op_names = [:d, :dual_d₀, :d̃₀]),
-
-  # Rules for ⋆
-  (src_type = :Form0, tgt_type = :DualForm1, op_names = [:⋆, :⋆₀, :star]),
-  (src_type = :Form1, tgt_type = :DualForm0, op_names = [:⋆, :⋆₁, :star]),
-  (src_type = :DualForm1, tgt_type = :Form0, op_names = [:⋆, :⋆₀⁻¹, :star_inv]),
-  (src_type = :DualForm0, tgt_type = :Form1, op_names = [:⋆, :⋆₁⁻¹, :star_inv]),
-
-  # Rules for Δ
-  (src_type = :Form0, tgt_type = :Form0, op_names = [:Δ, :Δ₀, :lapl]),
-  (src_type = :Form1, tgt_type = :Form1, op_names = [:Δ, :Δ₁, :lapl]),
+  # Rules for d.
+  Rule(:Form1, :Form0, :d₀, [:d]),
+  Rule(:Form2, :Form1, :d₁, [:d]),
+  Rule(:DualForm1, :DualForm0, :dual_d₀, [:d, :d̃₀]),
+  Rule(:DualForm2, :DualForm1, :dual_d₁, [:d, :d̃₁]),
 
   # Rules for δ
-  (src_type = :Form1, tgt_type = :Form0, op_names = [:δ, :δ₁, :codif]),
+  Rule(:Form0, :Form1, :δ₁, [:δ, :codif]),
+  Rule(:Form1, :Form2, :δ₂, [:δ, :codif]),
 
-  # Rules for negation
-  (src_type = :Form0, tgt_type = :Form0, op_names = [:neg, :(-)]),
-  (src_type = :Form1, tgt_type = :Form1, op_names = [:neg, :(-)]),
-  
-  # Rules for the averaging operator
-  (src_type = :Form0, tgt_type = :Form1, op_names = [:avg₀₁, :avg_01]),
+  # Rules for ♯
+  Rule(:PVF, :Form1, :♯ᵖᵖ, [:♯]),
+  Rule(:DVF, :DualForm1, :♯ᵈᵈ, [:♯]),
+  # TODO: Special case. ♯ᵖᵈ is opted-in in the eDSL.
+  Rule(:DVF, :Form1, :♯ᵖᵈ, []),
 
-  # Rules for ♯.
-  (src_type = :Form1, tgt_type = :PVF, op_names = [:♯, :♯ᵖᵖ]),
-  (src_type = :DualForm1, tgt_type = :DVF, op_names = [:♯, :♯ᵈᵈ]),
-
-  # Rules for ♭.
-  (src_type = :DVF, tgt_type = :Form1, op_names = [:♭, :♭ᵈᵖ]),
-  
-  # Rules for magnitude/ norm
-  (src_type = :PVF, tgt_type = :Form0, op_names = [:mag, :norm]),
-  (src_type = :DVF, tgt_type = :DualForm0, op_names = [:mag, :norm])]
-
-op2_inf_rules_1D = [
-  # Rules for ∧₀₀, ∧₁₀, ∧₀₁
-  (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, op_names = [:∧, :∧₀₀, :wedge]),
-  (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form1, op_names = [:∧, :∧₁₀, :wedge]),
-  (proj1_type = :Form0, proj2_type = :Form1, res_type = :Form1, op_names = [:∧, :∧₀₁, :wedge]),
-
-  # Rules for L₀, L₁
-  (proj1_type = :Form1, proj2_type = :DualForm0, res_type = :DualForm0, op_names = [:L, :L₀]),
-  (proj1_type = :Form1, proj2_type = :DualForm1, res_type = :DualForm1, op_names = [:L, :L₁]),    
-
-  # Rules for i₁
-  (proj1_type = :Form1, proj2_type = :DualForm1, res_type = :DualForm0, op_names = [:i, :i₁]),
-
-  # Rules for divison and multiplication
-  (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, op_names = [:/, :./, :*, :.*, :^, :.^]),
-  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form1, op_names = [:/, :./, :*, :.*, :^, :.^]),
-
-  # WARNING: This parameter type inference might be wrong, depending on what the user gives as a parameter
-  #= (proj1_type = :Parameter, proj2_type = :Form0, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
-  (proj1_type = :Parameter, proj2_type = :Form1, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
-  (proj1_type = :Parameter, proj2_type = :Form2, res_type = :Form2, op_names = [:/, :./, :*, :.*]),
-
-  (proj1_type = :Form0, proj2_type = :Parameter, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
-  (proj1_type = :Form1, proj2_type = :Parameter, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
-  (proj1_type = :Form2, proj2_type = :Parameter, res_type = :Form2, op_names = [:/, :./, :*, :.*]),=#
-  
-  (proj1_type = :Form0, proj2_type = :Literal, res_type = :Form0, op_names = [:/, :./, :*, :.*, :^, :.^]),
-  (proj1_type = :Form1, proj2_type = :Literal, res_type = :Form1, op_names = [:/, :./, :*, :.*, :^, :.^]),
-  
-  (proj1_type = :DualForm0, proj2_type = :Literal, res_type = :DualForm0, op_names = [:/, :./, :*, :.*, :^, :.^]),
-  (proj1_type = :DualForm1, proj2_type = :Literal, res_type = :DualForm1, op_names = [:/, :./, :*, :.*, :^, :.^]),
-
-  (proj1_type = :Literal, proj2_type = :Form0, res_type = :Form0, op_names = [:/, :./, :*, :.*, :^, :.^]),
-  (proj1_type = :Literal, proj2_type = :Form1, res_type = :Form1, op_names = [:/, :./, :*, :.*, :^, :.^]),
-
-  (proj1_type = :Literal, proj2_type = :DualForm0, res_type = :DualForm0, op_names = [:/, :./, :*, :.*, :^, :.^]),
-  (proj1_type = :Literal, proj2_type = :DualForm1, res_type = :DualForm1, op_names = [:/, :./, :*, :.*, :^, :.^]),
-
-  (proj1_type = :Constant, proj2_type = :Form0, res_type = :Form0, op_names = [:/, :./, :*, :.*, :^, :.^]),
-  (proj1_type = :Constant, proj2_type = :Form1, res_type = :Form1, op_names = [:/, :./, :*, :.*, :^, :.^]),
-  (proj1_type = :Form0, proj2_type = :Constant, res_type = :Form0, op_names = [:/, :./, :*, :.*, :^, :.^]),
-  (proj1_type = :Form1, proj2_type = :Constant, res_type = :Form1, op_names = [:/, :./, :*, :.*, :^, :.^]),
-  
-  (proj1_type = :Constant, proj2_type = :DualForm0, res_type = :DualForm0, op_names = [:/, :./, :*, :.*, :^, :.^]),
-  (proj1_type = :Constant, proj2_type = :DualForm1, res_type = :DualForm1, op_names = [:/, :./, :*, :.*, :^, :.^]),
-  (proj1_type = :DualForm0, proj2_type = :Constant, res_type = :DualForm0, op_names = [:/, :./, :*, :.*, :^, :.^]),
-  (proj1_type = :DualForm1, proj2_type = :Constant, res_type = :DualForm1, op_names = [:/, :./, :*, :.*, :^, :.^]),
-
-  # These rules contain infer:
-  (proj1_type = :Form0, proj2_type = :infer, res_type = :Form0, op_names = [:^]),
-  (proj1_type = :DualForm0, proj2_type = :infer, res_type = :DualForm0, op_names = [:^])]
-
-"""
-These are the default rules used to do type inference in the 2D exterior calculus.
-"""
-op1_inf_rules_2D = [
-  # Rules for ∂ₜ
-  (src_type = :Form0, tgt_type = :Form0, op_names = [:∂ₜ, :dt]),
-  (src_type = :Form1, tgt_type = :Form1, op_names = [:∂ₜ, :dt]),
-  (src_type = :Form2, tgt_type = :Form2, op_names = [:∂ₜ, :dt]),
-
-  # Rules for d
-  (src_type = :Form0, tgt_type = :Form1, op_names = [:d, :d₀]),
-  (src_type = :Form1, tgt_type = :Form2, op_names = [:d, :d₁]),
-  (src_type = :DualForm0, tgt_type = :DualForm1, op_names = [:d, :dual_d₀, :d̃₀]),
-  (src_type = :DualForm1, tgt_type = :DualForm2, op_names = [:d, :dual_d₁, :d̃₁]),
-
-  # Rules for ⋆
-  (src_type = :Form0, tgt_type = :DualForm2, op_names = [:⋆, :⋆₀, :star]),
-  (src_type = :Form1, tgt_type = :DualForm1, op_names = [:⋆, :⋆₁, :star]),
-  (src_type = :Form2, tgt_type = :DualForm0, op_names = [:⋆, :⋆₂, :star]),
-
-  (src_type = :DualForm2, tgt_type = :Form0, op_names = [:⋆, :⋆₀⁻¹, :star_inv]),
-  (src_type = :DualForm1, tgt_type = :Form1, op_names = [:⋆, :⋆₁⁻¹, :star_inv]),
-  (src_type = :DualForm0, tgt_type = :Form2, op_names = [:⋆, :⋆₂⁻¹, :star_inv]),
+  # Rules for ♭
+  Rule(:Form1, :DVF, :♭ᵈᵖ, [:♭]),
 
   # Rules for Δ
-  (src_type = :Form0, tgt_type = :Form0, op_names = [:Δ, :Δ₀, :lapl]),
-  (src_type = :Form1, tgt_type = :Form1, op_names = [:Δ, :Δ₁, :lapl]),
-  (src_type = :Form2, tgt_type = :Form2, op_names = [:Δ, :Δ₂, :lapl]),
+  Rule(:Form0, :Form0, :Δ₀, [:Δ, :∇², :lapl]),
+  Rule(:Form1, :Form1, :Δ₁, [:Δ, :∇², :lapl]),
+  Rule(:Form2, :Form2, :Δ₂, [:Δ, :∇², :lapl]),
 
   # Rules for Δᵈ
-  (src_type = :DualForm0, tgt_type = :DualForm0, op_names = [:Δᵈ₀]),
-  (src_type = :DualForm1, tgt_type = :DualForm1, op_names = [:Δᵈ₁]),
+  Rule(:DualForm0, :DualForm0, :Δᵈ₀, [:Δ, :∇², :lapl]),
+  Rule(:DualForm1, :DualForm1, :Δᵈ₁, [:Δ, :∇², :lapl]),
 
-  # Rules for δ
-  (src_type = :Form1, tgt_type = :Form0, op_names = [:δ, :δ₁, :codif]),
-  (src_type = :Form2, tgt_type = :Form1, op_names = [:δ, :δ₂, :codif]),
+  Rule(:Form0, :Form0, :(-), [:neg]),
+  Rule(:Form1, :Form1, :(-), [:neg]),
+  Rule(:Form2, :Form2, :(-), [:neg]),
+  Rule(:DualForm0, :DualForm0, :(-), [:neg]),
+  Rule(:DualForm1, :DualForm1, :(-), [:neg]),
+  Rule(:DualForm2, :DualForm2, :(-), [:neg]),
 
   # Rules for the averaging operator
-  (src_type = :Form0, tgt_type = :Form1, op_names = [:avg₀₁, :avg_01]),
+  Rule(:Form1, :Form0, :avg₀₁, [:avg_01]),
 
-  # Rules for negation
-  (src_type = :Form0, tgt_type = :Form0, op_names = [:neg, :(-)]),
-  (src_type = :Form1, tgt_type = :Form1, op_names = [:neg, :(-)]),
-  (src_type = :Form2, tgt_type = :Form2, op_names = [:neg, :(-)]),
-  (src_type = :DualForm0, tgt_type = :DualForm0, op_names = [:neg, :(-)]),
-  (src_type = :DualForm1, tgt_type = :DualForm1, op_names = [:neg, :(-)]),
-  (src_type = :DualForm2, tgt_type = :DualForm2, op_names = [:neg, :(-)]),
+  Rule(:Form0, :PVF, :norm, [:mag]),
+  Rule(:DualForm0, :DVF, :norm, [:mag])
+]
 
-  # Rules for ♯.
-  (src_type = :Form1, tgt_type = :PVF, op_names = [:♯, :♯ᵖᵖ]),
-  (src_type = :DualForm1, tgt_type = :DVF, op_names = [:♯, :♯ᵈᵈ]),
+op1_1D_bound_operators = [
 
-  # Rules for ♭.
-  (src_type = :DVF, tgt_type = :Form1, op_names = [:♭, :♭ᵈᵖ]),
+  # Rules for ⋆
+  Rule(:DualForm1, :Form0, :⋆₀, [:★, :⋆, :star]),
+  Rule(:DualForm0, :Form1, :⋆₁, [:★, :⋆, :star]),
+  Rule(:Form0, :DualForm1, :⋆₀⁻¹, [:★, :⋆, :star, :star_inv]),
+  Rule(:Form1, :DualForm0, :⋆₁⁻¹, [:★, :⋆, :star, :star_inv])
+]
 
-  # Rules for magnitude/ norm
-  (src_type = :PVF, tgt_type = :Form0, op_names = [:norm, :mag]),
-  (src_type = :DVF, tgt_type = :DualForm0, op_names = [:norm, :mag])]
-    
-op2_inf_rules_2D = vcat(op2_inf_rules_1D, [
-  # Rules for ∧₁₁, ∧₂₀, ∧₀₂
-  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form2, op_names = [:∧, :∧₁₁, :wedge]),
-  (proj1_type = :Form2, proj2_type = :Form0, res_type = :Form2, op_names = [:∧, :∧₂₀, :wedge]),
-  (proj1_type = :Form0, proj2_type = :Form2, res_type = :Form2, op_names = [:∧, :∧₀₂, :wedge]),
+op1_2D_bound_operators = [
 
-  # Rules for L₂
-  (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm2, op_names = [:L, :L₂]),    
+  # Rules for ⋆
+  Rule(:DualForm2, :Form0, :⋆₀, [:★, :⋆, :star]),
+  Rule(:DualForm1, :Form1, :⋆₁, [:★, :⋆, :star]),
+  Rule(:DualForm0, :Form2, :⋆₂, [:★, :⋆, :star]),
+  Rule(:Form0, :DualForm2, :⋆₀⁻¹, [:★, :⋆, :star, :star_inv]),
+  Rule(:Form1, :DualForm1, :⋆₁⁻¹, [:★, :⋆, :star, :star_inv]),
+  Rule(:Form2, :DualForm0, :⋆₂⁻¹, [:★, :⋆, :star, :star_inv])
+]
 
-  # Rules for i₁
-  (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm1, op_names = [:i, :i₂]),
+op2_operators = [
+  # Rules for ∧.
+  Rule(:Form0, [:Form0, :Form0], :∧₀₀, [:∧, :wedge]),
+  Rule(:Form1, [:Form1, :Form0], :∧₁₀, [:∧, :wedge]),
+  Rule(:Form1, [:Form0, :Form1], :∧₀₁, [:∧, :wedge]),
+  Rule(:Form2, [:Form1, :Form1], :∧₁₁, [:∧, :wedge]),
+  Rule(:Form2, [:Form2, :Form0], :∧₂₀, [:∧, :wedge]),
+  Rule(:Form2, [:Form0, :Form2], :∧₀₂, [:∧, :wedge]),
 
-  # Rules for ℒ
-  (proj1_type = :DualForm1, proj2_type = :DualForm1, res_type = :DualForm1, op_names = [:ℒ₁]),
+  # Rules for L.
+  Rule(:DualForm0, [:Form1, :DualForm0], :L₀, [:L]),
+  Rule(:DualForm1, [:Form1, :DualForm1], :L₁, [:L]),
+  Rule(:DualForm2, [:Form1, :DualForm2], :L₂, [:L]),
 
-  # Rules for ι
-  (proj1_type = :DualForm1, proj2_type = :DualForm1, res_type = :DualForm0, op_names = [:ι₁₁]),
-  (proj1_type = :DualForm1, proj2_type = :DualForm2, res_type = :DualForm1, op_names = [:ι₁₂]),
-  
-  # Rules for subtraction
-  (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, op_names = [:-, :.-]),
-  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form1, op_names = [:-, :.-]),
-  (proj1_type = :Form2, proj2_type = :Form2, res_type = :Form2, op_names = [:-, :.-]),
-  (proj1_type = :DualForm0, proj2_type = :DualForm0, res_type = :DualForm0, op_names = [:-, :.-]),
-  (proj1_type = :DualForm1, proj2_type = :DualForm1, res_type = :DualForm1, op_names = [:-, :.-]),
-  (proj1_type = :DualForm2, proj2_type = :DualForm2, res_type = :DualForm2, op_names = [:-, :.-]),
+  # TODO: Make consistent with other Lie's
+  Rule(:DualForm1, [:DualForm1, :DualForm1], :ℒ₁),
 
-  # Rules for divison, multiplication, and exponentiation.
-  (proj1_type = :Form2, proj2_type = :Form2, res_type = :Form2, op_names = [:/, :./, :*, :.*, :^, :.^]),
-  (proj1_type = :Literal, proj2_type = :Form2, res_type = :Form2, op_names = [:/, :./, :*, :.*, :^, :.^]),
-  (proj1_type = :Form2, proj2_type = :Literal, res_type = :Form2, op_names = [:/, :./, :*, :.*, :^, :.^]),
-  (proj1_type = :DualForm2, proj2_type = :DualForm2, res_type = :DualForm2, op_names = [:/, :./, :*, :.*, :^, :.^]),
-  (proj1_type = :Literal, proj2_type = :DualForm2, res_type = :DualForm2, op_names = [:/, :./, :*, :.*, :^, :.^]),
-  (proj1_type = :DualForm2, proj2_type = :Literal, res_type = :DualForm2, op_names = [:/, :./, :*, :.*, :^, :.^])])
+  # Rules for i.
+  Rule(:DualForm0, [:Form1, :DualForm1], :i₁, [:i]),
+  Rule(:DualForm1, [:Form1, :DualForm2], :i₂, [:i]),
+  Rule(:DualForm0, [:DualForm1, :DualForm1], :ι₁₁),
+  Rule(:DualForm1, [:DualForm1, :DualForm2], :ι₁₂),
 
-  """
-  These are the default rules used to do function resolution in the 1D exterior calculus.
-  """
-  op1_res_rules_1D = [
-    # Rules for d.
-    (src_type = :Form0, tgt_type = :Form1, resolved_name = :d₀, op = :d),
-    (src_type = :DualForm0, tgt_type = :DualForm1, resolved_name = :dual_d₀, op = :d),
-    # Rules for ⋆.
-    (src_type = :Form0, tgt_type = :DualForm1, resolved_name = :⋆₀, op = :⋆),
-    (src_type = :Form1, tgt_type = :DualForm0, resolved_name = :⋆₁, op = :⋆),
-    (src_type = :DualForm1, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = :⋆),
-    (src_type = :DualForm0, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :⋆),
-    (src_type = :Form0, tgt_type = :DualForm1, resolved_name = :⋆₀, op = :star),
-    (src_type = :Form1, tgt_type = :DualForm0, resolved_name = :⋆₁, op = :star),
-    (src_type = :DualForm1, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = :star),
-    (src_type = :DualForm0, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :star),
-    # Rules for δ.
-    (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :δ),
-    (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :codif),
-     # Rules for Δ
-    (src_type = :Form0, tgt_type = :Form0, resolved_name = :Δ₀, op = :Δ),
-    (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₁, op = :Δ)]
-  
-  # We merge 1D and 2D rules since it seems op2 rules are metric-free. If
-  # this assumption is false, this needs to change.
-  op2_res_rules_1D = [
-    # Rules for ∧.
-    (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, resolved_name = :∧₀₀, op = :∧),
-    (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form1, resolved_name = :∧₁₀, op = :∧),
-    (proj1_type = :Form0, proj2_type = :Form1, res_type = :Form1, resolved_name = :∧₀₁, op = :∧),
-    (proj1_type = :Form0, proj2_type = :Form0, res_type = :Form0, resolved_name = :∧₀₀, op = :wedge),
-    (proj1_type = :Form1, proj2_type = :Form0, res_type = :Form1, resolved_name = :∧₁₀, op = :wedge),
-    (proj1_type = :Form0, proj2_type = :Form1, res_type = :Form1, resolved_name = :∧₀₁, op = :wedge),
-    # Rules for L.
-    (proj1_type = :Form1, proj2_type = :DualForm0, res_type = :DualForm0, resolved_name = :L₀, op = :L),
-    (proj1_type = :Form1, proj2_type = :DualForm1, res_type = :DualForm1, resolved_name = :L₁, op = :L),
-    # Rules for i.
-    (proj1_type = :Form1, proj2_type = :DualForm1, res_type = :DualForm0, resolved_name = :i₁, op = :i)]
-  
-  
-  """
-  These are the default rules used to do function resolution in the 2D exterior calculus.
-  """
-  op1_res_rules_2D = [
-    # Rules for d.
-    (src_type = :Form0, tgt_type = :Form1, resolved_name = :d₀, op = :d),
-    (src_type = :Form1, tgt_type = :Form2, resolved_name = :d₁, op = :d),
-    (src_type = :DualForm0, tgt_type = :DualForm1, resolved_name = :dual_d₀, op = :d),
-    (src_type = :DualForm1, tgt_type = :DualForm2, resolved_name = :dual_d₁, op = :d),
-    # Rules for ⋆.
-    (src_type = :Form0, tgt_type = :DualForm2, resolved_name = :⋆₀, op = :⋆),
-    (src_type = :Form1, tgt_type = :DualForm1, resolved_name = :⋆₁, op = :⋆),
-    (src_type = :Form2, tgt_type = :DualForm0, resolved_name = :⋆₂, op = :⋆),
-    (src_type = :DualForm2, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = :⋆),
-    (src_type = :DualForm1, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :⋆),
-    (src_type = :DualForm0, tgt_type = :Form2, resolved_name = :⋆₂⁻¹, op = :⋆),
-    (src_type = :Form0, tgt_type = :DualForm2, resolved_name = :⋆₀, op = :star),
-    (src_type = :Form1, tgt_type = :DualForm1, resolved_name = :⋆₁, op = :star),
-    (src_type = :Form2, tgt_type = :DualForm0, resolved_name = :⋆₂, op = :star),
-    (src_type = :DualForm2, tgt_type = :Form0, resolved_name = :⋆₀⁻¹, op = :star),
-    (src_type = :DualForm1, tgt_type = :Form1, resolved_name = :⋆₁⁻¹, op = :star),
-    (src_type = :DualForm0, tgt_type = :Form2, resolved_name = :⋆₂⁻¹, op = :star),
-    # Rules for δ.
-    (src_type = :Form2, tgt_type = :Form1, resolved_name = :δ₂, op = :δ),
-    (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :δ),
-    (src_type = :Form2, tgt_type = :Form1, resolved_name = :δ₂, op = :codif),
-    (src_type = :Form1, tgt_type = :Form0, resolved_name = :δ₁, op = :codif),
-    # Rules for ♯.
-    (src_type = :Form1, tgt_type = :PVF, resolved_name = :♯ᵖᵖ, op = :♯),
-    (src_type = :DualForm1, tgt_type = :DVF, resolved_name = :♯ᵈᵈ, op = :♯),
-    # Rules for ♭.
-    (src_type = :DVF, tgt_type = :Form1, resolved_name = :♭ᵈᵖ, op = :♭),
-    # Rules for ∇².
-    # TODO: Call this :nabla2 in ASCII?
-    (src_type = :Form0, tgt_type = :Form0, resolved_name = :∇²₀, op = :∇²),
-    (src_type = :Form1, tgt_type = :Form1, resolved_name = :∇²₁, op = :∇²),
-    (src_type = :Form2, tgt_type = :Form2, resolved_name = :∇²₂, op = :∇²),
-    # Rules for Δ.
-    (src_type = :Form0, tgt_type = :Form0, resolved_name = :Δ₀, op = :Δ),
-    (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₁, op = :Δ),
-    (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₂, op = :Δ),
-    (src_type = :Form0, tgt_type = :Form0, resolved_name = :Δ₀, op = :lapl),
-    (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₁, op = :lapl),
-    (src_type = :Form1, tgt_type = :Form1, resolved_name = :Δ₂, op = :lapl)]
-  
-  # We merge 1D and 2D rules directly here since it seems op2 rules
-  # are metric-free. If this assumption is false, this needs to change.
-  op2_res_rules_2D = vcat(op2_res_rules_1D, [
-    # Rules for ∧.
-    (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form2, resolved_name = :∧₁₁, op = :∧),
-    (proj1_type = :Form2, proj2_type = :Form0, res_type = :Form2, resolved_name = :∧₂₀, op = :∧),
-    (proj1_type = :Form0, proj2_type = :Form2, res_type = :Form2, resolved_name = :∧₀₂, op = :∧),
-    (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form2, resolved_name = :∧₁₁, op = :wedge),
-    (proj1_type = :Form2, proj2_type = :Form0, res_type = :Form2, resolved_name = :∧₂₀, op = :wedge),
-    (proj1_type = :Form0, proj2_type = :Form2, res_type = :Form2, resolved_name = :∧₀₂, op = :wedge),
-    # Rules for L.
-    (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm2, resolved_name = :L₂, op = :L),
-    # (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm2, resolved_name = :L₂ᵈ, op = :L),
-    # Rules for i.
-    (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm1, resolved_name = :i₂, op = :i)])
-    
+  # Arthimetic rules
+  arithmetic_operators(:.-, true)...,
+  arithmetic_operators(:./, true)...,
+  arithmetic_operators(:.*, true)...,
+  arithmetic_operators(:.^, true)...,
+
+  # TODO: Only labelled as broadcasted since Decapodes converts all these
+  # to their broadcasted forms. They really should have different rules.
+  arithmetic_operators(:-, true)...,
+  arithmetic_operators(:/, true)...,
+  arithmetic_operators(:*, true)...,
+  arithmetic_operators(:^, true)...,
+
+  # TODO: Add some intermediate result type to avoid having infers
+  # Rule(:Form0, [:Form0, :infer], :^),
+  # Rule(:Form0, [:Form0, :infer], :.^),
+  # Rule(:Form1, [:Form1, :infer], :^),
+  # Rule(:Form1, [:Form1, :infer], :.^)
+]
+
 # TODO: When SummationDecapodes are annotated with the degree of their space,
 # use dispatch to choose the correct set of rules.
-infer_types!(d::SummationDecapode) =
-  infer_types!(d, op1_inf_rules_2D, op2_inf_rules_2D)
+function default_operators(dim)
+  @assert 1 <= dim <= 2
+  metric_free = vcat(op1_operators, op2_operators)
+  return vcat(metric_free, dim == 1 ? op1_1D_bound_operators : op1_2D_bound_operators)
+end
 
+infer_types!(d::SummationDecapode; dim = 2) =
+  infer_types!(d, default_operators(dim))
+
+resolve_overloads!(d::SummationDecapode; dim = 2) =
+  resolve_overloads!(d, default_operators(dim))
+
+type_check(d::SummationDecapode; dim = 2) =
+  type_check(d, default_operators(dim))
+
+function infer_resolve!(d::SummationDecapode; dim = 2)
+  operators = default_operators(dim)
+  infer_types!(d, operators)
+  resolve_overloads!(d, operators)
+  type_check(d, operators)
+
+  d
+end
 
 ascii_to_unicode_op1 = Pair{Symbol, Any}[
                         (:dt       => :∂ₜ),
@@ -426,4 +273,3 @@ rewrite_rules_2D = Vector{AbstractSDRewriteRule}([
 
 rewrite!(d::SummationDecapode) =
   rewrite!(d, rewrite_rules_2D)
-

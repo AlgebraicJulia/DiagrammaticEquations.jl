@@ -6,6 +6,9 @@ using Catlab.Graphs.PropertyGraphs
 using Catlab.Graphs
 using Catlab.Graphs.BasicGraphs
 
+import LinearAlgebra: norm
+using StatsBase
+using Colors
 
 # TODO: Change orientation to print 
 # TODO: generalize ok??
@@ -51,9 +54,38 @@ varname(d, v, verbose) = begin
   return "$name:$(spacename(d, v))"
 end
 
-# TODO: generalize ok??
-function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; typename=spacename, directed = true, prog = "dot", node_attrs=Dict(), edge_attrs=Dict(), graph_attrs=Dict(), node_labels = true, verbose = true, kw...)
-    
+#const colors = ColorSchemes.cyclic_mygbm_30_95_c78_n256 # A nice pastel scheme
+# Approximate the above color-scheme with a piecewise polynomial in RGB space.
+const corners = [[0.90, 0.90, 0.10],
+                 [0.20, 0.70, 0.15],
+                 [0.20, 0.10, 0.90],
+                 [0.90, 0.35, 0.95]]
+const poly_line = [[1,2], [2,3], [3,4], [4,1]]
+
+"""    get_colors(d::SummationDecapode)
+
+Given a Decapode, we infer the name of the boxes in the cospan which defines it and associate to these boxes a random unique color from a list of colors.
+"""
+function get_colors(d::SummationDecapode)
+    # Vectors with length > 1 are those which have been prefixed by a "_".
+    names = String.(d[:name])
+    paths = split.(names, "_")
+    spaces = first.(filter(p -> length(p) > 1, paths))
+    setdiff!(spaces, ["sum", ""])
+    swatches = map(spaces) do space
+      line = corners[sample(poly_line)]
+      point_on_line = rand()
+      swatch = Colors.RGB((line[1]*point_on_line + line[2]*(1-point_on_line))...)
+    end
+    Dict([space => "#" * Colors.hex(swatch) for (space, swatch) in zip(spaces, swatches)])
+end
+
+function labelcolor(s::T, colordict::Dict{SubString{String}, U}) where {T, U}
+    head = first(split(String(s), "_"))
+    String(get(colordict, head, "#ffffff"))
+end
+
+function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; typename=spacename, directed = true, prog = "dot", node_attrs=Dict(), edge_attrs=Dict(), graph_attrs=Dict(), node_labels = true, verbose = true, color = false, kw...)
     default_graph_attrs = Dict(:rankdir => "TB")
     default_edge_attrs = Dict()
     default_node_attrs = Dict(:shape => "oval")
@@ -63,8 +95,13 @@ function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; typena
       edge_attrs = merge!(default_edge_attrs, edge_attrs),  
       graph_attrs = merge!(default_graph_attrs, graph_attrs))
 
+    colordict = color ? get_colors(d) : Dict{SubString{String}, Symbol}()
+
     vids = map(parts(d, :Var)) do v
-      add_vertex!(G, label=varname(d, v, verbose))
+      vertex = add_vertex!(G, label=varname(d, v, verbose))
+      set_vprop!(G, v, :fillcolor, labelcolor(subpart(d, v, :name), colordict))
+      set_vprop!(G, v, :style, "filled")
+      vertex
     end
 
     # Add entry and exit vertices and wires

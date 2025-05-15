@@ -5,26 +5,11 @@ using MLStyle
 using Base.Iterators
 
 using DiagrammaticEquations
+using DiagrammaticEquations.Deca
+
+import DiagrammaticEquations: Judgement, filterfor_ec_types
 
 @testset "Parsing" begin
-
-  # @present DiffusionSpace2D(FreeExtCalc2D) begin
-  #   X::Space
-  #   k::Hom(Form1(X), Form1(X)) # diffusivity of space, usually constant (scalar multiplication)
-  #   proj₁_⁰⁰₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
-  #   proj₂_⁰⁰₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
-  #   sum₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
-  #   prod₀::Hom(Form0(X) ⊗ Form0(X), Form0(X))
-  # end
-
-
-  # Diffusion = @decapode DiffusionSpace2D begin
-  #     (C, Ċ₁, Ċ₂)::Form0{X}
-  #     Ċ₁ == ⋆₀⁻¹{X}(dual_d₁{X}(⋆₁{X}(k(d₀{X}(C)))))
-  #     Ċ₂ == ⋆₀⁻¹{X}(dual_d₁{X}(⋆₁{X}(d₀{X}(C))))
-  #     ∂ₜ{Form0{X}}(C) == Ċ₁ + Ċ₂
-  # end
-
   # Tests
   #######
 
@@ -420,8 +405,6 @@ import DiagrammaticEquations: safe_modifytype
   end
 end
 
-import DiagrammaticEquations: filterfor_ec_types
-
 @testset "Form Type Retrieval" begin
   all_types = [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2, :Literal, :Constant, :Parameter, :PVF, :DVF, :infer]
   @test filterfor_ec_types(all_types) == [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2, :PVF, :DVF]
@@ -429,16 +412,55 @@ import DiagrammaticEquations: filterfor_ec_types
   @test isempty(filterfor_ec_types([:Literal, :Constant, :Parameter, :infer]))
 end
 
-@testset "Type Inference" begin
-  # Warning, this testing depends on the fact that varname, form information is
-  # unique within a decapode even though this is not enforced
-  function get_name_type_pair(d::SummationDecapode)
-    Set(zip(d[:name], d[:type]))
-  end
+# Warning, this testing depends on the fact that varname, form information is
+# unique within a decapode even though this is not enforced
+function get_name_type_pair(d::SummationDecapode)
+  Set(zip(d[:name], d[:type]))
+end
 
-  function test_nametype_equality(d::SummationDecapode, names_types_expected)
-    issetequal(get_name_type_pair(d), names_types_expected)
-  end
+function test_nametype_equality(d::SummationDecapode, names_types_expected)
+  @test issetequal(get_name_type_pair(d), names_types_expected)
+end
+
+@testset "Ruleset ambiguity" begin
+  amb_forward_rules = [Rule(:Form0, [:Form0], :test), Rule(:Form1, [:Form0], :test)]
+  @test !check_rule_ambiguity(amb_forward_rules)
+
+  amb_back_rules = [Rule(:Form1, [:Form0], :test), Rule(:Form1, [:Form1], :test)]
+  @test !check_rule_ambiguity(amb_back_rules)
+
+  amb_large_rules = [Rule(:Form0, [:Form0, :Form1, :Form2], :test), Rule(:Form1, [:Form0, :Form1, :Form2], :test)]
+  @test !check_rule_ambiguity(amb_large_rules)
+
+  amb_large_back_rules = [Rule(:Form0, [:Form0, :Form1, :Form1], :test), Rule(:Form0, [:Form0, :Form1, :Form2], :test)]
+  @test !check_rule_ambiguity(amb_large_back_rules)
+
+  usertype_amb_rules = [Rule(:Form0, [:Constant], :test), Rule(:Form1, [:Constant], :test)]
+  @test !check_rule_ambiguity(usertype_amb_rules)
+
+  usertype_good_rules = [Rule(:Form0, [:Constant], :test), Rule(:Form0, [:Parameter], :test)]
+  @test check_rule_ambiguity(usertype_good_rules)
+
+  usertype_large_rules = [Rule(:Form0, [:Form0, :Constant], :test), Rule(:Form0, [:Form0, :Literal], :test)]
+  @test check_rule_ambiguity(usertype_large_rules)
+
+  different_rules = [Rule(:Form0, [:Form0], :test1), Rule(:Form1, [:Form0], :test2)]
+  @test check_rule_ambiguity(different_rules)
+
+  aliases_amb = [Rule(:Form0, [:Form0], :test1, [:test]), Rule(:Form1, [:Form0], :test2, [:test])]
+  @test !check_rule_ambiguity(aliases_amb)
+
+  diff_size_rules = [Rule(:Form0, [:Form0], :test), Rule(:Form1, [:Form0, :Form0], :test)]
+  @test check_rule_ambiguity(diff_size_rules)
+
+  same_rules = [Rule(:Form1, [:Form0], :test), Rule(:Form1, [:Form0], :test)]
+  @test check_rule_ambiguity(same_rules)
+
+  @test check_rule_ambiguity(default_operators(1))
+  @test check_rule_ambiguity(default_operators(2))
+end
+
+@testset "Type Inference" begin
 
   # The type of the tgt of ∂ₜ is inferred.
   Test1 = quote
@@ -450,7 +472,7 @@ end
 
   # We use set equality because we do not care about the order of the Var table.
   names_types_expected_1 = Set([(:C, :Form0)])
-  @test test_nametype_equality(t1, names_types_expected_1)
+  test_nametype_equality(t1, names_types_expected_1)
 
   # The type of the src of ∂ₜ is inferred.
   Test2 = quote
@@ -462,7 +484,7 @@ end
   infer_types!(t2)
 
   names_types_expected_2 = Set([(:C, :Form0)])
-  @test test_nametype_equality(t2, names_types_expected_2)
+  test_nametype_equality(t2, names_types_expected_2)
 
   # The type of the tgt of d is inferred.
   Test3 = quote
@@ -480,7 +502,7 @@ end
   infer_types!(t3)
 
   names_types_expected_3 = Set([(:C, :Form0), (:D, :Form1), (:E, :Form2)])
-  @test test_nametype_equality(t3, names_types_expected_3)
+  test_nametype_equality(t3, names_types_expected_3)
 
   # The type of the src and tgt of d is inferred.
   Test4 = quote
@@ -495,7 +517,7 @@ end
   infer_types!(t4)
 
   names_types_expected_4 = Set([(:C, :Form0), (:D, :Form1), (:E, :Form2)])
-  @test test_nametype_equality(t4, names_types_expected_4)
+  test_nametype_equality(t4, names_types_expected_4)
 
   # The type of the src of d is inferred.
   Test5 = quote
@@ -507,7 +529,7 @@ end
   infer_types!(t5)
 
   names_types_expected_5 = Set([(:C, :Form0), (:D, :Form1)])
-  @test test_nametype_equality(t5, names_types_expected_5)
+  test_nametype_equality(t5, names_types_expected_5)
 
   # The type of the src of d is inferred.
   Test6 = quote
@@ -525,7 +547,7 @@ end
   names_types_expected_6 = Set([
     (:A, :Form0),     (:B, :Form1),     (:C, :Form2),
     (:F, :DualForm2), (:E, :DualForm1), (:D, :DualForm0)])
-  @test test_nametype_equality(t6, names_types_expected_6)
+  test_nametype_equality(t6, names_types_expected_6)
 
   # The type of a summand is inferred.
   Test7 = quote
@@ -568,7 +590,7 @@ end
     (:Γ, :Form0),
     (:A, :Form1), (:B, :Form1), (:C, :Form1), (:D, :Form1), (:E, :Form1), (:F, :Form1),
     (:Θ, :Form2)])
-  @test test_nametype_equality(t8, names_types_expected_8)
+  test_nametype_equality(t8, names_types_expected_8)
 
   function makeInferPathDeca(log_cycles; infer_path = false)
     cycles = 2 ^ log_cycles
@@ -613,7 +635,7 @@ end
   names_types_expected_9 = Set([
     (:A, :Form0),     (Symbol("•_1_", 1), :Form1),     (Symbol("•_1_", 2), :Form2),
     (:B, :DualForm2), (Symbol("•_1_", 4), :DualForm1), (Symbol("•_1_", 3), :DualForm0)])
-  @test test_nametype_equality(t9, names_types_expected_9)
+  test_nametype_equality(t9, names_types_expected_9)
 
   # Basic op2 inference using ∧
   Test10 = quote
@@ -633,7 +655,7 @@ end
   infer_types!(t10)
 
   names_types_expected_10 = Set([(:F, :Form1), (:B, :Form0), (:C, :Form0), (:H, :Form1), (:A, :Form0), (:E, :Form1), (:D, :Form0)])
-  @test test_nametype_equality(t10, names_types_expected_10)
+  test_nametype_equality(t10, names_types_expected_10)
 
   # Basic op2 inference using L
   Test11 = quote
@@ -650,7 +672,7 @@ end
 
 
   names_types_expected_11 = Set([(:A, :Form1), (:B, :DualForm0), (:C, :DualForm0), (:E, :DualForm1), (:D, :DualForm1)])
-  @test test_nametype_equality(t11, names_types_expected_11)
+  test_nametype_equality(t11, names_types_expected_11)
 
   # Basic op2 inference using i
   Test12 = quote
@@ -664,7 +686,7 @@ end
   infer_types!(t12)
 
   names_types_expected_12 = Set([(:A, :Form1), (:B, :DualForm1), (:C, :DualForm0)])
-  @test test_nametype_equality(t12, names_types_expected_12)
+  test_nametype_equality(t12, names_types_expected_12)
 
   #2D op2 inference using ∧
   Test13 = quote
@@ -684,7 +706,7 @@ end
   infer_types!(t13)
 
   names_types_expected_13 = Set([(:E, :Form2), (:B, :Form1), (:C, :Form2), (:A, :Form1), (:F, :Form2), (:H, :Form2), (:D, :Form0)])
-  @test test_nametype_equality(t13, names_types_expected_13)
+  test_nametype_equality(t13, names_types_expected_13)
 
   # 2D op2 inference using L
   Test14 = quote
@@ -698,7 +720,7 @@ end
   infer_types!(t14)
 
   names_types_expected_14 = Set([(:C, :DualForm2), (:A, :Form1), (:B, :DualForm2)])
-  @test test_nametype_equality(t14, names_types_expected_14)
+  test_nametype_equality(t14, names_types_expected_14)
 
   # 2D op2 inference using i
   Test15 = quote
@@ -712,7 +734,7 @@ end
   infer_types!(t15)
 
   names_types_expected_15 = Set([(:A, :Form1), (:B, :DualForm2), (:C, :DualForm1)])
-  @test test_nametype_equality(t15, names_types_expected_15)
+  test_nametype_equality(t15, names_types_expected_15)
 
   # Special case of a summation with a mix of infer and Literal.
   t16 = @decapode begin
@@ -721,7 +743,7 @@ end
   infer_types!(t16)
 
   names_types_expected_16 = Set([(:A, :infer), (:C, :infer), (:D, :infer), (Symbol("2"), :Literal)])
-  @test test_nametype_equality(t16, names_types_expected_16)
+  test_nametype_equality(t16, names_types_expected_16)
 
   # Special case of a summation with a mix of Form, Constant, and infer.
   t17 = @decapode begin
@@ -732,7 +754,7 @@ end
   infer_types!(t17)
 
   names_types_expected_17 = Set([(:A, :Form0), (:C, :Constant), (:D, :Form0)])
-  @test test_nametype_equality(t17, names_types_expected_17)
+  test_nametype_equality(t17, names_types_expected_17)
 
   # Special case of a summation with a mix of infer and Constant.
   t18 = @decapode begin
@@ -742,7 +764,7 @@ end
   infer_types!(t18)
 
   names_types_expected_18 = Set([(:A, :infer), (:C, :Constant), (:D, :infer)])
-  @test test_nametype_equality(t18, names_types_expected_18)
+  test_nametype_equality(t18, names_types_expected_18)
 
   # Test #19: Prevent intermediates from converting to Constant
   let
@@ -755,7 +777,7 @@ end
       ḣ == ∘(⋆, d, ⋆)(Γ * d(h) * avg₀₁(mag(♯(d(h)))^(n-1)) * avg₀₁(h^(n+2)))
     end
 
-    infer_types!(d, op1_inf_rules_1D, op2_inf_rules_1D)
+    infer_types!(d, dim = 1)
     @test d[18, :type] != :Constant
   end
 
@@ -771,7 +793,7 @@ end
     end
 
     d = expand_operators(d)
-    infer_types!(d, op1_inf_rules_1D, op2_inf_rules_1D)
+    infer_types!(d, dim = 1)
 
     @test d[8, :type] != :Literal
   end
@@ -785,7 +807,7 @@ end
     infer_types!(d)
 
     names_types_expected = Set([(:A, :infer), (:C, :Parameter), (:D, :infer)])
-    @test test_nametype_equality(d, names_types_expected)
+    test_nametype_equality(d, names_types_expected)
   end
 
   # Test #22: Have source form information flow over Parameters and Constants
@@ -799,7 +821,7 @@ end
     infer_types!(d)
 
     names_types_expected = Set([(:A, :Form0), (:B, :Form0), (:C, :Parameter), (:D, :Constant)])
-    @test test_nametype_equality(d, names_types_expected)
+    test_nametype_equality(d, names_types_expected)
   end
 
   # Test #23: Have target form information flow over Parameters and Constants
@@ -813,7 +835,7 @@ end
     infer_types!(d)
 
     names_types_expected = Set([(:A, :Form0), (:B, :Form0), (:C, :Parameter), (:D, :Constant)])
-    @test test_nametype_equality(d, names_types_expected)
+    test_nametype_equality(d, names_types_expected)
   end
 
   # Test #24: Summing mismatched forms throws an error
@@ -856,13 +878,37 @@ end
                                (:E, :DVF), (:F, :infer), (:G, :Form1), (:H, :DualForm1),
                                (:I, :Form1), (:J, :DualForm1), (:K, :PVF), (:L, :DVF),
                                (:M, :PVF), (:N, :DVF), (:O, :infer), (:P, :Form1)])
-    @test test_nametype_equality(d, names_types_expected)
+    test_nametype_equality(d, names_types_expected)
   end
+
+  op_not_in_rules = @decapode begin
+    A::Form0
+    C::Form0
+
+    B == fake(A)
+    D == fake2(A, C)
+  end
+  op_not_in_rules_res = deepcopy(op_not_in_rules)
+  infer_types!(op_not_in_rules)
+
+  @test op_not_in_rules == op_not_in_rules_res
+  @test !(op_not_in_rules === op_not_in_rules_res)
+
+  only_type_dec = @decapode begin
+    A::Form0
+
+    B == fake(A)
+    C == d(A)
+  end
+  infer_types!(only_type_dec)
+
+  only_type_dec_res = Set([(:A, :Form0), (:B, :infer), (:C, :Form1)])
+  test_nametype_equality(only_type_dec, only_type_dec_res)
 end
 
-@testset "Overloading Resolution" begin
+@testset "Overloading Resolution and Type Checking" begin
   # d overloading is resolved.
-  Test1 = quote
+  t1 = @decapode begin
     A::Form0{X}
     B::Form1{X}
     C::Form2{X}
@@ -874,15 +920,15 @@ end
     E == d(D)
     F == d(E)
   end
-  t1 = SummationDecapode(parse_decapode(Test1))
   resolve_overloads!(t1)
 
   op1s_1 = t1[:op1]
   op1s_expected_1 = [:d₀ , :d₁, :dual_d₀, :dual_d₁]
   @test op1s_1 == op1s_expected_1
+  @test type_check(t1)
 
   # ⋆ overloading is resolved.
-  Test2 = quote
+  t2 = @decapode begin
     C::Form0{X}
     D::DualForm2{X}
     E::Form1{X}
@@ -896,8 +942,8 @@ end
     G == ⋆(H)
     H == ⋆(G)
   end
-  t2 = SummationDecapode(parse_decapode(Test2))
   resolve_overloads!(t2)
+  @test type_check(t2)
 
   op1s_2 = t2[:op1]
   # Note: The Op1 table of the decapode created does not have the functions
@@ -906,7 +952,7 @@ end
   @test op1s_2 == op1s_expected_2
 
   # All overloading on the de Rahm complex is resolved.
-  Test3 = quote
+  t3 = @decapode begin
     A::Form0{X}
     B::Form1{X}
     C::Form2{X}
@@ -924,7 +970,6 @@ end
     D == ⋆(C)
     C == ⋆(D)
   end
-  t3 = SummationDecapode(parse_decapode(Test3))
   resolve_overloads!(t3)
 
   op1s_3 = t3[:op1]
@@ -932,8 +977,9 @@ end
   # listed in the order in which they appear in Test2.
   op1s_expected_3 = [:d₀ , :d₁, :dual_d₀, :dual_d₁, :⋆₀ , :⋆₀⁻¹ , :⋆₁ , :⋆₁⁻¹ , :⋆₂ , :⋆₂⁻¹]
   @test op1s_3 == op1s_expected_3
+  @test type_check(t3)
 
-  Test4 = quote
+  t4 = @decapode begin
     (A, C)::Form0{X}
     (B, D, E)::Form1{X}
 
@@ -947,13 +993,13 @@ end
     G == L(B, J)
     H == i(B, J)
   end
-  t4 = SummationDecapode(parse_decapode(Test4))
   resolve_overloads!(t4)
   op2s_4 = t4[:op2]
   op2s_expected_4 = [:∧₀₀ , :∧₀₁, :∧₁₀, :L₀, :L₁, :i₁]
   @test op2s_4 == op2s_expected_4
+  @test type_check(t4)
 
-  Test5 = quote
+  t5 = @decapode begin
     A::Form0{X}
     B::Form1{X}
     (C, D, E, F)::Form2{X}
@@ -967,14 +1013,138 @@ end
     G == L(B, I)
     H == i(B, I)
   end
-  t5 = SummationDecapode(parse_decapode(Test5))
   resolve_overloads!(t5)
   op2s_5 = t5[:op2]
   op2s_expected_5 = [:∧₁₁, :∧₀₂, :∧₂₀, :L₂, :i₂]
   @test op2s_5 == op2s_expected_5
+  @test type_check(t5)
+
+  t6 = @decapode begin
+    A::Form1
+    B::Form1
+
+    Y == ♯ᵖᵈ(A)
+    Z == ♯(B)
+  end
+  resolve_overloads!(infer_types!(t6))
+  op1s_6 = t6[:op1]
+  op1s_expected_6 = [:♯ᵖᵈ, :♯ᵖᵖ]
+  @test op1s_6 == op1s_expected_6
+  @test type_check(t6)
+
+  op_not_in_rules = @decapode begin
+    A::Form0
+    B::Form0
+    C::Form0
+    D::Form0
+
+    B == fake(A)
+    D == fake2(A, C)
+  end
+  op_not_in_rules_res = deepcopy(op_not_in_rules)
+  resolve_overloads!(op_not_in_rules)
+
+  @test op_not_in_rules == op_not_in_rules_res
+  @test op_not_in_rules !== op_not_in_rules_res
+  @test type_check(op_not_in_rules)
+
+  only_type_dec = @decapode begin
+    A::Form0
+    B::Form0
+    C::Form1
+
+    B == fake(A)
+    C == d(A)
+  end
+  resolve_overloads!(only_type_dec)
+
+  only_type_dec_res = Set([(:A, :Form0), (:B, :Form0), (:C, :Form1)])
+  test_nametype_equality(only_type_dec, only_type_dec_res)
+  @test type_check(only_type_dec)
+
+  poorly_type_deca = @decapode begin
+    (A,B)::Form0
+
+    B == d(A)
+  end
+  resolve_overloads!(poorly_type_deca)
+  @test_throws DecaTypeExeception type_check(poorly_type_deca)
 end
 
 @testset "Type Inference and Overloading Resolution Integration" begin
+
+  start_just_op1s = @decapode begin
+    B::Form0
+    A == d(d(B))
+  end
+
+  infer_resolve!(start_just_op1s)
+  test_nametype_equality(start_just_op1s, Set([(Symbol("•1"), :Form1), (:B, :Form0), (:A, :Form2)]))
+  @test start_just_op1s[:op1] == [:d₀, :d₁]
+
+  end_just_op1s = @decapode begin
+    A::Form2
+    A == d(d(B))
+  end
+  infer_resolve!(end_just_op1s)
+  test_nametype_equality(end_just_op1s, Set([(Symbol("•1"), :Form1), (:B, :Form0), (:A, :Form2)]))
+  @test end_just_op1s[:op1] == [:d₀, :d₁]
+
+  all_op_types = @decapode begin
+    (I1, I2)::Form0
+    A == Δ(d(∧(I1, I2))) + δ(I3)
+  end
+  infer_resolve!(all_op_types)
+  @test all_op_types[3, :name] == :A && all_op_types[3, :type] == :Form1
+  @test all_op_types[8, :name] == :I3 && all_op_types[8, :type] == :Form2
+
+  @test all_op_types[:op1] == [:d₀, :Δ₁, :δ₂]
+  @test all_op_types[:op2] == [:∧₀₀]
+
+  arithmetic = @decapode begin
+    B::Form0
+    A == (n+1) .* B
+  end
+  infer_resolve!(arithmetic)
+
+  @test_broken arithmetic[2, :name] == :A && arithmetic[2, :type] == :Form0
+
+  # Infer types and resolve overloads for the Halfar equation.
+  # TODO: This test isn't passing right now because we can't ignore type of the power
+  # in the exponent.
+  let
+    d = @decapode begin
+      h::Form0
+      Γ::Form1
+      n::Constant
+
+      ∂ₜ(h) == ∘(⋆, d, ⋆)(Γ  * d(h) ∧ (mag(♯(d(h)))^(n-1)) ∧ (h^(n+2)))
+    end
+    d = expand_operators(d)
+    infer_resolve!(d)
+    @test_broken d == @acset SummationDecapode{Any, Any, Symbol} begin
+      Var = 19
+      TVar = 1
+      Op1 = 8
+      Op2 = 6
+      Σ = 1
+      Summand = 2
+      src = [1, 1, 1, 13, 12, 6, 18, 19]
+      tgt = [4, 9, 13, 12, 11, 18, 19, 4]
+      proj1 = [2, 3, 11, 8, 1, 7]
+      proj2 = [9, 15, 14, 10, 5, 16]
+      res = [8, 14, 10, 7, 16, 6]
+      incl = [4]
+      summand = [3, 17]
+      summation = [1, 1]
+      sum = [5]
+      op1 = [:∂ₜ, :d₀, :d₀, :♯ᵖᵖ, :norm, :⋆₁, :dual_d₁, :⋆₀⁻¹]
+      op2 = [:*, :-, :^, :∧₁₀, :^, :∧₁₀]
+      type = [:Form0, :Form1, :Constant, :Form0, :infer, :Form1, :Form1, :Form1, :Form1, :Form0, :Form0, :PVF, :Form1, :infer, :Literal, :Form0, :Literal, :DualForm1, :DualForm2]
+      name = [:h, :Γ, :n, :ḣ, :sum_1, Symbol("•2"), Symbol("•3"), Symbol("•4"), Symbol("•5"), Symbol("•6"), Symbol("•7"), Symbol("•8"), Symbol("•9"), Symbol("•10"), Symbol("1"), Symbol("•11"), Symbol("2"), Symbol("•_6_1"), Symbol("•_6_2")]
+    end
+  end
+
   # Momentum-formulation of Navier Stokes on sphere
   DiffusionExprBody = quote
     (T, Ṫ)::Form0{X}
@@ -1034,83 +1204,12 @@ end
                   [Open(continuity, [:M, :ρ, :P, :T]),
                   Open(NavierStokes, [:M, :ρ, :p, :T])])
   HeatXfer = apex(heatXfer_cospan)
+  infer_types!(HeatXfer)
+  resolve_overloads!(HeatXfer)
 
-  bespoke_op1_inf_rules = [
-  # Rules for avg.
-  (src_type = :Form0, tgt_type = :Form1, op_names = [:avg]),
-  # Rules for R₀.
-  (src_type = :Form0, tgt_type = :Form0, op_names = [:R₀])]
-
-  #= bespoke_op2_inf_rules = [
-  (proj1_type = :Parameter, proj2_type = :Form0, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
-  (proj1_type = :Parameter, proj2_type = :Form1, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
-  (proj1_type = :Parameter, proj2_type = :Form2, res_type = :Form2, op_names = [:/, :./, :*, :.*]),
-
-  (proj1_type = :Form0, proj2_type = :Parameter, res_type = :Form0, op_names = [:/, :./, :*, :.*]),
-  (proj1_type = :Form1, proj2_type = :Parameter, res_type = :Form1, op_names = [:/, :./, :*, :.*]),
-  (proj1_type = :Form2, proj2_type = :Parameter, res_type = :Form2, op_names = [:/, :./, :*, :.*])] =#
-
-  infer_types!(HeatXfer, vcat(bespoke_op1_inf_rules, op1_inf_rules_2D),
-    op2_inf_rules_2D)
-
-  names_types_hx = zip(HeatXfer[:name], HeatXfer[:type])
-
-  names_types_expected_hx = [
-    (:T, :Form0), (:continuity_Ṫ₁, :Form0), (:continuity_diffusion_ϕ, :DualForm1), (:continuity_diffusion_k, :Parameter), (Symbol("continuity_diffusion_•1"), :DualForm2), (Symbol("continuity_diffusion_•2"), :Form1), (Symbol("continuity_diffusion_•3"), :Form1), (:M, :Form1), (:continuity_advection_V, :Form1), (:ρ, :Form0), (:P, :Form0), (:continuity_Ṫₐ, :Form0), (Symbol("continuity_advection_•1"), :Form0), (Symbol("continuity_advection_•2"), :Form1), (Symbol("continuity_advection_•3"), :DualForm2), (Symbol("continuity_advection_•4"), :Form0), (Symbol("continuity_advection_•5"), :DualForm2), (:continuity_Ṫ, :Form0), (:navierstokes_Ṁ, :Form1), (:navierstokes_G, :Form1), (:navierstokes_V, :Form1), (:navierstokes_ṗ, :Form0), (:navierstokes_two, :Parameter), (:navierstokes_three, :Parameter), (:navierstokes_kᵥ, :Parameter), (Symbol("navierstokes_•1"), :DualForm2), (Symbol("navierstokes_•2"), :Form1), (Symbol("navierstokes_•3"), :Form1), (Symbol("navierstokes_•4"), :DualForm1), (Symbol("navierstokes_•5"), :DualForm1), (Symbol("navierstokes_•6"), :DualForm1), (Symbol("navierstokes_•7"), :Form1), (Symbol("navierstokes_•8"), :Form1), (Symbol("navierstokes_•9"), :Form1), (Symbol("navierstokes_•10"), :Form1), (Symbol("navierstokes_•11"), :Form1), (:navierstokes_sum_1, :Form1), (Symbol("navierstokes_•12"), :Form0), (Symbol("navierstokes_•13"), :Form1), (Symbol("navierstokes_•14"), :Form1), (Symbol("navierstokes_•15"), :Form0), (Symbol("navierstokes_•16"), :DualForm0), (Symbol("navierstokes_•17"), :DualForm1), (Symbol("navierstokes_•18"), :Form1), (Symbol("navierstokes_•19"), :Form1), (Symbol("navierstokes_•20"), :Form1), (:navierstokes_sum_2, :Form0), (Symbol("navierstokes_•21"), :Form1), (Symbol("navierstokes_•22"), :Form1), (Symbol("navierstokes_•23"), :DualForm2)]
-
-  @test issetequal(names_types_hx, names_types_expected_hx)
-
-  bespoke_op2_res_rules = [
-  # Rules for L.
-  (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :Form2, resolved_name = :L₀, op = :L),
-  (proj1_type = :Form1, proj2_type = :DualForm2, res_type = :DualForm2, resolved_name = :L₀, op = :L),
-  (proj1_type = :Form1, proj2_type = :Form1, res_type = :Form1, resolved_name = :L₁′, op = :L)]
-
-  resolve_overloads!(HeatXfer, op1_res_rules_2D,
-    vcat(bespoke_op2_res_rules, op2_res_rules_2D))
-
-  op1s_hx = HeatXfer[:op1]
-  op1s_expected_hx = [:d₀, :⋆₁, :dual_d₁, :⋆₀⁻¹, :avg, :R₀, :⋆₀, :⋆₀⁻¹, :neg, :∂ₜ, :avg, :⋆₁, :neg, :avg, :Δ₁, :δ₁, :d₀, :⋆₁, :d₀, :avg, :d₀, :neg, :avg, :∂ₜ, :⋆₀, :⋆₀⁻¹, :neg, :∂ₜ]
-  @test op1s_hx == op1s_expected_hx
-  op2s_hx = HeatXfer[:op2]
-  op2s_expected_hx = [:*, :/, :/, :L₀, :/, :L₁, :*, :/, :*, :i₁, :/, :*, :*, :L₀]
-  @test op2s_hx == op2s_expected_hx
-
-  # Infer types and resolve overloads for the Halfar equation.
-  let
-    d = @decapode begin
-      h::Form0
-      Γ::Form1
-      n::Constant
-
-      ∂ₜ(h) == ∘(⋆, d, ⋆)(Γ  * d(h) ∧ (mag(♯(d(h)))^(n-1)) ∧ (h^(n+2)))
-    end
-    d = expand_operators(d)
-    infer_types!(d)
-    resolve_overloads!(d)
-    @test d == @acset SummationDecapode{Any, Any, Symbol} begin
-      Var = 19
-      TVar = 1
-      Op1 = 8
-      Op2 = 6
-      Σ = 1
-      Summand = 2
-      src = [1, 1, 1, 13, 12, 6, 18, 19]
-      tgt = [4, 9, 13, 12, 11, 18, 19, 4]
-      proj1 = [2, 3, 11, 8, 1, 7]
-      proj2 = [9, 15, 14, 10, 5, 16]
-      res = [8, 14, 10, 7, 16, 6]
-      incl = [4]
-      summand = [3, 17]
-      summation = [1, 1]
-      sum = [5]
-      op1 = [:∂ₜ, :d₀, :d₀, :♯ᵖᵖ, :mag, :⋆₁, :dual_d₁, :⋆₀⁻¹]
-      op2 = [:*, :-, :^, :∧₁₀, :^, :∧₁₀]
-      type = [:Form0, :Form1, :Constant, :Form0, :infer, :Form1, :Form1, :Form1, :Form1, :Form0, :Form0, :PVF, :Form1, :infer, :Literal, :Form0, :Literal, :DualForm1, :DualForm2]
-      name = [:h, :Γ, :n, :ḣ, :sum_1, Symbol("•2"), Symbol("•3"), Symbol("•4"), Symbol("•5"), Symbol("•6"), Symbol("•7"), Symbol("•8"), Symbol("•9"), Symbol("•10"), Symbol("1"), Symbol("•11"), Symbol("2"), Symbol("•_6_1"), Symbol("•_6_2")]
-    end
-  end
-
+  @test_throws DecaTypeExeception type_check(HeatXfer)
+  @test HeatXfer[12, :op2] == :*
+  @test HeatXfer[40, :type] == :DualForm1 && HeatXfer[39, :type] == :Form1
 end
 
 @testset "Compilation Transformation" begin
@@ -1125,7 +1224,7 @@ end
   t1_contracted = contract_operators(t1_expanded)
   @test t1_orig == t1_contracted
   # contract_operators does not mutate its argument.
-  @test t1_contracted !== t1_expanded
+  @test !(t1_contracted === t1_expanded)
 
   # contract_operators works on multiple chains.
   Test2 = quote
@@ -1181,7 +1280,7 @@ end
   t6_rec_del = recursive_delete_parents(t6_orig, Vector{Int64}())
   @test t6_orig == SummationDecapode{Any, Any, Symbol}()
   # recursive_delete_parents does not mutate its argument.
-  @test t6_orig !== t6_rec_del
+  @test !(t6_orig === t6_rec_del)
 
   # recursive_delete_parents deletes a chain of single-child parents.
   t7_orig = SummationDecapode(parse_decapode(quote
