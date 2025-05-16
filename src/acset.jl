@@ -2,6 +2,7 @@ using Catlab
 using Catlab.DenseACSets
 using DataStructures
 using ACSets.InterTypes
+using ACSets.Query: From, Where
 
 @intertypes "decapodeacset.it" module decapodeacset end
 
@@ -351,13 +352,9 @@ function find_chains(d::SummationDecapode;
     black_list::Set{Symbol} = Set{Symbol}())
   chains = []
   visited = falses(nparts(d, :Op1))
-  # TODO: Re-write this without two reduce-vcats.
-  rvrv(x) = reduce(vcat, reduce(vcat, x))
-  chain_starts = unique(rvrv(
-    [incident(d, Vector{Int64}(filter(i -> !isnothing(i), infer_states(d))), :src),
-     incident(d, d[:res], :src),
-     incident(d, d[:sum], :src),
-     incident(d, d[collect(Iterators.flatten(incident(d, collect(black_list), :op1))), :tgt], :src)]))
+  chain_starts = (From(:Op1) |> 
+  Where(:src, d[:res] ∪ d[:sum] ∪ filter(!isnothing, infer_states(d))) |
+  Where(:src, From(:Op1=>:tgt) |> Where(:op1, collect(black_list))))(d)
 
   passes_white_list(x) = isempty(white_list) ? true : x ∈ white_list
   passes_black_list(x) = x ∉ black_list
