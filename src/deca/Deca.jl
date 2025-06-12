@@ -3,6 +3,7 @@ module Deca
 using DataStructures
 using ..DiagrammaticEquations
 using Catlab
+using MLStyle
 
 using Reexport
 

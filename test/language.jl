@@ -1210,6 +1210,68 @@ end
   @test_throws DecaTypeExeception type_check(HeatXfer)
   @test HeatXfer[12, :op2] == :*
   @test HeatXfer[40, :type] == :DualForm1 && HeatXfer[39, :type] == :Form1
+
+  deca_3d = @decapode begin
+    (P0::Form0)
+    (P1::Form1)
+    (P2::Form2)
+    (P3::Form3)
+
+    (D0::DualForm0)
+    (D1::DualForm1)
+    (D2::DualForm2)
+    (D3::DualForm3)
+
+    R1 == d(P2)
+    R2 == d(D2)
+
+    R3 == δ(P3)
+
+    R4 == Δ(P3)
+
+    R5 == -(P3)
+    R6 == -(D3)
+
+    R7 == ⋆(P0)
+    R8 == ⋆(P1)
+    R9 == ⋆(P2)
+    R10 == ⋆(P3)
+
+    R11 == ⋆(D0)
+    R12 == ⋆(D1)
+    R13 == ⋆(D2)
+    R14 == ⋆(D3)
+
+    R15 == ∂ₜ(P3)
+    R16 == ∂ₜ(D3)
+
+    R17 == ∧(P2, P1)
+    R18 == ∧(P1, P2)
+
+    R19 == L(P1, D3)
+    R20 == i(P1, D3)
+
+  end
+
+  infer_types!(deca_3d, dim=3)
+
+  @test deca_3d[deca_3d[1:4, :tgt], :type] == [:Form3, :DualForm3, :Form2, :Form3]
+  @test deca_3d[deca_3d[5:6, :tgt], :type] == [:Form3, :DualForm3]
+  @test deca_3d[deca_3d[7:10, :tgt], :type] == [:DualForm3, :DualForm2, :DualForm1, :DualForm0]
+  @test deca_3d[deca_3d[11:14, :tgt], :type] == [:Form3, :Form2, :Form1, :Form0]
+  @test deca_3d[deca_3d[15:16, :tgt], :type] == [:Form3, :DualForm3]
+  @test deca_3d[deca_3d[1:4, :res], :type] == [:Form3, :Form3, :DualForm3, :DualForm2]
+
+  @test type_check(deca_3d, dim=3)
+
+  resolve_overloads!(deca_3d, dim=3)
+
+  @test deca_3d[1:4, :op1] == [:d₂, :dual_d₂, :δ₃, :Δ₃]
+  @test deca_3d[5:6, :op1] == [:-, :-]
+  @test deca_3d[7:10, :op1] == [:⋆₀, :⋆₁, :⋆₂, :⋆₃]
+  @test deca_3d[11:14, :op1] == [:⋆₃⁻¹, :⋆₂⁻¹, :⋆₁⁻¹, :⋆₀⁻¹]
+  @test deca_3d[15:16, :op1] == [:∂ₜ, :∂ₜ]
+  @test deca_3d[1:4, :op2] == [:∧₂₁, :∧₁₂, :L₃, :i₃]
 end
 
 @testset "Compilation Transformation" begin
