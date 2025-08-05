@@ -1251,6 +1251,9 @@ end
     R19 == L(P1, D3)
     R20 == i(P1, D3)
 
+    R21 == ∧(P3, P0)
+    R22 == ∧(P0, P3)
+
   end
 
   infer_types!(deca_3d, dim=3)
@@ -1260,7 +1263,7 @@ end
   @test deca_3d[deca_3d[7:10, :tgt], :type] == [:DualForm3, :DualForm2, :DualForm1, :DualForm0]
   @test deca_3d[deca_3d[11:14, :tgt], :type] == [:Form3, :Form2, :Form1, :Form0]
   @test deca_3d[deca_3d[15:16, :tgt], :type] == [:Form3, :DualForm3]
-  @test deca_3d[deca_3d[1:4, :res], :type] == [:Form3, :Form3, :DualForm3, :DualForm2]
+  @test deca_3d[deca_3d[1:6, :res], :type] == [:Form3, :Form3, :DualForm3, :DualForm2, :Form3, :Form3]
 
   @test type_check(deca_3d, dim=3)
 
@@ -1271,7 +1274,7 @@ end
   @test deca_3d[7:10, :op1] == [:⋆₀, :⋆₁, :⋆₂, :⋆₃]
   @test deca_3d[11:14, :op1] == [:⋆₃⁻¹, :⋆₂⁻¹, :⋆₁⁻¹, :⋆₀⁻¹]
   @test deca_3d[15:16, :op1] == [:∂ₜ, :∂ₜ]
-  @test deca_3d[1:4, :op2] == [:∧₂₁, :∧₁₂, :L₃, :i₃]
+  @test deca_3d[1:6, :op2] == [:∧₂₁, :∧₁₂, :L₃, :i₃, :∧₃₀, :∧₀₃]
 end
 
 @testset "Compilation Transformation" begin

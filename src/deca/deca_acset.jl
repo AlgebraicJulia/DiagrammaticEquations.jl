@@ -107,6 +107,8 @@ op2_operators = [
   Rule(:Form2, [:Form0, :Form2], :∧₀₂, [:∧, :wedge]),
   Rule(:Form3, [:Form2, :Form1], :∧₂₁, [:∧, :wedge]),
   Rule(:Form3, [:Form1, :Form2], :∧₁₂, [:∧, :wedge]),
+  Rule(:Form3, [:Form3, :Form0], :∧₃₀, [:∧, :wedge]),
+  Rule(:Form3, [:Form0, :Form3], :∧₀₃, [:∧, :wedge]),
 
   # Rules for L.
   Rule(:DualForm0, [:Form1, :DualForm0], :L₀, [:L]),
