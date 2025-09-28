@@ -159,13 +159,13 @@ end
 
 # A collection of DecaType getters
 # TODO: This should be replaced by using a type hierarchy
-const ALL_TYPES = [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2,
+const ALL_TYPES = [:Form0, :Form1, :Form2, :Form3, :DualForm0, :DualForm1, :DualForm2, :DualForm3,
                    :PVF, :DVF,
                    :Literal, :Parameter, :Constant, :infer]
 
-const FORM_TYPES = [:Form0, :Form1, :Form2, :DualForm0, :DualForm1, :DualForm2]
-const PRIMALFORM_TYPES = [:Form0, :Form1, :Form2]
-const DUALFORM_TYPES = [:DualForm0, :DualForm1, :DualForm2]
+const FORM_TYPES = [:Form0, :Form1, :Form2, :Form3, :DualForm0, :DualForm1, :DualForm2, :DualForm3]
+const PRIMALFORM_TYPES = [:Form0, :Form1, :Form2, :Form3]
+const DUALFORM_TYPES = [:DualForm0, :DualForm1, :DualForm2, :DualForm3]
 
 const VECTORFIELD_TYPES = [:PVF, :DVF]
 
