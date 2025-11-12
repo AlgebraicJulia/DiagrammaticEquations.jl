@@ -85,12 +85,12 @@ function labelcolor(s::T, colordict::Dict{SubString{String}, U}) where {T, U}
     String(get(colordict, head, "#ffffff"))
 end
 
-function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; typename=spacename, directed = true, prog = "dot", node_attrs=Dict(), edge_attrs=Dict(), graph_attrs=Dict(), node_labels = true, verbose = true, color = false, kw...)
+function Graphics.to_graphviz_property_graph(d::SummationDecapode; typename=spacename, directed = true, prog = "dot", node_attrs=Dict(), edge_attrs=Dict(), graph_attrs=Dict(), node_labels = true, verbose = true, color = false, kw...)
     default_graph_attrs = Dict(:rankdir => "TB")
     default_edge_attrs = Dict()
     default_node_attrs = Dict(:shape => "oval")
 
-    G = to_graphviz_property_graph(Catlab.Graphs.Graph(0); prog, node_labels,
+    G = to_graphviz_property_graph(Graphs.Graph(0); prog, node_labels,
       node_attrs = merge!(default_node_attrs, node_attrs),  
       edge_attrs = merge!(default_edge_attrs, edge_attrs),  
       graph_attrs = merge!(default_graph_attrs, graph_attrs))

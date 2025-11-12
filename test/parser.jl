@@ -1,9 +1,10 @@
 using Test
-using Catlab
+import Catlab.CategoricalAlgebra: is_isomorphic
+
 using DiagrammaticEquations
 
 # Import Decapodes AST Nodes
-using DiagrammaticEquations: Lit, AppCirc1, App1, App2, Plus, Mult, Tan, Eq
+using DiagrammaticEquations: Lit, AppCirc1, App1, App2, Plus, Mult, Tan, Eq, Var
 
 # Import PEG Rules
 using PEG

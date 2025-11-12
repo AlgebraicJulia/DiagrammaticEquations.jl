@@ -21,7 +21,7 @@ end
 # function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; kw...)
 #   to_graphviz_property_graph(d::SummationDecapode; typename=spacename, directed = true, kw...)
 # end
-function Catlab.Graphics.to_graphviz_property_graph(d::AbstractNamedDecapode; typename=typename, directed=true, kw...)
+function Graphics.to_graphviz_property_graph(d::AbstractNamedDecapode; typename=typename, directed=true, kw...)
     pg = PropertyGraph{Any}(;kw...)
     vids = map(parts(d, :Var)) do v
       add_vertex!(pg, label=varname(d,v))

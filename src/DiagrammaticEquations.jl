@@ -2,8 +2,6 @@
 """
 module DiagrammaticEquations
 
-using Catlab
-
 export
 DerivOp, append_dot, normalize_unicode, infer_states, infer_types!,
 # Deca

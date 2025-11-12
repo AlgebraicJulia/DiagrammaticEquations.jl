@@ -38,7 +38,7 @@ function parse_decapode(expr::Expr)
             Expr(:call, :(==), lhs, rhs) => Eq(term(lhs), term(rhs))
             _ => error("The line $line is malformed")
         end
-    end |> skipmissing |> collect
+    end |> skipmissing |> Base.collect
     judges = []
     eqns = []
     foreach(stmts) do s

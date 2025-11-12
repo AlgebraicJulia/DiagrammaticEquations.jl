@@ -1,5 +1,6 @@
 using Test
-using Catlab
+using Catlab.ACSetInterface
+using Catlab.CategoricalAlgebra
 using LinearAlgebra
 using MLStyle
 using Base.Iterators
@@ -7,7 +8,7 @@ using Base.Iterators
 using DiagrammaticEquations
 using DiagrammaticEquations.Deca
 
-import DiagrammaticEquations: Judgement, filterfor_ec_types
+import DiagrammaticEquations: Judgement, filterfor_ec_types, Var
 
 @testset "Parsing" begin
   # Tests

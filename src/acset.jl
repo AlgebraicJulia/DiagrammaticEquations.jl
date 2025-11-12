@@ -1,7 +1,7 @@
-using Catlab
 using Catlab.DenseACSets
-using DataStructures
 using ACSets.InterTypes
+
+using DataStructures
 
 @intertypes "decapodeacset.it" module decapodeacset end
 
@@ -357,7 +357,7 @@ function find_chains(d::SummationDecapode;
     [incident(d, Vector{Int64}(filter(i -> !isnothing(i), infer_states(d))), :src),
      incident(d, d[:res], :src),
      incident(d, d[:sum], :src),
-     incident(d, d[collect(Iterators.flatten(incident(d, collect(black_list), :op1))), :tgt], :src)]))
+     incident(d, d[Base.collect(Iterators.flatten(incident(d, Base.collect(black_list), :op1))), :tgt], :src)]))
 
   passes_white_list(x) = isempty(white_list) ? true : x ∈ white_list
   passes_black_list(x) = x ∉ black_list
@@ -750,12 +750,12 @@ end
 
 function replace_names!(d::SummationDecapode, op1_repls::Vector{Pair{Symbol, Any}}, op2_repls::Vector{Pair{Symbol, Symbol}})
   for (orig,repl) in op1_repls
-    for i in collect(incident(d, orig, :op1))
+    for i in Base.collect(incident(d, orig, :op1))
       d[i, :op1] = repl
     end
   end
   for (orig,repl) in op2_repls
-    for i in collect(incident(d, orig, :op2))
+    for i in Base.collect(incident(d, orig, :op2))
       d[i, :op2] = repl
     end
   end
