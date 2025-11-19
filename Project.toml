@@ -21,7 +21,6 @@ Unicode = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 [compat]
 Catlab = "0.17"
 ACSets = "0.2 - 0.2.21, ~0.2.23"
-Catlab = "0.16.20"
 Colors = "0.12.11, 0.13.0"
 DataStructures = "0.18.20"
 LinearAlgebra = "1.10, 1.11"

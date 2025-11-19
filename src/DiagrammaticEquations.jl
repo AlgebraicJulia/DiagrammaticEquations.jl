@@ -57,7 +57,7 @@ append_dot(s::Symbol) = Symbol(string(s)*'\U0307')
 
 include("acset.jl")
 include("language.jl")
-include("parser.jl")
+include("Parser.jl")
 include("composition.jl")
 include("collages.jl")
 include("visualization.jl")
@@ -73,6 +73,7 @@ include("SymbolicUtilsInterop.jl")
 
 @reexport using .Deca
 @reexport using .SymbolicUtilsInterop
+@reexport using .Parser 
 
 include("acset2symbolic.jl")
 
