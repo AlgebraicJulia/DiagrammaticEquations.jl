@@ -25,6 +25,10 @@ end
   include("redundant_lits.jl")
 end
 
+@testset "Bundling" begin
+  include("bundle.jl")
+end
+
 @testset "Collages" begin
   include("collages.jl")
 end

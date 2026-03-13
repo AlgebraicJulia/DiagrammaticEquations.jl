@@ -790,3 +790,110 @@ function unique_lits!(d::SummationDecapode)
   d
 end
 
+"""    function bundle_op1s!(d::SummationDecapode)
+
+Find Op1 operations which share the same source variable and operator, and
+merge their targets. This removes redundant computations from the Decapode.
+"""
+function bundle_op1s!(d::SummationDecapode)
+  # Group Op1s by (operator, source variable)
+  op1_groups = Dict{Tuple{Any,Int}, Vector{Int}}()
+  for op in parts(d, :Op1)
+    key = (d[op, :op1], d[op, :src])
+    push!(get!(op1_groups, key, Int[]), op)
+  end
+
+  ops_to_remove = Int[]
+  vars_to_remove = Int[]
+  tvars = d[:incl]
+  for (_, op_idxs) in op1_groups
+    length(op_idxs) <= 1 && continue
+    keep_tgt = d[op_idxs[1], :tgt]
+    for op in op_idxs[2:end]
+      dup_tgt = d[op, :tgt]
+      push!(ops_to_remove, op)
+      # If the duplicate target differs from the kept one, redirect and schedule removal.
+      if dup_tgt != keep_tgt
+        transfer_children!(d, dup_tgt, keep_tgt)
+        # Only remove if not a TVar-associated variable.
+        dup_tgt ∉ tvars && push!(vars_to_remove, dup_tgt)
+      end
+    end
+  end
+
+  rem_parts!(d, :Op1, sort!(ops_to_remove))
+  rem_parts!(d, :Var, sort!(unique!(vars_to_remove)))
+  d
+end
+
+"""    function bundle_op2s!(d::SummationDecapode)
+
+Find Op2 operations which share the same source variables and operator, and
+merge their result variables. This removes redundant computations from the
+Decapode.
+"""
+function bundle_op2s!(d::SummationDecapode)
+  # Group Op2s by (operator, proj1, proj2)
+  op2_groups = Dict{Tuple{Any,Int,Int}, Vector{Int}}()
+  for op in parts(d, :Op2)
+    key = (d[op, :op2], d[op, :proj1], d[op, :proj2])
+    push!(get!(op2_groups, key, Int[]), op)
+  end
+
+  ops_to_remove = Int[]
+  vars_to_remove = Int[]
+  tvars = d[:incl]
+  for (_, op_idxs) in op2_groups
+    length(op_idxs) <= 1 && continue
+    keep_res = d[op_idxs[1], :res]
+    for op in op_idxs[2:end]
+      dup_res = d[op, :res]
+      push!(ops_to_remove, op)
+      if dup_res != keep_res
+        transfer_children!(d, dup_res, keep_res)
+        # Only remove if not a TVar-associated variable.
+        dup_res ∉ tvars && push!(vars_to_remove, dup_res)
+      end
+    end
+  end
+
+  rem_parts!(d, :Op2, sort!(ops_to_remove))
+  rem_parts!(d, :Var, sort!(unique!(vars_to_remove)))
+  d
+end
+
+"""    function bundle!(d::SummationDecapode)
+
+Find repeated Op1 or Op2 applications and merge them into a single
+computation. This optimization removes redundant paths from a Decapode.
+
+Bundling is applied repeatedly until convergence, since merging Op1s may
+expose duplicate Op2s and vice versa.
+
+See also: [`bundle`](@ref).
+"""
+function bundle!(d::SummationDecapode)
+  while true
+    n_op1 = nparts(d, :Op1)
+    n_op2 = nparts(d, :Op2)
+    bundle_op1s!(d)
+    bundle_op2s!(d)
+    (nparts(d, :Op1) == n_op1 && nparts(d, :Op2) == n_op2) && break
+  end
+  d
+end
+
+"""    function bundle(d::SummationDecapode)
+
+Return a copy of the given Decapode in which repeated Op1 or Op2 applications
+are merged into single computations. This optimization removes redundant paths.
+
+See also: [`bundle!`](@ref).
+"""
+function bundle(d::SummationDecapode)
+  e = SummationDecapode{Any, Any, Symbol}()
+  copy_parts!(e, d, (:Var, :TVar, :Op1, :Op2, :Σ, :Summand))
+  bundle!(e)
+  e
+end
+
