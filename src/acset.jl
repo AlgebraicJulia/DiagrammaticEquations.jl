@@ -862,31 +862,78 @@ function bundle_op2s!(d::SummationDecapode)
   d
 end
 
+"""    function bundle_sums!(d::SummationDecapode)
+
+Find Σ (summation) nodes whose sets of summand variables are identical, and
+merge them into a single summation. Only the case in which all summands are
+shared is handled; partial overlap is not merged.
+"""
+function bundle_sums!(d::SummationDecapode)
+  # Group Σ nodes by their sorted multiset of summand variable IDs.
+  sigma_groups = Dict{Vector{Int}, Vector{Int}}()
+  for sigma in parts(d, :Σ)
+    summands = sort(d[incident(d, sigma, :summation), :summand])
+    push!(get!(sigma_groups, summands, Int[]), sigma)
+  end
+
+  sigmas_to_remove   = Int[]
+  summands_to_remove = Int[]
+  vars_to_remove     = Int[]
+  tvars = d[:incl]
+  for (_, sigma_idxs) in sigma_groups
+    length(sigma_idxs) <= 1 && continue
+    keep_sum = d[sigma_idxs[1], :sum]
+    for sigma in sigma_idxs[2:end]
+      dup_sum = d[sigma, :sum]
+      push!(sigmas_to_remove, sigma)
+      # Collect the Summand rows belonging to this duplicate Σ.
+      append!(summands_to_remove, incident(d, sigma, :summation))
+      if dup_sum != keep_sum
+        # Redirect downstream uses of the duplicate sum-variable to the kept one.
+        transfer_children!(d, dup_sum, keep_sum)
+        # Only remove if not a TVar-associated variable.
+        dup_sum ∉ tvars && push!(vars_to_remove, dup_sum)
+      end
+    end
+  end
+
+  # Remove Summand rows before Σ rows to avoid dangling foreign-key references.
+  rem_parts!(d, :Summand, sort!(unique!(summands_to_remove)))
+  rem_parts!(d, :Σ,       sort!(unique!(sigmas_to_remove)))
+  rem_parts!(d, :Var,     sort!(unique!(vars_to_remove)))
+  d
+end
+
 """    function bundle!(d::SummationDecapode)
 
-Find repeated Op1 or Op2 applications and merge them into a single
-computation. This optimization removes redundant paths from a Decapode.
+Find repeated Op1, Op2, or Σ (summation) applications and merge them into
+single computations. This optimization removes redundant paths from a Decapode.
 
-Bundling is applied repeatedly until convergence, since merging Op1s may
-expose duplicate Op2s and vice versa.
+Bundling is applied repeatedly until convergence, since merging one kind of
+operation may expose duplicates of another kind.
 
 See also: [`bundle`](@ref).
 """
 function bundle!(d::SummationDecapode)
   while true
-    n_op1 = nparts(d, :Op1)
-    n_op2 = nparts(d, :Op2)
+    n_op1  = nparts(d, :Op1)
+    n_op2  = nparts(d, :Op2)
+    n_sigma = nparts(d, :Σ)
     bundle_op1s!(d)
     bundle_op2s!(d)
-    (nparts(d, :Op1) == n_op1 && nparts(d, :Op2) == n_op2) && break
+    bundle_sums!(d)
+    (nparts(d, :Op1)  == n_op1  &&
+     nparts(d, :Op2)  == n_op2  &&
+     nparts(d, :Σ)    == n_sigma) && break
   end
   d
 end
 
 """    function bundle(d::SummationDecapode)
 
-Return a copy of the given Decapode in which repeated Op1 or Op2 applications
-are merged into single computations. This optimization removes redundant paths.
+Return a copy of the given Decapode in which repeated Op1, Op2, or Σ
+(summation) applications are merged into single computations. This
+optimization removes redundant paths.
 
 See also: [`bundle!`](@ref).
 """

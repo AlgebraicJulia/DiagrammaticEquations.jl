@@ -109,3 +109,68 @@ let
   e2 = bundle(e1)
   @test e1 == e2
 end
+
+# Bundle duplicate Σ (summation) nodes whose summand variable sets are identical.
+# Two different equations computing A+B → F and A+B → G: G should be merged into F.
+let
+  # Σ[1]: F = A + B,  Σ[2]: G = A + B  ← duplicate
+  # An Op1 (:foo) uses G downstream.
+  d = @acset SummationDecapode{Any, Any, Symbol} begin
+    Var    = 5
+    TVar   = 0
+    Op1    = 1
+    Op2    = 0
+    Σ      = 2
+    Summand = 4
+    src  = [4]        # Op1: src=4(G)
+    tgt  = [5]        # Op1: tgt=5(H)
+    op1  = [:foo]
+    sum      = [3, 4]  # Σ[1]→F, Σ[2]→G
+    summand  = [1, 2, 1, 2]   # Summand[1,2] for Σ[1]; Summand[3,4] for Σ[2]
+    summation = [1, 1, 2, 2]
+    type = [:Form0, :Form0, :Form0, :Form0, :Form0]
+    name = [:A, :B, :F, :G, :H]
+  end
+  e = bundle(d)
+  # After bundling: Σ[2] and G removed; the Op1 :foo now uses F as its source.
+  @test nparts(e, :Σ)       == 1
+  @test nparts(e, :Summand) == 2
+  @test nparts(e, :Var)     == 4    # A, B, F, H (G removed)
+  @test nparts(e, :Op1)     == 1
+  # The remaining Op1 (:foo) must have F as its source.
+  @test e[e[:sum][1], :name] == :F
+  @test e[e[:src][1], :name] == :F
+end
+
+# bundle_sums! is a no-op when no duplicate summations exist.
+let
+  # Σ[1]: F = A + B,  Σ[2]: G = A + C — different summand sets, no merge.
+  NoDupSums = @acset SummationDecapode{Any, Any, Symbol} begin
+    Var     = 5      # A=1, B=2, F=3, C=4, G=5
+    Σ       = 2
+    Summand = 4      # {A,B} for Σ[1]; {A,C} for Σ[2]
+    sum       = [3, 5]
+    summand   = [1, 2, 1, 4]
+    summation = [1, 1, 2, 2]
+    type = [:Form0, :Form0, :Form0, :Form0, :Form0]
+    name = [:A, :B, :F, :C, :G]
+  end
+  @test bundle(NoDupSums) == NoDupSums
+end
+
+# Idempotency of bundle_sums!
+let
+  d = @acset SummationDecapode{Any, Any, Symbol} begin
+    Var    = 4
+    Σ      = 2
+    Summand = 4
+    sum       = [3, 4]
+    summand   = [1, 2, 1, 2]
+    summation = [1, 1, 2, 2]
+    type = [:Form0, :Form0, :Form0, :Form0]
+    name = [:A, :B, :F, :G]
+  end
+  e1 = bundle(d)
+  e2 = bundle(e1)
+  @test e1 == e2
+end
