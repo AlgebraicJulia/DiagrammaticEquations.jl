@@ -803,8 +803,7 @@ function bundle_op1s!(d::SummationDecapode)
     push!(get!(op1_groups, key, Int[]), op)
   end
 
-  ops_to_remove = Int[]
-  vars_to_remove = Int[]
+  ops_to_remove, vars_to_remove = Int[], Int[]
   tvars = d[:incl]
   for (_, op_idxs) in op1_groups
     length(op_idxs) <= 1 && continue
@@ -840,8 +839,7 @@ function bundle_op2s!(d::SummationDecapode)
     push!(get!(op2_groups, key, Int[]), op)
   end
 
-  ops_to_remove = Int[]
-  vars_to_remove = Int[]
+  ops_to_remove, vars_to_remove = Int[], Int[]
   tvars = d[:incl]
   for (_, op_idxs) in op2_groups
     length(op_idxs) <= 1 && continue
@@ -876,9 +874,7 @@ function bundle_sums!(d::SummationDecapode)
     push!(get!(sigma_groups, summands, Int[]), sigma)
   end
 
-  sigmas_to_remove   = Int[]
-  summands_to_remove = Int[]
-  vars_to_remove     = Int[]
+  sigmas_to_remove, summands_to_remove, vars_to_remove = Int[], Int[], Int[]
   tvars = d[:incl]
   for (_, sigma_idxs) in sigma_groups
     length(sigma_idxs) <= 1 && continue
@@ -912,6 +908,8 @@ single computations. This optimization removes redundant paths from a Decapode.
 Bundling is applied repeatedly until convergence, since merging one kind of
 operation may expose duplicates of another kind.
 
+This algorithm performs [common subexpression elimination](https://en.wikipedia.org/wiki/Common_subexpression_elimination).
+
 See also: [`bundle`](@ref).
 """
 function bundle!(d::SummationDecapode)
@@ -934,6 +932,8 @@ end
 Return a copy of the given Decapode in which repeated Op1, Op2, or Σ
 (summation) applications are merged into single computations. This
 optimization removes redundant paths.
+
+This algorithm performs [common subexpression elimination](https://en.wikipedia.org/wiki/Common_subexpression_elimination).
 
 See also: [`bundle!`](@ref).
 """
