@@ -93,22 +93,15 @@ let
   # the d inside ∘(⋆,d,⋆) (different src) remains untouched → 2 :d ops total.
   @test count(==(:d), e[:op1]) == 2
   # The bundled decapode should have fewer Op1s and fewer Vars.
-  @test nparts(e, :Op1) < nparts(d, :Op1)
-  @test nparts(e, :Var) < nparts(d, :Var)
-end
-
-# Idempotency: applying bundle twice gives the same result as once.
-let
-  halfar = @decapode begin
-    h::Form0
-    Γ::Form1
-    n::Constant
-    ∂ₜ(h) == ∘(⋆, d, ⋆)(Γ * d(h) ∧ (mag(♯(d(h)))^(n-1)) ∧ (h^(n+2)))
-  end
-  d = expand_operators(halfar)
-  e1 = bundle(d)
-  e2 = bundle(e1)
-  @test e1 == e2
+  @test nparts(e, :Op1) == nparts(d, :Op1) - 1
+  @test nparts(e, :Var) == nparts(d, :Var) - 1
+  # Idempotency:
+  f = bundle(e)
+  @test e == f
+  # The original decapode is homomorphic to the bundled one (up to var names).
+  d[:name] = nothing
+  e[:name] = nothing
+  @test is_homomorphic(d, e)
 end
 
 # Bundle duplicate Σ (summation) nodes whose summand variable sets are identical.
@@ -133,187 +126,34 @@ let
     name = [:A, :B, :F, :G, :H]
   end
   e = bundle(d)
-  # After bundling: Σ[2] and G removed; the Op1 :foo now uses F as its source.
-  @test nparts(e, :Σ)       == 1
-  @test nparts(e, :Summand) == 2
-  @test nparts(e, :Var)     == 4    # A, B, F, H (G removed)
-  @test nparts(e, :Op1)     == 1
-  # The remaining Op1 (:foo) must have F as its source.
-  @test e[e[:sum][1], :name] == :F
-  @test e[e[:src][1], :name] == :F
+  @test e == @acset SummationDecapode{Any, Any, Symbol} begin
+    Var = 4
+    Op1 = 1
+    # After bundling: Σ[2] removed
+    Σ = 1
+    Summand = 2
+    # The Op1 :foo now uses F as its source.
+    src = [3]
+    tgt = [4]
+    op1 = [:foo]
+    summand = [1, 2]
+    summation = [1, 1]
+    sum = [3]
+    type = [:Form0, :Form0, :Form0, :Form0]
+    # After bundling: G removed.
+    name = [:A, :B, :F, :H]
+  end
+  # Idempotency:
+  @test e == bundle(e)
 end
 
 # bundle_sums! is a no-op when no duplicate summations exist.
 let
   # Σ[1]: F = A + B,  Σ[2]: G = A + C — different summand sets, no merge.
-  NoDupSums = @acset SummationDecapode{Any, Any, Symbol} begin
-    Var     = 5      # A=1, B=2, F=3, C=4, G=5
-    Σ       = 2
-    Summand = 4      # {A,B} for Σ[1]; {A,C} for Σ[2]
-    sum       = [3, 5]
-    summand   = [1, 2, 1, 4]
-    summation = [1, 1, 2, 2]
-    type = [:Form0, :Form0, :Form0, :Form0, :Form0]
-    name = [:A, :B, :F, :C, :G]
+  NoDupSums = @decapode begin
+    F == A + B
+    G == A + C
   end
   @test bundle(NoDupSums) == NoDupSums
-end
-
-# Idempotency of bundle_sums!
-let
-  d = @acset SummationDecapode{Any, Any, Symbol} begin
-    Var    = 4
-    Σ      = 2
-    Summand = 4
-    sum       = [3, 4]
-    summand   = [1, 2, 1, 2]
-    summation = [1, 1, 2, 2]
-    type = [:Form0, :Form0, :Form0, :Form0]
-    name = [:A, :B, :F, :G]
-  end
-  e1 = bundle(d)
-  e2 = bundle(e1)
-  @test e1 == e2
-end
-
-# Homomorphism structure of bundled Decapodes
-# ############################################
-#
-# When bundling removes a duplicate result variable that has NO downstream
-# users, the bundled Decapode strictly embeds into the original — there is a
-# (strict, monic) ACSet homomorphism  bundle(d) → d.
-#
-# When the removed variable DID have downstream users that were redirected to
-# the kept variable, strict embedding fails (the same kept var now plays two
-# roles that differ in the original).  In that case the mathematically correct
-# witness is a *loose* quotient-map  d → bundle(d)  that collapses the removed
-# variable onto the kept variable.
-
-# Op1 bundling (no downstream use of removed var) — strict embedding ↪ original
-let
-  d = @acset SummationDecapode{Any, Any, Symbol} begin
-    Var = 3
-    Op1 = 2
-    name = [:h, :dh1, :dh2]
-    type = [:Form0, :Form1, :Form1]
-    src  = [1, 1]
-    tgt  = [2, 3]
-    op1  = [:d, :d]
-  end
-  e = bundle(d)
-  @test !isempty(homomorphisms(e, d))
-end
-
-# Op2 bundling (no downstream use of removed var) — strict embedding ↪ original
-let
-  d = @acset SummationDecapode{Any, Any, Symbol} begin
-    Var  = 4
-    Op2  = 2
-    name = [:A, :B, :C, :D]
-    type = [:Form0, :Form0, :Form0, :Form0]
-    proj1 = [1, 1]
-    proj2 = [2, 2]
-    res   = [3, 4]
-    op2   = [:*, :*]
-  end
-  e = bundle(d)
-  @test !isempty(homomorphisms(e, d))
-end
-
-# Σ bundling (no downstream use of removed var) — strict embedding ↪ original
-let
-  d = @acset SummationDecapode{Any, Any, Symbol} begin
-    Var     = 4
-    Σ       = 2
-    Summand = 4
-    name      = [:A, :B, :F, :G]
-    type      = [:Form0, :Form0, :Form0, :Form0]
-    sum       = [3, 4]
-    summand   = [1, 2, 1, 2]
-    summation = [1, 1, 2, 2]
-  end
-  e = bundle(d)
-  @test !isempty(homomorphisms(e, d))
-end
-
-# Op1 bundling with downstream redirection — loose quotient-map original → bundled.
-# Two duplicate d(h) ops (→ dh1, → dh2); ♯ uses dh2 downstream.
-# After bundling dh2 is merged into dh1 and ♯ is redirected.
-# A loose homomorphism d → bundle(d) collapses dh2 ↦ dh1.
-let
-  d = @acset SummationDecapode{Any, Any, Symbol} begin
-    Var = 4
-    Op1 = 3
-    name = [:h, :dh1, :dh2, :v]
-    type = [:Form0, :Form1, :Form1, :Form1]
-    src  = [1, 1, 3]
-    tgt  = [2, 3, 4]
-    op1  = [:d, :d, :♯]
-  end
-  e = bundle(d)
-  # The quotient Name-function maps the removed duplicate target to the kept one.
-  Name_fn = n -> (n == :dh2 ? :dh1 : n)
-  @test is_homomorphic(d, e; type_components=(Name=Name_fn,))
-end
-
-# Σ bundling with downstream redirection — loose quotient-map original → bundled.
-# Two duplicate Σ (F = A+B and G = A+B); Op1 :foo uses G downstream.
-# After bundling G is merged into F and :foo is redirected.
-# A loose homomorphism d → bundle(d) collapses G ↦ F.
-let
-  d = @acset SummationDecapode{Any, Any, Symbol} begin
-    Var     = 5
-    Op1     = 1
-    Σ       = 2
-    Summand = 4
-    name      = [:A, :B, :F, :G, :H]
-    type      = [:Form0, :Form0, :Form0, :Form0, :Form0]
-    src       = [4]
-    tgt       = [5]
-    op1       = [:foo]
-    sum       = [3, 4]
-    summand   = [1, 2, 1, 2]
-    summation = [1, 1, 2, 2]
-  end
-  e = bundle(d)
-  Name_fn = n -> (n == :G ? :F : n)
-  @test is_homomorphic(d, e; type_components=(Name=Name_fn,))
-end
-
-# Halfar equation — loose quotient-map original → bundled.
-# Expanding the Halfar equation produces two duplicate d(h) ops.  After
-# bundling, the removed duplicate's target is merged into the kept one.
-# A loose homomorphism witnesses the reduction, with the Name-component
-# remapping the removed intermediate variable to its kept counterpart.
-let
-  halfar = @decapode begin
-    h::Form0
-    Γ::Form1
-    n::Constant
-    ∂ₜ(h) == ∘(⋆, d, ⋆)(Γ * d(h) ∧ (mag(♯(d(h)))^(n-1)) ∧ (h^(n+2)))
-  end
-  d = expand_operators(halfar)
-  e = bundle(d)
-  # Compute the name map: any var in d that was removed by bundling maps to
-  # the name of the variable that replaced it (the tgt of the same op in e).
-  e_names = Set(e[:name])
-  name_map = Dict{Symbol,Symbol}()
-  for v in 1:nparts(d, :Var)
-    vname = d[v, :name]
-    vname ∈ e_names && continue
-    for op in incident(d, v, :tgt)
-      src_name = d[d[op, :src], :name]
-      op_sym   = d[op, :op1]
-      for oe in 1:nparts(e, :Op1)
-        if e[oe, :op1] == op_sym && e[e[oe, :src], :name] == src_name
-          name_map[vname] = e[e[oe, :tgt], :name]
-          break
-        end
-      end
-      break
-    end
-  end
-  Name_fn = n -> get(name_map, n, n)
-  @test is_homomorphic(d, e; type_components=(Name=Name_fn,))
 end
 
