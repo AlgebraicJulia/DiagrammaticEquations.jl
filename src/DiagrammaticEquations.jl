@@ -18,6 +18,7 @@ contract_operators!, contract_operators, add_constant!, add_parameter, fill_name
 resolve_overloads!, replace_names!, type_check, check_rule_ambiguity,
 transfer_parents!, transfer_children!,
 unique_lits!,
+bundle_op1s!, bundle_op2s!, bundle_sums!, bundle!, bundle,
 ## language
 @decapode, Term, parse_decapode, term, Eq, DecaExpr,
 # ~~~~~
