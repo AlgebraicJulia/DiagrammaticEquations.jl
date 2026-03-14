@@ -1,7 +1,6 @@
 ### Drawing of Decapodes
-import Catlab.Graphics.Graphviz
-using Catlab.Graphics
-using Catlab.Graphics.Graphviz
+import Catlab.Graphics: to_graphviz
+import Catlab.Graphics.GraphvizGraphs: to_graphviz_property_graph
 using Catlab.Graphs.PropertyGraphs
 using Catlab.Graphs
 using Catlab.Graphs.BasicGraphs
@@ -9,8 +8,6 @@ using Catlab.Graphs.BasicGraphs
 import LinearAlgebra: norm
 using StatsBase
 using Colors
-using ColorSchemes
-using ColorSchemeTools
 
 # TODO: Change orientation to print 
 # TODO: generalize ok??
@@ -18,8 +15,8 @@ using ColorSchemeTools
 
 Visualize the given Decapode through Graphviz. Ensure that you have called `using Catlab.Graphics` before-hand, and have a way of visualizing SVG files in your current environment.
 """
-Graphics.to_graphviz(F::AbstractDecapode; directed = true, verbose = true, kw...) =
-to_graphviz(GraphvizGraphs.to_graphviz_property_graph(F; typename, directed, verbose, kw...))
+to_graphviz(F::AbstractDecapode; directed = true, verbose = true, kw...) =
+to_graphviz(to_graphviz_property_graph(F; typename, directed, verbose, kw...))
 
 Decapode_edge_label(s::Symbol) = String(s)
 Decapode_edge_label(s::Vector{Symbol}) = join(String.(s), "⋅")
@@ -56,8 +53,13 @@ varname(d, v, verbose) = begin
   return "$name:$(spacename(d, v))"
 end
 
-# XXX: Diagrams with more than 256 namespaces will throw an error.
-const colors = ColorSchemes.cyclic_mygbm_30_95_c78_n256 # A nice pastel scheme
+#const colors = ColorSchemes.cyclic_mygbm_30_95_c78_n256 # A nice pastel scheme
+# Approximate the above color-scheme with a piecewise polynomial in RGB space.
+const corners = [[0.90, 0.90, 0.10],
+                 [0.20, 0.70, 0.15],
+                 [0.20, 0.10, 0.90],
+                 [0.90, 0.35, 0.95]]
+const poly_line = [[1,2], [2,3], [3,4], [4,1]]
 
 """    get_colors(d::SummationDecapode)
 
@@ -69,7 +71,11 @@ function get_colors(d::SummationDecapode)
     paths = split.(names, "_")
     spaces = first.(filter(p -> length(p) > 1, paths))
     setdiff!(spaces, ["sum", ""])
-    swatches = sample(colors.colors, length(spaces), replace=false)
+    swatches = map(spaces) do space
+      line = corners[sample(poly_line)]
+      point_on_line = rand()
+      swatch = Colors.RGB((line[1]*point_on_line + line[2]*(1-point_on_line))...)
+    end
     Dict([space => "#" * Colors.hex(swatch) for (space, swatch) in zip(spaces, swatches)])
 end
 
@@ -78,12 +84,12 @@ function labelcolor(s::T, colordict::Dict{SubString{String}, U}) where {T, U}
     String(get(colordict, head, "#ffffff"))
 end
 
-function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; typename=spacename, directed = true, prog = "dot", node_attrs=Dict(), edge_attrs=Dict(), graph_attrs=Dict(), node_labels = true, verbose = true, color = false, kw...)
+function to_graphviz_property_graph(d::SummationDecapode; typename=spacename, directed = true, prog = "dot", node_attrs=Dict(), edge_attrs=Dict(), graph_attrs=Dict(), node_labels = true, verbose = true, color = false, kw...)
     default_graph_attrs = Dict(:rankdir => "TB")
     default_edge_attrs = Dict()
     default_node_attrs = Dict(:shape => "oval")
 
-    G = to_graphviz_property_graph(Catlab.Graphs.Graph(0); prog, node_labels,
+    G = to_graphviz_property_graph(Graphs.Graph(0); prog, node_labels,
       node_attrs = merge!(default_node_attrs, node_attrs),  
       edge_attrs = merge!(default_edge_attrs, edge_attrs),  
       graph_attrs = merge!(default_graph_attrs, graph_attrs))

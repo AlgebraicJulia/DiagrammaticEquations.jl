@@ -5,8 +5,9 @@ import ..DiagrammaticEquations: rules
 
 using MLStyle
 using StructEquality
-using SymbolicUtils
-using SymbolicUtils: Symbolic, BasicSymbolic, FnType, Sym, Term
+
+import SymbolicUtils
+using SymbolicUtils: Symbolic, BasicSymbolic, FnType, Sym, Term, @rule
 import SymbolicUtils: symtype, promote_symtype
 
 import Base: +, -, *
@@ -267,7 +268,6 @@ Base.nameof(s::Union{Parameter, Type{Parameter}}) = :Parameter
 Base.nameof(s::Union{Scalar, Type{Scalar}}) = :Scalar
 Base.nameof(s::Union{InferredType, Type{InferredType}}) = :infer
 
-
 Base.nameof(::typeof(-), args...) = Symbol("-")
 
 const SUBSCRIPT_DIGIT_0 = '₀'
@@ -280,13 +280,13 @@ Base.nameof(::typeof(∧), s1, s2) = Symbol("∧$(sub_dim(s1, s2))")
 Base.nameof(::typeof(∂ₜ), s) = Symbol("∂ₜ")
 
 function Base.nameof(::typeof(d), s)
-  dual = isdual(s) ? "dual_" : ""
-  Symbol("$(dual)d$(sub_dim(s))")
+    dual = isdual(s) ? "dual_" : ""
+    Symbol("$(dual)d$(sub_dim(s))")
 end
 
 #TODO: Add naming for dual
 function Base.nameof(::typeof(Δ), s)
-  Symbol("Δ$(sub_dim(s))")
+    Symbol("Δ$(sub_dim(s))")
 end
 
 function Base.nameof(::typeof(★), s)

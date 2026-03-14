@@ -1,5 +1,3 @@
-using Catlab
-
 """    function get_valid_op1s(deca_source::SummationDecapode, varID)
 
 Searches SummationDecapode, deca_source, at the request varID

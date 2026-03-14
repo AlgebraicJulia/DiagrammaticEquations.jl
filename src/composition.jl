@@ -1,4 +1,5 @@
 using Catlab.ADTs
+import Catlab.BasicSets: FinFunction
 import Catlab.CategoricalAlgebra: apex, feet, legs
 import Catlab.WiringDiagrams: oapply
 
@@ -88,14 +89,13 @@ function type_check_Decapodes_composition(relation::RelationDiagram, decs::Vecto
   end)
 end
 
-
 #function oapply_rename(relation::RelationDiagram, Decapodes::Vector{OpenSummationDecapode})
 function oapply_rename(relation::RelationDiagram, Decapodes::Vector{D}) where D<:OpenSummationDecapode
   r = relation
   # The deepcopy. is necessary because if multiple Decapodes in the vector are
   # OpenPodes of the same SummationDecapode, their apex will point to the same
   # spot in memory. This interferes with renaming.
-  Decapodes_vars = deepcopy.(collect(map(apex, Decapodes)))
+  Decapodes_vars = deepcopy.(Base.collect(map(apex, Decapodes)))
   # FIXME: in this line, you should cast the SummationDecapode{S,T, Symbol} to SummationDecapode{S,T,Vector{Symbol}}
   # This will allow you to return namespace scoped variables.
   # Check that the number of Decapodes given matches the number of boxes in the
@@ -218,7 +218,7 @@ oapply(r::RelationDiagram, podes::Vector{D}) where {D<:OpenSummationDecapode} =
 
 oapply(r::RelationDiagram, pode::OpenSummationDecapode) = oapply(r, [pode])
 
-import Catlab.Programs.RelationalPrograms: UntypedUnnamedRelationDiagram
+import Catlab.WiringDiagrams.RelationDiagrams: UntypedUnnamedRelationDiagram
 export UntypedUnnamedRelationDiagram
 
 (diagram::UntypedUnnamedRelationDiagram{Symbol, Symbol})(opens::Vector{<:OpenSummationDecapode}) = apex(oapply(diagram, opens))

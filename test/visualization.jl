@@ -159,3 +159,4 @@ end
 
 t7 = to_graphviz(AlteredKlausmeier, color = true)
 @test length(unique(Graphviz.filter_statements(t7, Graphviz.Node, :fillcolor))) == 3
+
