@@ -24,7 +24,7 @@ using MLStyle
 @rule Statement = AnyJudgement , Equation
 
 # Recall that a more-left rule in an OR has higher precedence in a PEG.
-@rule Term = Derivative , Call , Compose , Grouping , Atom
+@rule Term = Derivative , Call , Compose , Circumfix , Grouping , Atom
 
 # Parentheses enforce precedence.
 @rule Grouping = lparen & ws & PrecMinusOperation & ws & rparen |>
@@ -134,6 +134,12 @@ using MLStyle
 
 @rule CallList = CallName & (ws & comma & CallName)[*] |>
   v -> vcat(v[1], last.(v[2]))
+
+# Circumfix syntax
+#-----------------
+
+@rule Circumfix = "[" & ws & Term & ws & comma & ws & Term & ws & "]" |>
+  v -> App2("Lie", v[3], v[7])
 
 # Function syntax
 #----------------
