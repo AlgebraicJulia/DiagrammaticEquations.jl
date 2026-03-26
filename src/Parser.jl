@@ -138,8 +138,11 @@ using MLStyle
 # Circumfix syntax
 #-----------------
 
-@rule Circumfix = "[" & ws & Term & ws & comma & ws & Term & ws & "]" |>
-  v -> App2("Lie", v[3], v[7])
+@rule lbracket = r"\["
+@rule rbracket = r"\]"
+
+@rule Circumfix = lbracket & ws & PrecMinusOperation & ws & comma & ws & PrecMinusOperation & ws & rbracket |>
+  v -> App2(:Lie, v[3], v[7])
 
 # Function syntax
 #----------------
@@ -180,10 +183,10 @@ using MLStyle
 # They cannot start with digits.
 @rule Ident = r"""([^0-9\+\*:{}→\n;=,\-−¦⊕⊖⊞⊟∪∨⊔±∓∔∸≏⊎⊻⊽⋎⋓⟇⧺⧻⨈⨢⨣⨤⨥⨦⨧⨨⨩⨪⨫⨬⨭⨮⨹⨺⩁⩂
   ⩅⩊⩌⩏⩐⩒⩔⩖⩗⩛⩝⩡⩢⩣\\\/⌿÷%&··⋅∘×∩∧⊗⊘⊙⊚⊛⊠⊡⊓∗∙∤⅋≀⊼⋄⋆⋇⋉⋊⋋⋌⋏⋒⟑⦸⦼⦾⦿⧶⧷⨇⨰⨱⨲⨳⨴⨵⨶⨷⨸⨻⨼⨽⩀<⩃⩄⩋
-  ⩍⩎⩑⩓⩕⩘⩚⩜⩞⩟⩠⫛⊍▷⨝⟕⟖⟗⨟\^↑↓⇵⟰⟱⤈⤉⤊⤋⤒⤓⥉⥌⥍⥏⥑⥔⥕⥘⥙⥜⥝⥠⥡⥣⥥⥮⥯￪￬\|\(\)\s][^\+\*:{}→\n;=,\-
+  ⩍⩎⩑⩓⩕⩘⩚⩜⩞⩟⩠⫛⊍▷⨝⟕⟖⟗⨟\^↑↓⇵⟰⟱⤈⤉⤊⤋⤒⤓⥉⥌⥍⥏⥑⥔⥕⥘⥙⥜⥝⥠⥡⥣⥥⥮⥯￪￬\|\(\)\[\]\s][^\+\*:{}→\n;=,\-
   −¦⊕⊖⊞⊟∪∨⊔±∓∔∸≏⊎⊻⊽⋎⋓⟇⧺⧻⨈⨢⨣⨤⨥⨦⨧⨨⨩⨪⨫⨬⨭⨮⨹⨺⩁⩂⩅⩊⩌⩏⩐⩒⩔⩖⩗⩛⩝⩡⩢⩣\\\/⌿÷%&··⋅∘×∩∧⊗⊘⊙⊚⊛⊠⊡⊓
   ∗∙∤⅋≀⊼⋄⋆⋇⋉⋊⋋⋌⋏⋒⟑⦸⦼⦾⦿⧶⧷⨇⨰⨱⨲⨳⨴⨵⨶⨷⨸⨻⨼⨽⩀<⩃⩄⩋⩍⩎⩑⩓⩕⩘⩚⩜⩞⩟⩠⫛⊍▷⨝⟕⟖⟗⨟\^↑↓⇵⟰⟱⤈⤉⤊⤋⤒⤓⥉⥌⥍⥏⥑
-  ⥔⥕⥘⥙⥜⥝⥠⥡⥣⥥⥮⥯￪￬\|\(\)\s]*)""" |>
+  ⥔⥕⥘⥙⥜⥝⥠⥡⥣⥥⥮⥯￪￬\|\(\)\[\]\s]*)""" |>
   v -> Symbol(v...)
 
 @rule Operator = PrecMinusOp , PrecDivOp , PrecPowerOp
