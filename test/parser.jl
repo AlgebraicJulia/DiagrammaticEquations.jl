@@ -12,7 +12,7 @@ import DiagrammaticEquations.Parser: DecapodeExpr, SingleLineComment, MultiLineC
   Line, Statement, AnyJudgement, TypeName, Equation, SumOperation,
   PrecMinusOperation, PrecDivOperation, MultOperation, PrecPowerOperation, Term as ParserTerm,
   Grouping, Derivative, Compose, Call, CallName, Operator, List, CallList, Atom,
-  Ident, SciLiteral, PrecMinusOp, PrecDivOp, PrecPowerOp, OpSuffixes, @decapode_str
+  Ident, SciLiteral, PrecMinusOp, PrecDivOp, PrecPowerOp, OpSuffixes, Circumfix, @decapode_str
 
 LS = Lit ∘ Symbol
 
