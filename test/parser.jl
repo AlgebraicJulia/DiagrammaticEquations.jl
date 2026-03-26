@@ -213,6 +213,10 @@ end
   @test Call("∧(A, 2)")[1] == App2(:∧, Var(:A), LS("2"))
 end
 
+@testset "Circumfix Notation" begin
+  @test Circumfix("[C,D]")[1] == App2(:Lie, Var(:C), Var(:D))
+end
+
 @testset "Function Call Names" begin
   # Identifier Case
   @test CallName("f")[1] == :f
