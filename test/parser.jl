@@ -802,4 +802,17 @@ end
 
           ∂ₜ(Y) == L₁(X,Y)
         end
+  # The second-order Lie advection equation:
+  @test decapode"
+          Y::DualForm1
+          X::Constant
+
+          ∂ₜ(Y) == [X,[X,Y]]
+        " ==
+        @decapode begin
+          Y::DualForm1
+          X::Constant
+
+          ∂ₜ(Y) == L₁(X,L₁(X,Y))
+        end
 end
