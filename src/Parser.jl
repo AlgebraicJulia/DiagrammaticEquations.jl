@@ -24,7 +24,7 @@ using MLStyle
 @rule Statement = AnyJudgement , Equation
 
 # Recall that a more-left rule in an OR has higher precedence in a PEG.
-@rule Term = Derivative , Call , Compose , Circumfix , Grouping , Atom
+@rule Term = Derivative , Call , Compose , LieBracket , Grouping , Atom
 
 # Parentheses enforce precedence.
 @rule Grouping = lparen & ws & PrecMinusOperation & ws & rparen |>

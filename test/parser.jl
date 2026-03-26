@@ -787,4 +787,19 @@ end
     =#
     A == d(B)
     ")
+
+  # Support parsing the Lie bracket.
+  # The Lie advection equation:
+  @test decapode"
+          Y::DualForm1
+          X::Constant
+
+          ∂ₜ(Y) == [X,Y]
+        " ==
+        @decapode begin
+          Y::DualForm1
+          X::Constant
+
+          ∂ₜ(Y) == L₁(X,Y)
+        end
 end
