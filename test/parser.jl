@@ -12,7 +12,7 @@ import DiagrammaticEquations.Parser: DecapodeExpr, SingleLineComment, MultiLineC
   Line, Statement, AnyJudgement, TypeName, Equation, SumOperation,
   PrecMinusOperation, PrecDivOperation, MultOperation, PrecPowerOperation, Term as ParserTerm,
   Grouping, Derivative, Compose, Call, CallName, Operator, List, CallList, Atom,
-  Ident, SciLiteral, PrecMinusOp, PrecDivOp, PrecPowerOp, OpSuffixes, Circumfix, @decapode_str
+  Ident, SciLiteral, PrecMinusOp, PrecDivOp, PrecPowerOp, OpSuffixes, LieBracket, @decapode_str
 
 LS = Lit ∘ Symbol
 
@@ -214,7 +214,7 @@ end
 end
 
 @testset "Circumfix Notation" begin
-  @test Circumfix("[C,D]")[1] == App2(:Lie, Var(:C), Var(:D))
+  @test LieBracket("[C,D]")[1] == App2(:L₁, Var(:C), Var(:D))
 end
 
 @testset "Function Call Names" begin

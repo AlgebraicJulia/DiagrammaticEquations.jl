@@ -141,8 +141,8 @@ using MLStyle
 @rule lbracket = r"\["
 @rule rbracket = r"\]"
 
-@rule Circumfix = lbracket & ws & PrecMinusOperation & ws & comma & ws & PrecMinusOperation & ws & rbracket |>
-  v -> App2(:Lie, v[3], v[7])
+@rule LieBracket = lbracket & ws & PrecMinusOperation & ws & comma & ws & PrecMinusOperation & ws & rbracket |>
+  v -> App2(:L₁, v[3], v[7])
 
 # Function syntax
 #----------------
