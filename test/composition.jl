@@ -8,7 +8,7 @@ using Catlab
 # @testset "Composition" begin
 # Simplest possible decapode relation.
 Trivial = @decapode begin
-  H::Form0{X}
+  H::Form0
 end
 
 trivial_relation = @relation () begin

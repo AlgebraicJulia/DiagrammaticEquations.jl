@@ -1,5 +1,7 @@
 using Test
 
+import Catlab: oplus, infer_acset_cat, TypedCatWithCoproducts 
+using Catlab.ACSetInterface
 using DiagrammaticEquations
 
 # Remove redundant literals
@@ -71,7 +73,7 @@ end
 ComponentB = @decapode begin
   ∂ₜ(E) == -1*F*Δ(E)
 end
-RepeatedLits = oplus(ComponentA, ComponentB)
+RepeatedLits = oplus[TypedCatWithCoproducts(infer_acset_cat(ComponentA))](ComponentA, ComponentB)
 
 @test unique_lits!(RepeatedLits) ==
   @acset SummationDecapode{Any, Any, Symbol} begin

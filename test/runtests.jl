@@ -1,4 +1,5 @@
 using Test
+
 @testset "Core" begin
   include("core.jl")
 end
@@ -24,6 +25,10 @@ end
   include("redundant_lits.jl")
 end
 
+@testset "Bundling" begin
+  include("bundle.jl")
+end
+
 @testset "Collages" begin
   include("collages.jl")
 end
@@ -45,4 +50,9 @@ end
   include("decasymbolic.jl")
 end
 
+@testset "PEG Parser" begin
+  include("parser.jl")
+end
+
 include("aqua.jl")
+
