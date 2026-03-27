@@ -2,7 +2,7 @@ module Deca
 
 using DataStructures
 using ..DiagrammaticEquations
-using Catlab
+using Catlab.ACSetInterface
 
 using Reexport
 

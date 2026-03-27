@@ -2,8 +2,6 @@
 """
 module DiagrammaticEquations
 
-using Catlab
-
 export
 DerivOp, append_dot, normalize_unicode, infer_states, infer_types!,
 # Deca
@@ -20,6 +18,7 @@ contract_operators!, contract_operators, add_constant!, add_parameter, fill_name
 resolve_overloads!, replace_names!, type_check, check_rule_ambiguity,
 transfer_parents!, transfer_children!,
 unique_lits!,
+bundle_op1s!, bundle_op2s!, bundle_sums!, bundle!, bundle,
 ## language
 @decapode, Term, parse_decapode, term, Eq, DecaExpr,
 # ~~~~~
@@ -59,7 +58,7 @@ append_dot(s::Symbol) = Symbol(string(s)*'\U0307')
 
 include("acset.jl")
 include("language.jl")
-include("parser.jl")
+include("Parser.jl")
 include("composition.jl")
 include("collages.jl")
 include("visualization.jl")
@@ -75,6 +74,7 @@ include("SymbolicUtilsInterop.jl")
 
 @reexport using .Deca
 @reexport using .SymbolicUtilsInterop
+@reexport using .Parser 
 
 include("acset2symbolic.jl")
 

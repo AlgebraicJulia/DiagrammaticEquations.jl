@@ -1,8 +1,8 @@
-using Catlab
 using Catlab.DenseACSets
-using DataStructures
 using ACSets.InterTypes
 using ACSets.Query: From, Where
+
+using DataStructures
 
 @intertypes "decapodeacset.it" module decapodeacset end
 
@@ -747,12 +747,12 @@ end
 
 function replace_names!(d::SummationDecapode, op1_repls::Vector{Pair{Symbol, Any}}, op2_repls::Vector{Pair{Symbol, Symbol}})
   for (orig,repl) in op1_repls
-    for i in collect(incident(d, orig, :op1))
+    for i in Base.collect(incident(d, orig, :op1))
       d[i, :op1] = repl
     end
   end
   for (orig,repl) in op2_repls
-    for i in collect(incident(d, orig, :op2))
+    for i in Base.collect(incident(d, orig, :op2))
       d[i, :op2] = repl
     end
   end
@@ -785,5 +785,159 @@ function unique_lits!(d::SummationDecapode)
   end
   rem_parts!(d, :Var, sort!(reduce(vcat, to_remove)))
   d
+end
+
+"""    function bundle_op1s!(d::SummationDecapode)
+
+Find Op1 operations which share the same source variable and operator, and
+merge their targets. This removes redundant computations from the Decapode.
+"""
+function bundle_op1s!(d::SummationDecapode)
+  # Group Op1s by (operator, source variable)
+  op1_groups = Dict{Tuple{Any,Int}, Vector{Int}}()
+  for op in parts(d, :Op1)
+    key = (d[op, :op1], d[op, :src])
+    push!(get!(op1_groups, key, Int[]), op)
+  end
+
+  ops_to_remove, vars_to_remove = Int[], Int[]
+  tvars = d[:incl]
+  for (_, op_idxs) in op1_groups
+    length(op_idxs) <= 1 && continue
+    keep_tgt = d[op_idxs[1], :tgt]
+    for op in op_idxs[2:end]
+      dup_tgt = d[op, :tgt]
+      push!(ops_to_remove, op)
+      # If the duplicate target differs from the kept one, redirect and schedule removal.
+      if dup_tgt != keep_tgt
+        transfer_children!(d, dup_tgt, keep_tgt)
+        # Only remove if not a TVar-associated variable.
+        dup_tgt ∉ tvars && push!(vars_to_remove, dup_tgt)
+      end
+    end
+  end
+
+  rem_parts!(d, :Op1, sort!(ops_to_remove))
+  rem_parts!(d, :Var, sort!(unique!(vars_to_remove)))
+  d
+end
+
+"""    function bundle_op2s!(d::SummationDecapode)
+
+Find Op2 operations which share the same source variables and operator, and
+merge their result variables. This removes redundant computations from the
+Decapode.
+"""
+function bundle_op2s!(d::SummationDecapode)
+  # Group Op2s by (operator, proj1, proj2)
+  op2_groups = Dict{Tuple{Any,Int,Int}, Vector{Int}}()
+  for op in parts(d, :Op2)
+    key = (d[op, :op2], d[op, :proj1], d[op, :proj2])
+    push!(get!(op2_groups, key, Int[]), op)
+  end
+
+  ops_to_remove, vars_to_remove = Int[], Int[]
+  tvars = d[:incl]
+  for (_, op_idxs) in op2_groups
+    length(op_idxs) <= 1 && continue
+    keep_res = d[op_idxs[1], :res]
+    for op in op_idxs[2:end]
+      dup_res = d[op, :res]
+      push!(ops_to_remove, op)
+      if dup_res != keep_res
+        transfer_children!(d, dup_res, keep_res)
+        # Only remove if not a TVar-associated variable.
+        dup_res ∉ tvars && push!(vars_to_remove, dup_res)
+      end
+    end
+  end
+
+  rem_parts!(d, :Op2, sort!(ops_to_remove))
+  rem_parts!(d, :Var, sort!(unique!(vars_to_remove)))
+  d
+end
+
+"""    function bundle_sums!(d::SummationDecapode)
+
+Find Σ (summation) nodes whose sets of summand variables are identical, and
+merge them into a single summation. Only the case in which all summands are
+shared is handled; partial overlap is not merged.
+"""
+function bundle_sums!(d::SummationDecapode)
+  # Group Σ nodes by their sorted multiset of summand variable IDs.
+  sigma_groups = Dict{Vector{Int}, Vector{Int}}()
+  for sigma in parts(d, :Σ)
+    summands = sort(d[incident(d, sigma, :summation), :summand])
+    push!(get!(sigma_groups, summands, Int[]), sigma)
+  end
+
+  sigmas_to_remove, summands_to_remove, vars_to_remove = Int[], Int[], Int[]
+  tvars = d[:incl]
+  for (_, sigma_idxs) in sigma_groups
+    length(sigma_idxs) <= 1 && continue
+    keep_sum = d[sigma_idxs[1], :sum]
+    for sigma in sigma_idxs[2:end]
+      dup_sum = d[sigma, :sum]
+      push!(sigmas_to_remove, sigma)
+      # Collect the Summand rows belonging to this duplicate Σ.
+      append!(summands_to_remove, incident(d, sigma, :summation))
+      if dup_sum != keep_sum
+        # Redirect downstream uses of the duplicate sum-variable to the kept one.
+        transfer_children!(d, dup_sum, keep_sum)
+        # Only remove if not a TVar-associated variable.
+        dup_sum ∉ tvars && push!(vars_to_remove, dup_sum)
+      end
+    end
+  end
+
+  # Remove Summand rows before Σ rows to avoid dangling foreign-key references.
+  rem_parts!(d, :Summand, sort!(unique!(summands_to_remove)))
+  rem_parts!(d, :Σ,       sort!(unique!(sigmas_to_remove)))
+  rem_parts!(d, :Var,     sort!(unique!(vars_to_remove)))
+  d
+end
+
+"""    function bundle!(d::SummationDecapode)
+
+Find repeated Op1, Op2, or Σ (summation) applications and merge them into
+single computations. This optimization removes redundant paths from a Decapode.
+
+Bundling is applied repeatedly until convergence, since merging one kind of
+operation may expose duplicates of another kind.
+
+This algorithm performs [common subexpression elimination](https://en.wikipedia.org/wiki/Common_subexpression_elimination).
+
+See also: [`bundle`](@ref).
+"""
+function bundle!(d::SummationDecapode)
+  while true
+    n_op1  = nparts(d, :Op1)
+    n_op2  = nparts(d, :Op2)
+    n_sigma = nparts(d, :Σ)
+    bundle_op1s!(d)
+    bundle_op2s!(d)
+    bundle_sums!(d)
+    (nparts(d, :Op1)  == n_op1  &&
+     nparts(d, :Op2)  == n_op2  &&
+     nparts(d, :Σ)    == n_sigma) && break
+  end
+  d
+end
+
+"""    function bundle(d::SummationDecapode)
+
+Return a copy of the given Decapode in which repeated Op1, Op2, or Σ
+(summation) applications are merged into single computations. This
+optimization removes redundant paths.
+
+This algorithm performs [common subexpression elimination](https://en.wikipedia.org/wiki/Common_subexpression_elimination).
+
+See also: [`bundle!`](@ref).
+"""
+function bundle(d::SummationDecapode)
+  e = SummationDecapode{Any, Any, Symbol}()
+  copy_parts!(e, d, (:Var, :TVar, :Op1, :Op2, :Σ, :Summand))
+  bundle!(e)
+  e
 end
 

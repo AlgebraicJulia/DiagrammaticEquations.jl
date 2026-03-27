@@ -1,4 +1,10 @@
+module Parser
+
 using Catlab.Parsers.ParserCore
+using ..DiagrammaticEquations
+using ..DiagrammaticEquations.decapodes
+
+using MLStyle
 
 # String -> Vector{String}
 ##########################
@@ -15,7 +21,7 @@ using Catlab.Parsers.ParserCore
 @rule LineEOL = Line & EOL |>
   v -> v[1]
 
-@rule Statement = Judgement , Equation
+@rule Statement = AnyJudgement , Equation
 
 # Recall that a more-left rule in an OR has higher precedence in a PEG.
 @rule Term = Derivative , Call , Compose , Grouping , Atom
@@ -38,7 +44,7 @@ using Catlab.Parsers.ParserCore
 #------------------
 
 # e.g. C::Form0 or (C, D)::DualForm1{X}.
-@rule Judgement = SingleJudgement , MultiJudgement
+@rule AnyJudgement = SingleJudgement , MultiJudgement
 
 @rule SingleJudgement = Ident & "::" & TypeName |>
   v -> Judgement(v[1], v[3]...)
@@ -252,4 +258,6 @@ The `SummationDecapode` constructor then constructs an ACSet.
 macro decapode_str(s::String)
   :(SummationDecapode(parse_whole(DecapodeExpr, $s)))
 end
+export decapode_str
 
+end
