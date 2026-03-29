@@ -24,7 +24,7 @@ using MLStyle
 @rule Statement = AnyJudgement , Equation
 
 # Recall that a more-left rule in an OR has higher precedence in a PEG.
-@rule Term = Derivative , Call , Compose , Grouping , Atom
+@rule Term = Derivative , Call , Compose , LieBracket , Grouping , Atom
 
 # Parentheses enforce precedence.
 @rule Grouping = lparen & ws & PrecMinusOperation & ws & rparen |>
@@ -135,6 +135,15 @@ using MLStyle
 @rule CallList = CallName & (ws & comma & CallName)[*] |>
   v -> vcat(v[1], last.(v[2]))
 
+# Circumfix syntax
+#-----------------
+
+@rule lbracket = r"\["
+@rule rbracket = r"\]"
+
+@rule LieBracket = lbracket & ws & PrecMinusOperation & ws & comma & ws & PrecMinusOperation & ws & rbracket |>
+  v -> App2(:L₁, v[3], v[7])
+
 # Function syntax
 #----------------
 
@@ -174,10 +183,10 @@ using MLStyle
 # They cannot start with digits.
 @rule Ident = r"""([^0-9\+\*:{}→\n;=,\-−¦⊕⊖⊞⊟∪∨⊔±∓∔∸≏⊎⊻⊽⋎⋓⟇⧺⧻⨈⨢⨣⨤⨥⨦⨧⨨⨩⨪⨫⨬⨭⨮⨹⨺⩁⩂
   ⩅⩊⩌⩏⩐⩒⩔⩖⩗⩛⩝⩡⩢⩣\\\/⌿÷%&··⋅∘×∩∧⊗⊘⊙⊚⊛⊠⊡⊓∗∙∤⅋≀⊼⋄⋆⋇⋉⋊⋋⋌⋏⋒⟑⦸⦼⦾⦿⧶⧷⨇⨰⨱⨲⨳⨴⨵⨶⨷⨸⨻⨼⨽⩀<⩃⩄⩋
-  ⩍⩎⩑⩓⩕⩘⩚⩜⩞⩟⩠⫛⊍▷⨝⟕⟖⟗⨟\^↑↓⇵⟰⟱⤈⤉⤊⤋⤒⤓⥉⥌⥍⥏⥑⥔⥕⥘⥙⥜⥝⥠⥡⥣⥥⥮⥯￪￬\|\(\)\s][^\+\*:{}→\n;=,\-
+  ⩍⩎⩑⩓⩕⩘⩚⩜⩞⩟⩠⫛⊍▷⨝⟕⟖⟗⨟\^↑↓⇵⟰⟱⤈⤉⤊⤋⤒⤓⥉⥌⥍⥏⥑⥔⥕⥘⥙⥜⥝⥠⥡⥣⥥⥮⥯￪￬\|\(\)\[\]\s][^\+\*:{}→\n;=,\-
   −¦⊕⊖⊞⊟∪∨⊔±∓∔∸≏⊎⊻⊽⋎⋓⟇⧺⧻⨈⨢⨣⨤⨥⨦⨧⨨⨩⨪⨫⨬⨭⨮⨹⨺⩁⩂⩅⩊⩌⩏⩐⩒⩔⩖⩗⩛⩝⩡⩢⩣\\\/⌿÷%&··⋅∘×∩∧⊗⊘⊙⊚⊛⊠⊡⊓
   ∗∙∤⅋≀⊼⋄⋆⋇⋉⋊⋋⋌⋏⋒⟑⦸⦼⦾⦿⧶⧷⨇⨰⨱⨲⨳⨴⨵⨶⨷⨸⨻⨼⨽⩀<⩃⩄⩋⩍⩎⩑⩓⩕⩘⩚⩜⩞⩟⩠⫛⊍▷⨝⟕⟖⟗⨟\^↑↓⇵⟰⟱⤈⤉⤊⤋⤒⤓⥉⥌⥍⥏⥑
-  ⥔⥕⥘⥙⥜⥝⥠⥡⥣⥥⥮⥯￪￬\|\(\)\s]*)""" |>
+  ⥔⥕⥘⥙⥜⥝⥠⥡⥣⥥⥮⥯￪￬\|\(\)\[\]\s]*)""" |>
   v -> Symbol(v...)
 
 @rule Operator = PrecMinusOp , PrecDivOp , PrecPowerOp
