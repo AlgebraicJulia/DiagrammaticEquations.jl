@@ -12,7 +12,8 @@ import DiagrammaticEquations.Parser: DecapodeExpr, SingleLineComment, MultiLineC
   Line, Statement, AnyJudgement, TypeName, Equation, SumOperation,
   PrecMinusOperation, PrecDivOperation, MultOperation, PrecPowerOperation, Term as ParserTerm,
   Grouping, Derivative, Compose, Call, CallName, Operator, List, CallList, Atom,
-  Ident, SciLiteral, PrecMinusOp, PrecDivOp, PrecPowerOp, OpSuffixes, Magnitude, @decapode_str
+  Ident, SciLiteral, PrecMinusOp, PrecDivOp, PrecPowerOp, OpSuffixes, LieBracket, Magnitude,
+  @decapode_str
 
 LS = Lit ∘ Symbol
 
@@ -214,6 +215,7 @@ end
 end
 
 @testset "Circumfix Notation" begin
+  @test LieBracket("[C,D]")[1] == App2(:L₁, Var(:C), Var(:D))
   @test Magnitude("|x|")[1] == App1(:mag, Var(:x))
   @test Magnitude("|f(x)|")[1] == App1(:mag, App1(:f, Var(:x)))
 end
@@ -804,4 +806,33 @@ end
     =#
     A == d(B)
     ")
+
+  # Support parsing the Lie bracket.
+  # The Lie advection equation:
+  @test decapode"
+          Y::DualForm1
+          X::Constant
+
+          ∂ₜ(Y) == [X,Y]
+        " ==
+        @decapode begin
+          Y::DualForm1
+          X::Constant
+
+          ∂ₜ(Y) == L₁(X,Y)
+        end
+  # This equation corresponds to diffusion along the contour lines of a vector field X,
+  # proportional to the magnitude of X.
+  @test decapode"
+          Y::DualForm1
+          X::Constant
+
+          ∂ₜ(Y) == -1 * [X,[X,Y]]
+        " ==
+        @decapode begin
+          Y::DualForm1
+          X::Constant
+
+          ∂ₜ(Y) == -1 * L₁(X,L₁(X,Y))
+        end
 end
