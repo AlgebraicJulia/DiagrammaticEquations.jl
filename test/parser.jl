@@ -802,17 +802,18 @@ end
 
           ∂ₜ(Y) == L₁(X,Y)
         end
-  # The second-order Lie advection equation:
+  # This equation corresponds to diffusion along the contour lines of a vector field X,
+  # proportional to the magnitude of X.
   @test decapode"
           Y::DualForm1
           X::Constant
 
-          ∂ₜ(Y) == [X,[X,Y]]
+          ∂ₜ(Y) == -1 * [X,[X,Y]]
         " ==
         @decapode begin
           Y::DualForm1
           X::Constant
 
-          ∂ₜ(Y) == L₁(X,L₁(X,Y))
+          ∂ₜ(Y) == -1 * L₁(X,L₁(X,Y))
         end
 end
