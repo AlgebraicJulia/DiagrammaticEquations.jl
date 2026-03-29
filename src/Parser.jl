@@ -24,7 +24,7 @@ using MLStyle
 @rule Statement = AnyJudgement , Equation
 
 # Recall that a more-left rule in an OR has higher precedence in a PEG.
-@rule Term = Derivative , Call , Compose , LieBracket , Grouping , Atom
+@rule Term = Derivative , Call , Compose , LieBracket , Magnitude , Grouping , Atom
 
 # Parentheses enforce precedence.
 @rule Grouping = lparen & ws & PrecMinusOperation & ws & rparen |>
@@ -138,11 +138,16 @@ using MLStyle
 # Circumfix syntax
 #-----------------
 
+@rule bar = r"\|"
+
 @rule lbracket = r"\["
 @rule rbracket = r"\]"
 
 @rule LieBracket = lbracket & ws & PrecMinusOperation & ws & comma & ws & PrecMinusOperation & ws & rbracket |>
   v -> App2(:L₁, v[3], v[7])
+
+@rule Magnitude = bar & ws & PrecMinusOperation & ws & bar |>
+  v -> App1(:mag, v[3])
 
 # Function syntax
 #----------------

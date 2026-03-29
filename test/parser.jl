@@ -12,7 +12,8 @@ import DiagrammaticEquations.Parser: DecapodeExpr, SingleLineComment, MultiLineC
   Line, Statement, AnyJudgement, TypeName, Equation, SumOperation,
   PrecMinusOperation, PrecDivOperation, MultOperation, PrecPowerOperation, Term as ParserTerm,
   Grouping, Derivative, Compose, Call, CallName, Operator, List, CallList, Atom,
-  Ident, SciLiteral, PrecMinusOp, PrecDivOp, PrecPowerOp, OpSuffixes, LieBracket, @decapode_str
+  Ident, SciLiteral, PrecMinusOp, PrecDivOp, PrecPowerOp, OpSuffixes, LieBracket, Magnitude,
+  @decapode_str
 
 LS = Lit ∘ Symbol
 
@@ -215,6 +216,8 @@ end
 
 @testset "Circumfix Notation" begin
   @test LieBracket("[C,D]")[1] == App2(:L₁, Var(:C), Var(:D))
+  @test Magnitude("|x|")[1] == App1(:mag, Var(:x))
+  @test Magnitude("|f(x)|")[1] == App1(:mag, App1(:f, Var(:x)))
 end
 
 @testset "Function Call Names" begin
@@ -402,6 +405,22 @@ end
       Γ::Form1
       n::Constant
                 
+      ∂ₜ(h) == (∘(⋆, d, ⋆))(((Γ * d(h)) ∧ mag(♯(d(h))) ^ (n - 1)) ∧ h ^ (n + 2))
+    end)
+
+  # Support the magnitude circumfix notation |expr| in the Halfar equation.
+  @test is_isomorphic(
+    decapode"
+      h::Form0
+      Γ::Form1
+      n::Constant
+
+      ∂ₜ(h) == (∘(⋆, d, ⋆))(((Γ * d(h)) ∧ |♯(d(h))| ^ (n - 1)) ∧ h ^ (n + 2))",
+    @decapode begin
+      h::Form0
+      Γ::Form1
+      n::Constant
+
       ∂ₜ(h) == (∘(⋆, d, ⋆))(((Γ * d(h)) ∧ mag(♯(d(h))) ^ (n - 1)) ∧ h ^ (n + 2))
     end)
   
