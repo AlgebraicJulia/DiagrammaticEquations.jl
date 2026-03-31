@@ -1,13 +1,14 @@
 using DiagrammaticEquations
 using Catlab.CategoricalAlgebra
 using ACSets
+# Note: decapodes is a local module defined in language.jl, not the Decapodes package
 
-function Term(s::SummationDecapode)
+function decapodes.Term(s::SummationDecapode)
   # s = expand_operators(s)
   judgements = map(parts(s,:Var)) do v
     var = s[v, :name]
     typ = s[v, :type]
-    Judgement(var, typ, :I)
+    decapodes.Judgement(var, typ, :I)
   end
 
   op1s = map(parts(s, :Op1)) do op
@@ -15,11 +16,11 @@ function Term(s::SummationDecapode)
     y = Var(s[op, [:tgt, :name]])
     f = s[op, :op1]
     if f == :∂ₜ
-      Eq(y, Tan(x))
+      decapodes.Eq(y, Tan(x))
     elseif typeof(f) == Vector{Symbol}
-      Eq(y, AppCirc1(f, x))
+      decapodes.Eq(y, AppCirc1(f, x))
     else
-      Eq(y, App1(f, x))
+      decapodes.Eq(y, App1(f, x))
     end
   end
 
@@ -28,12 +29,12 @@ function Term(s::SummationDecapode)
     y = Var(s[op, [:proj2, :name]])
     z = Var(s[op, [:res, :name]])
     f = s[op, :op2]
-    Eq(z, App2(f, x, y))
+    decapodes.Eq(z, App2(f, x, y))
   end
 
   sums = map(parts(s, :Σ)) do σ
     terms = map(Var, s[incident(s, σ, :summation), [:summand, :name]])
-    Eq(Var(s[σ, [:sum,:name]]), Plus(terms))
+    decapodes.Eq(Var(s[σ, [:sum,:name]]), Plus(terms))
   end
   DiagrammaticEquations.DecaExpr(judgements, vcat(op1s, op2s, sums))
 end
