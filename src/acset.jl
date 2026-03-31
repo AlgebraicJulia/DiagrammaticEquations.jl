@@ -1,13 +1,8 @@
 using Catlab.DenseACSets
-using ACSets.InterTypes
 
 using DataStructures
 
-@intertypes "decapodeacset.it" module decapodeacset end
-
 import Base.show
-
-using .decapodeacset
 
 # Transferring pointers
 # --------------------
