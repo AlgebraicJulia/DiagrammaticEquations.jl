@@ -56,6 +56,9 @@ normalize_unicode(s::Symbol)  = Symbol(normalize_unicode(String(s)))
 DerivOp = Symbol("∂ₜ")
 append_dot(s::Symbol) = Symbol(string(s)*'\U0307')
 
+include("DecapodeACSet.jl")
+using .DecapodeACSet
+
 include("acset.jl")
 include("language.jl")
 include("Parser.jl")
