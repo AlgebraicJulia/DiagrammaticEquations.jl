@@ -302,4 +302,68 @@ end
     [:Diffusion, :AdvectionDuplicates, :Superposition])
 end
 
+@testset "Default Composition Diagrams - Macro and Default Names" begin
+  Diffusion = @decapode begin
+    C::Form0
+    ϕ₁::Form1
+    ϕ₁ ==  ∘(k, d₀)(C)
+  end
+  Advection = @decapode begin
+    C::Form0
+    (V, ϕ₂)::Form1
+    ϕ₂ == ∧₀₁(C,V)
+  end
+  Superposition = @decapode begin
+    (C, Ċ)::Form0
+    (ϕ, ϕ₁, ϕ₂)::Form1
+    ϕ == ϕ₁ + ϕ₂
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    ∂ₜ(C) == Ċ
+  end
+  expected =
+    @relation () begin
+      Diffusion(C,ϕ₁)
+      Advection(C,V,ϕ₂)
+      Superposition(C,ϕ₁,ϕ₂,Ċ,ϕ)
+    end
+
+  # Test the macro uses variable names as box names.
+  @test is_isomorphic(expected, @default_composition_diagram(Diffusion, Advection, Superposition))
+
+  # Test that the macro and the explicit-names function agree.
+  @test is_isomorphic(
+    default_composition_diagram([Diffusion, Advection, Superposition], [:Diffusion, :Advection, :Superposition]),
+    @default_composition_diagram(Diffusion, Advection, Superposition))
+
+  # Test the vector-only method generates default names Model1, Model2, etc.
+  expected_default_names =
+    @relation () begin
+      Model1(C,ϕ₁)
+      Model2(C,V,ϕ₂)
+      Model3(C,ϕ₁,ϕ₂,Ċ,ϕ)
+    end
+  @test is_isomorphic(expected_default_names, default_composition_diagram([Diffusion, Advection, Superposition]))
+
+  # Test the vector-only method with only_states_terminals=true.
+  GlensLaw = @decapode begin
+    Γ::Form1
+    (A,ρ,g,n)::Constant
+
+    Γ == (2/(n+2))*A*(ρ*g)^n
+  end
+  HalfarsEquation = @decapode begin
+    h::Form0
+    Γ::Form1
+    n::Constant
+
+    ∂ₜ(h) == ∘(⋆, d, ⋆)(Γ  * d(h) ∧ (mag(♯(d(h)))^(n-1)) ∧ (h^(n+2)))
+  end
+  expected_states_terminals =
+    @relation () begin
+      Model1(Γ,A,ρ,g,n)
+      Model2(h,Γ,n,ḣ)
+    end
+  @test is_isomorphic(expected_states_terminals, default_composition_diagram([GlensLaw, HalfarsEquation], only_states_terminals=true))
+end
+
 # end
