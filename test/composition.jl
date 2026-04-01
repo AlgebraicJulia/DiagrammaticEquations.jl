@@ -222,7 +222,7 @@ end
     @relation () begin
       Diffusion(C,ϕ₁)
       Advection(C,V,ϕ₂)
-      Superposition(C,ϕ₁,ϕ₂,Ċ,ϕ)
+      Superposition(C,ϕ₁,ϕ₂,Ċ)
     end
   @test is_isomorphic(expected, default_composition_diagram(
           [Diffusion, Advection, Superposition],
@@ -300,6 +300,65 @@ end
   @test_throws "Decapode AdvectionDuplicates contains repeated variable names: Set([:ϕ₂])." default_composition_diagram(
     [Diffusion, AdvectionDuplicates, Superposition],
     [:Diffusion, :AdvectionDuplicates, :Superposition])
+end
+
+@testset "Default Composition Diagrams - Macro and Default Names" begin
+  Diffusion = @decapode begin
+    C::Form0
+    ϕ₁::Form1
+    ϕ₁ ==  ∘(k, d₀)(C)
+  end
+  Advection = @decapode begin
+    C::Form0
+    (V, ϕ₂)::Form1
+    ϕ₂ == ∧₀₁(C,V)
+  end
+  Superposition = @decapode begin
+    (C, Ċ)::Form0
+    (ϕ, ϕ₁, ϕ₂)::Form1
+    ϕ == ϕ₁ + ϕ₂
+    Ċ == ∘(⋆₀⁻¹, dual_d₁, ⋆₁)(ϕ)
+    ∂ₜ(C) == Ċ
+  end
+  expected =
+    @relation () begin
+      Diffusion(C,ϕ₁)
+      Advection(C,V,ϕ₂)
+      Superposition(C,ϕ₁,ϕ₂,Ċ)
+    end
+
+  # Test the macro uses variable names as box names.
+  @test is_isomorphic(expected, @default_composition_diagram(Diffusion, Advection, Superposition))
+
+  # Test that the macro and the explicit-names function agree.
+  @test is_isomorphic(
+    default_composition_diagram([Diffusion, Advection, Superposition], [:Diffusion, :Advection, :Superposition]),
+    @default_composition_diagram(Diffusion, Advection, Superposition))
+
+  # Test the vector-only method generates default names Model1, Model2, etc.
+  expected_default_names =
+    @relation () begin
+      Model1(C,ϕ₁)
+      Model2(C,V,ϕ₂)
+      Model3(C,ϕ₁,ϕ₂,Ċ)
+    end
+  @test is_isomorphic(expected_default_names, default_composition_diagram([Diffusion, Advection, Superposition]))
+
+  # Test the vector-only method with only_states_terminals=false.
+  Eq1 = @decapode begin
+    B == d(A)
+    C == d(B)
+  end
+  Eq2 = @decapode begin
+    B == d(Z)
+    C == d(B)
+  end
+  expected_relation =
+    @relation () begin
+      Model1(A,B,C)
+      Model2(Z,B,C)
+    end
+  @test is_isomorphic(expected_relation, default_composition_diagram([Eq1, Eq2], only_states_terminals=false))
 end
 
 # end
