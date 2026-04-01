@@ -222,7 +222,7 @@ end
 Construct a SummationDecapode using the Decapode Domain-Specific Language.
 """
 macro decapode(e)
-  :(SummationDecapode(parse_decapode($(Meta.quot(e)))))
+  :(SummationDecapode(parse_decapode($(Meta.quot(e))))) |> esc
 end
 
 # Verify that @decapode is usable at module-level in source (not just in tests/REPL).
