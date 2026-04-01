@@ -241,8 +241,7 @@ function construct_relation_diagram(boxes::Vector{Symbol}, junctions::Vector{Vec
   parse_relation_diagram(:(), :($(tables...),))
 end
 
-# TODO: Add a macro which provides names for boxes via the Symbol of the Decapode.
-"""    function default_composition_diagram(podes::Vector{D}, names::Vector{Symbol}) where {D<:SummationDecapode}
+"""    function default_composition_diagram(podes::Vector{D}, names::Vector{Symbol} only_states_terminals=true) where {D<:SummationDecapode}
 
 Given a list of Decapodes and their names, return a composition diagram which assumes that variables sharing the same name ought to be composed.
 
@@ -250,11 +249,13 @@ No Literals are exposed. Use [`unique_lits!`](@ref) after composing.
 
 Throw an error if any individual Decapode already contains a repeated name (except for Literals).
 
-If `only_states_terminals` is `true`, only expose state and terminal variables. Defaults to `false`.
+If `only_states_terminals` is `true`, only expose state and terminal variables. Defaults to `true`.
 
 Note that composing immediately with [`oapply`](@ref) will fail if types do not match (e.g. (:infer, :Form0) or (:Form0, :Form1)).
+
+See also: [`@default_composition_diagram`](@ref).
 """
-function default_composition_diagram(podes::Vector{D}, names::Vector{Symbol}, only_states_terminals=false) where {D<:SummationDecapode}
+function default_composition_diagram(podes::Vector{D}, names::Vector{Symbol}, only_states_terminals=true) where {D<:SummationDecapode}
   length(podes) == length(names) || error("$(length(podes)) models given, but $(length(names)) names provided.")
   non_lit_names = map(podes) do pode
     pode[findall(!=(:Literal), pode[:type]), :name]
@@ -269,5 +270,44 @@ function default_composition_diagram(podes::Vector{D}, names::Vector{Symbol}, on
     end
   end
   construct_relation_diagram(names, non_lit_names)
+end
+
+"""    function default_composition_diagram(podes::Vector{D}; only_states_terminals=true) where {D<:SummationDecapode}
+
+Given a list of Decapodes, return a composition diagram which assumes that variables sharing the same name ought to be composed. Boxes are named `Model1`, `Model2`, etc.
+
+No Literals are exposed. Use [`unique_lits!`](@ref) after composing.
+
+Throw an error if any individual Decapode already contains a repeated name (except for Literals).
+
+If `only_states_terminals` is `true`, only expose state and terminal variables. Defaults to `true`.
+
+Note that composing immediately with [`oapply`](@ref) will fail if types do not match (e.g. (:infer, :Form0) or (:Form0, :Form1)).
+
+See also: [`@default_composition_diagram`](@ref).
+"""
+function default_composition_diagram(podes::Vector{D}; only_states_terminals::Bool=true) where {D<:SummationDecapode}
+  names = [Symbol("Model$i") for i in eachindex(podes)]
+  default_composition_diagram(podes, names, only_states_terminals)
+end
+
+"""    @default_composition_diagram(podes...)
+
+Given a list of Decapode variables, return a composition diagram which assumes that variables sharing the same name ought to be composed. The name of each variable is used as the name of its corresponding box.
+
+Only state and terminal variables are candidates for composition.
+
+No Literals are exposed. Use [`unique_lits!`](@ref) after composing.
+
+Throw an error if any individual Decapode already contains a repeated name (except for Literals).
+
+Note that composing immediately with [`oapply`](@ref) will fail if types do not match (e.g. (:infer, :Form0) or (:Form0, :Form1)).
+
+See also: [`default_composition_diagram`](@ref).
+"""
+macro default_composition_diagram(args...)
+  names = [QuoteNode(arg) for arg in args]
+  models = [esc(arg) for arg in args]
+  :(default_composition_diagram([$(models...)], [$(names...)]))
 end
 
