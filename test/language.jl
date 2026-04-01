@@ -326,6 +326,25 @@ end
   @test nparts(advdiffdp, :Summand) == 2
 end
 
+@testset "Variable Interpolation" begin
+  oscillator = @decapode begin
+   (X,V)::Form0
+   k::Constant
+   ∂ₜ(X) == V
+   ∂ₜ(V) == 5.0 * X
+  end
+  
+  k = 5.0
+  oscillator_interpolated = @decapode begin
+   (X,V)::Form0
+   k::Constant
+   ∂ₜ(X) == V
+   ∂ₜ(V) == $k * X
+  end
+  
+  @test oscillator == oscillator_interpolated
+end
+
 @testset "State Variable Inference" begin
   oscillator = @decapode begin
    (X,V)::Form0
