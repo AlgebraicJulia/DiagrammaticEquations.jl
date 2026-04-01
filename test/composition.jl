@@ -222,7 +222,7 @@ end
     @relation () begin
       Diffusion(C,ϕ₁)
       Advection(C,V,ϕ₂)
-      Superposition(C,ϕ₁,ϕ₂,Ċ,ϕ)
+      Superposition(C,ϕ₁,ϕ₂,Ċ)
     end
   @test is_isomorphic(expected, default_composition_diagram(
           [Diffusion, Advection, Superposition],
@@ -324,7 +324,7 @@ end
     @relation () begin
       Diffusion(C,ϕ₁)
       Advection(C,V,ϕ₂)
-      Superposition(C,ϕ₁,ϕ₂,Ċ,ϕ)
+      Superposition(C,ϕ₁,ϕ₂,Ċ)
     end
 
   # Test the macro uses variable names as box names.
@@ -340,30 +340,25 @@ end
     @relation () begin
       Model1(C,ϕ₁)
       Model2(C,V,ϕ₂)
-      Model3(C,ϕ₁,ϕ₂,Ċ,ϕ)
+      Model3(C,ϕ₁,ϕ₂,Ċ)
     end
   @test is_isomorphic(expected_default_names, default_composition_diagram([Diffusion, Advection, Superposition]))
 
   # Test the vector-only method with only_states_terminals=false.
-  GlensLaw = @decapode begin
-    Γ::Form1
-    (A,ρ,g,n)::Constant
-
-    Γ == (2/(n+2))*A*(ρ*g)^n
+  Eq1 = @decapode begin
+    B == d(A)
+    C == d(B)
   end
-  HalfarsEquation = @decapode begin
-    h::Form0
-    Γ::Form1
-    n::Constant
-
-    ∂ₜ(h) == ∘(⋆, d, ⋆)(Γ  * d(h) ∧ (mag(♯(d(h)))^(n-1)) ∧ (h^(n+2)))
+  Eq2 = @decapode begin
+    B == d(Z)
+    C == d(B)
   end
   expected_relation =
     @relation () begin
-      Model1(Γ,A,ρ,g,n)
-      Model2(h,Γ,n,ḣ)
+      Model1(A,B,C)
+      Model2(Z,B,C)
     end
-  @test is_isomorphic(expected_relation, default_composition_diagram([GlensLaw, HalfarsEquation], only_states_terminals=false))
+  @test is_isomorphic(expected_relation, default_composition_diagram([Eq1, Eq2], only_states_terminals=false))
 end
 
 # end
