@@ -344,7 +344,7 @@ end
     end
   @test is_isomorphic(expected_default_names, default_composition_diagram([Diffusion, Advection, Superposition]))
 
-  # Test the vector-only method with only_states_terminals=true.
+  # Test the vector-only method with only_states_terminals=false.
   GlensLaw = @decapode begin
     Γ::Form1
     (A,ρ,g,n)::Constant
@@ -358,12 +358,12 @@ end
 
     ∂ₜ(h) == ∘(⋆, d, ⋆)(Γ  * d(h) ∧ (mag(♯(d(h)))^(n-1)) ∧ (h^(n+2)))
   end
-  expected_states_terminals =
+  expected_relation =
     @relation () begin
       Model1(Γ,A,ρ,g,n)
       Model2(h,Γ,n,ḣ)
     end
-  @test is_isomorphic(expected_states_terminals, default_composition_diagram([GlensLaw, HalfarsEquation], only_states_terminals=true))
+  @test is_isomorphic(expected_relation, default_composition_diagram([GlensLaw, HalfarsEquation], only_states_terminals=false))
 end
 
 # end
