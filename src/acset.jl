@@ -953,35 +953,33 @@ function upset(d::SummationDecapode, var_name::Symbol)
   var_idx = only(var_indices)
 
   # BFS backward to find all ancestor variables and operations.
-  visited_vars = Set{Int}()
-  visited_op1s = Set{Int}()
-  visited_op2s = Set{Int}()
-  visited_Σs = Set{Int}()
-  visited_summands = Set{Int}()
+  # A single Dict maps each ACSet object type to its set of visited indices.
+  visited = Dict{Symbol, Set{Int}}(
+    k => Set{Int}() for k in (:Var, :TVar, :Op1, :Op2, :Σ, :Summand))
 
   queue = Queue{Int}()
   enqueue!(queue, var_idx)
-  push!(visited_vars, var_idx)
+  push!(visited[:Var], var_idx)
 
   while !isempty(queue)
     curr = dequeue!(queue)
 
     # Find Op1s that produce curr (tgt == curr).
     for op1_idx in incident(d, curr, :tgt)
-      push!(visited_op1s, op1_idx)
+      push!(visited[:Op1], op1_idx)
       src = d[op1_idx, :src]
-      if src ∉ visited_vars
-        push!(visited_vars, src)
+      if src ∉ visited[:Var]
+        push!(visited[:Var], src)
         enqueue!(queue, src)
       end
     end
 
     # Find Op2s that produce curr (res == curr).
     for op2_idx in incident(d, curr, :res)
-      push!(visited_op2s, op2_idx)
+      push!(visited[:Op2], op2_idx)
       for proj_var in [d[op2_idx, :proj1], d[op2_idx, :proj2]]
-        if proj_var ∉ visited_vars
-          push!(visited_vars, proj_var)
+        if proj_var ∉ visited[:Var]
+          push!(visited[:Var], proj_var)
           enqueue!(queue, proj_var)
         end
       end
@@ -989,12 +987,12 @@ function upset(d::SummationDecapode, var_name::Symbol)
 
     # Find Σs that produce curr (sum == curr).
     for Σ_idx in incident(d, curr, :sum)
-      push!(visited_Σs, Σ_idx)
+      push!(visited[:Σ], Σ_idx)
       for summand_idx in incident(d, Σ_idx, :summation)
-        push!(visited_summands, summand_idx)
+        push!(visited[:Summand], summand_idx)
         summand_var = d[summand_idx, :summand]
-        if summand_var ∉ visited_vars
-          push!(visited_vars, summand_var)
+        if summand_var ∉ visited[:Var]
+          push!(visited[:Var], summand_var)
           enqueue!(queue, summand_var)
         end
       end
@@ -1002,23 +1000,18 @@ function upset(d::SummationDecapode, var_name::Symbol)
   end
 
   # Collect TVars for visited variables.
-  visited_tvars = Set{Int}()
   for tvar_idx in parts(d, :TVar)
-    if d[tvar_idx, :incl] ∈ visited_vars
-      push!(visited_tvars, tvar_idx)
+    if d[tvar_idx, :incl] ∈ visited[:Var]
+      push!(visited[:TVar], tvar_idx)
     end
   end
 
   # Copy everything, then remove parts not in the upset.
   e = SummationDecapode{Any, Any, Symbol}()
-  copy_parts!(e, d, (:Var, :TVar, :Op1, :Op2, :Σ, :Summand))
-
-  rem_parts!(e, :TVar, sort(collect(setdiff(parts(d, :TVar), visited_tvars))))
-  rem_parts!(e, :Op1, sort(collect(setdiff(parts(d, :Op1), visited_op1s))))
-  rem_parts!(e, :Op2, sort(collect(setdiff(parts(d, :Op2), visited_op2s))))
-  rem_parts!(e, :Summand, sort(collect(setdiff(parts(d, :Summand), visited_summands))))
-  rem_parts!(e, :Σ, sort(collect(setdiff(parts(d, :Σ), visited_Σs))))
-  rem_parts!(e, :Var, sort(collect(setdiff(parts(d, :Var), visited_vars))))
+  copy_parts!(e, d, Tuple(keys(visited)))
+  for k in keys(visited)
+    rem_parts!(e, k, sort(collect(setdiff(parts(d, k), visited[k]))))
+  end
 
   return e
 end
