@@ -1013,12 +1013,12 @@ function upset(d::SummationDecapode, var_name::Symbol)
   e = SummationDecapode{Any, Any, Symbol}()
   copy_parts!(e, d, (:Var, :TVar, :Op1, :Op2, :Σ, :Summand))
 
-  rem_parts!(e, :TVar, sort(collect(setdiff(Set(parts(d, :TVar)), visited_tvars))))
-  rem_parts!(e, :Op1, sort(collect(setdiff(Set(parts(d, :Op1)), visited_op1s))))
-  rem_parts!(e, :Op2, sort(collect(setdiff(Set(parts(d, :Op2)), visited_op2s))))
-  rem_parts!(e, :Summand, sort(collect(setdiff(Set(parts(d, :Summand)), visited_summands))))
-  rem_parts!(e, :Σ, sort(collect(setdiff(Set(parts(d, :Σ)), visited_Σs))))
-  rem_parts!(e, :Var, sort(collect(setdiff(Set(parts(d, :Var)), visited_vars))))
+  rem_parts!(e, :TVar, sort(collect(setdiff(parts(d, :TVar), visited_tvars))))
+  rem_parts!(e, :Op1, sort(collect(setdiff(parts(d, :Op1), visited_op1s))))
+  rem_parts!(e, :Op2, sort(collect(setdiff(parts(d, :Op2), visited_op2s))))
+  rem_parts!(e, :Summand, sort(collect(setdiff(parts(d, :Summand), visited_summands))))
+  rem_parts!(e, :Σ, sort(collect(setdiff(parts(d, :Σ), visited_Σs))))
+  rem_parts!(e, :Var, sort(collect(setdiff(parts(d, :Var), visited_vars))))
 
   return e
 end
