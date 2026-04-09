@@ -945,9 +945,21 @@ Compute the upset of a variable: return a new Decapode containing only the
 given variable and all variables and operations which are necessary for
 computing its value.
 
-See also: [`recursive_delete_parents`](@ref).
+See also: [`upset!`](@ref), [`recursive_delete_parents`](@ref).
 """
 function upset(d::SummationDecapode, var_name::Symbol)
+  e = SummationDecapode{Any, Any, Symbol}()
+  copy_parts!(e, d, (:Var, :TVar, :Op1, :Op2, :Σ, :Summand))
+  upset!(e, d, var_name)
+  return e
+end
+
+"""    function upset!(e::SummationDecapode, d::SummationDecapode, var_name::Symbol)
+
+Mutating helper for [`upset`](@ref). Given `e`, a copy of `d`, remove all
+parts from `e` that are not in the upset of `var_name` in `d`.
+"""
+function upset!(e::SummationDecapode, d::SummationDecapode, var_name::Symbol)
   var_indices = incident(d, var_name, :name)
   isempty(var_indices) && error("Variable $(var_name) not found in Decapode")
   var_idx = only(var_indices)
@@ -1006,9 +1018,7 @@ function upset(d::SummationDecapode, var_name::Symbol)
     end
   end
 
-  # Copy everything, then remove parts not in the upset.
-  e = SummationDecapode{Any, Any, Symbol}()
-  copy_parts!(e, d, Tuple(keys(visited)))
+  # Remove parts not in the upset.
   for k in keys(visited)
     rem_parts!(e, k, sort(collect(setdiff(parts(d, k), visited[k]))))
   end
