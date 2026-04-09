@@ -1,6 +1,7 @@
 using Test
 using DiagrammaticEquations
 using Catlab.ACSetInterface
+using Catlab.CategoricalAlgebra
 
 # Upset (ancestor subgraph)
 # #########################
@@ -163,4 +164,10 @@ let
   @test nparts(ns, :Var) > nparts(e, :Var)
   @test nparts(ns, :Op1) > nparts(e, :Op1)
   @test nparts(ns, :Op2) > nparts(e, :Op2)
+
+  # Verify there is a monic (injective) ACSet morphism from the upset to the
+  # full NS Decapode, proving the upset is a valid inclusion/subobject.
+  h = homomorphism(e, ns)
+  @test is_natural(h)
+  @test is_monic(h)
 end
