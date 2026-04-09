@@ -939,6 +939,46 @@ function bundle(d::SummationDecapode)
   e
 end
 
+"""    function producing_parts(d::SummationDecapode, var_idx::Int)
+
+Return a `Dict{Symbol, Vector{Int}}` describing the operations that produce
+`var_idx` and the variables they consume.  Keys:
+
+  - `:Var`     – input variable indices (Op1 sources, Op2 projections, summands)
+  - `:Op1`     – Op1 indices whose target is `var_idx`
+  - `:Op2`     – Op2 indices whose result is `var_idx`
+  - `:Σ`       – Σ indices whose sum is `var_idx`
+  - `:Summand` – Summand indices belonging to those Σs
+
+This is the shared backward-neighbourhood lookup used by both [`upset!`](@ref)
+and [`recursive_delete_parents!`](@ref).
+"""
+function producing_parts(d::SummationDecapode, var_idx::Int)
+  result = Dict{Symbol, Vector{Int}}(
+    :Var => Int[], :Op1 => Int[], :Op2 => Int[], :Σ => Int[], :Summand => Int[])
+
+  for op1_idx in incident(d, var_idx, :tgt)
+    push!(result[:Op1], op1_idx)
+    push!(result[:Var], d[op1_idx, :src])
+  end
+
+  for op2_idx in incident(d, var_idx, :res)
+    push!(result[:Op2], op2_idx)
+    push!(result[:Var], d[op2_idx, :proj1])
+    push!(result[:Var], d[op2_idx, :proj2])
+  end
+
+  for Σ_idx in incident(d, var_idx, :sum)
+    push!(result[:Σ], Σ_idx)
+    for summand_idx in incident(d, Σ_idx, :summation)
+      push!(result[:Summand], summand_idx)
+      push!(result[:Var], d[summand_idx, :summand])
+    end
+  end
+
+  return result
+end
+
 """    function upset(d::SummationDecapode, var_name::Symbol)
 
 Compute the upset of a variable: return a new Decapode containing only the
@@ -975,38 +1015,14 @@ function upset!(e::SummationDecapode, d::SummationDecapode, var_name::Symbol)
 
   while !isempty(queue)
     curr = dequeue!(queue)
-
-    # Find Op1s that produce curr (tgt == curr).
-    for op1_idx in incident(d, curr, :tgt)
-      push!(visited[:Op1], op1_idx)
-      src = d[op1_idx, :src]
-      if src ∉ visited[:Var]
-        push!(visited[:Var], src)
-        enqueue!(queue, src)
-      end
+    pp = producing_parts(d, curr)
+    for k in (:Op1, :Op2, :Σ, :Summand)
+      union!(visited[k], pp[k])
     end
-
-    # Find Op2s that produce curr (res == curr).
-    for op2_idx in incident(d, curr, :res)
-      push!(visited[:Op2], op2_idx)
-      for proj_var in [d[op2_idx, :proj1], d[op2_idx, :proj2]]
-        if proj_var ∉ visited[:Var]
-          push!(visited[:Var], proj_var)
-          enqueue!(queue, proj_var)
-        end
-      end
-    end
-
-    # Find Σs that produce curr (sum == curr).
-    for Σ_idx in incident(d, curr, :sum)
-      push!(visited[:Σ], Σ_idx)
-      for summand_idx in incident(d, Σ_idx, :summation)
-        push!(visited[:Summand], summand_idx)
-        summand_var = d[summand_idx, :summand]
-        if summand_var ∉ visited[:Var]
-          push!(visited[:Var], summand_var)
-          enqueue!(queue, summand_var)
-        end
+    for v in pp[:Var]
+      if v ∉ visited[:Var]
+        push!(visited[:Var], v)
+        enqueue!(queue, v)
       end
     end
   end
