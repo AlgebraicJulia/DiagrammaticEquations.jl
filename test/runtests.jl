@@ -30,7 +30,7 @@ end
 end
 
 @testset "Upset" begin
-  include("upset.jl")
+  include("downset.jl")
 end
 
 @testset "Collages" begin

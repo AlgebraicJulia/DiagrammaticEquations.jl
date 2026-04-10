@@ -950,7 +950,7 @@ Return a `Dict{Symbol, Vector{Int}}` describing the operations that produce
   - `:Σ`       – Σ indices whose sum is `var_idx`
   - `:Summand` – Summand indices belonging to those Σs
 
-This is the shared backward-neighbourhood lookup used by both [`upset!`](@ref)
+This is the shared backward-neighbourhood lookup used by both [`downset!`](@ref)
 and [`recursive_delete_parents!`](@ref).
 """
 function producing_parts(d::SummationDecapode, var_idx::Int)
@@ -979,27 +979,27 @@ function producing_parts(d::SummationDecapode, var_idx::Int)
   return result
 end
 
-"""    function upset(d::SummationDecapode, var_name::Symbol)
+"""    function downset(d::SummationDecapode, var_name::Symbol)
 
-Compute the upset of a variable: return a new Decapode containing only the
+Compute the downset of a variable: return a new Decapode containing only the
 given variable and all variables and operations which are necessary for
 computing its value.
 
-See also: [`upset!`](@ref), [`recursive_delete_parents`](@ref).
+See also: [`downset!`](@ref), [`recursive_delete_parents`](@ref).
 """
-function upset(d::SummationDecapode, var_name::Symbol)
+function downset(d::SummationDecapode, var_name::Symbol)
   e = SummationDecapode{Any, Any, Symbol}()
   copy_parts!(e, d, (:Var, :TVar, :Op1, :Op2, :Σ, :Summand))
-  upset!(e, d, var_name)
+  downset!(e, d, var_name)
   return e
 end
 
-"""    function upset!(e::SummationDecapode, d::SummationDecapode, var_name::Symbol)
+"""    function downset!(e::SummationDecapode, d::SummationDecapode, var_name::Symbol)
 
-Mutating helper for [`upset`](@ref). Given `e`, a copy of `d`, remove all
-parts from `e` that are not in the upset of `var_name` in `d`.
+Mutating helper for [`downset`](@ref). Given `e`, a copy of `d`, remove all
+parts from `e` that are not in the downset of `var_name` in `d`.
 """
-function upset!(e::SummationDecapode, d::SummationDecapode, var_name::Symbol)
+function downset!(e::SummationDecapode, d::SummationDecapode, var_name::Symbol)
   var_indices = incident(d, var_name, :name)
   isempty(var_indices) && error("Variable $(var_name) not found in Decapode")
   var_idx = only(var_indices)
@@ -1034,7 +1034,7 @@ function upset!(e::SummationDecapode, d::SummationDecapode, var_name::Symbol)
     end
   end
 
-  # Remove parts not in the upset.
+  # Remove parts not in the downset.
   for k in keys(visited)
     rem_parts!(e, k, sort(collect(setdiff(parts(d, k), visited[k]))))
   end

@@ -19,7 +19,7 @@ resolve_overloads!, replace_names!, type_check, check_rule_ambiguity,
 transfer_parents!, transfer_children!,
 unique_lits!,
 bundle_op1s!, bundle_op2s!, bundle_sums!, bundle!, bundle,
-upset, upset!, producing_parts,
+downset, downset!, producing_parts,
 ## language
 @decapode, Term, parse_decapode, term, Eq, DecaExpr,
 # ~~~~~

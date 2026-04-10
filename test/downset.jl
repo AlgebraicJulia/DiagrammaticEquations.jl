@@ -11,7 +11,7 @@ let
   d = @decapode begin
     C::Form0
   end
-  e = upset(d, :C)
+  e = downset(d, :C)
   @test nparts(e, :Var) == 1
   @test e[1, :name] == :C
   @test nparts(e, :Op1) == 0
@@ -25,7 +25,7 @@ let
     B == f(A)
     C == g(B)
   end
-  e = upset(d, :C)
+  e = downset(d, :C)
   @test nparts(e, :Var) == 3
   @test Set(e[:name]) == Set([:A, :B, :C])
   @test nparts(e, :Op1) == 2
@@ -38,7 +38,7 @@ let
     B == f(A)
     C == g(B)
   end
-  e = upset(d, :B)
+  e = downset(d, :B)
   @test nparts(e, :Var) == 2
   @test Set(e[:name]) == Set([:A, :B])
   @test nparts(e, :Op1) == 1
@@ -50,7 +50,7 @@ let
   d = @decapode begin
     C == A * B
   end
-  e = upset(d, :C)
+  e = downset(d, :C)
   @test nparts(e, :Var) == 3
   @test Set(e[:name]) == Set([:A, :B, :C])
   @test nparts(e, :Op2) == 1
@@ -62,7 +62,7 @@ let
   d = @decapode begin
     D == A + B + C
   end
-  e = upset(d, :D)
+  e = downset(d, :D)
   @test nparts(e, :Var) == 4
   @test Set(e[:name]) == Set([:A, :B, :C, :D])
   @test nparts(e, :Σ) == 1
@@ -74,7 +74,7 @@ let
     B == f(A)
     D == g(C)
   end
-  e = upset(d, :B)
+  e = downset(d, :B)
   @test nparts(e, :Var) == 2
   @test Set(e[:name]) == Set([:A, :B])
   @test nparts(e, :Op1) == 1
@@ -87,19 +87,19 @@ let
     C == g(A)
     D == B * C
   end
-  e = upset(d, :D)
+  e = downset(d, :D)
   @test nparts(e, :Var) == 4
   @test Set(e[:name]) == Set([:A, :B, :C, :D])
   @test nparts(e, :Op1) == 2
   @test nparts(e, :Op2) == 1
 end
 
-# Combined Op1, Op2, and Σ in the upset.
+# Combined Op1, Op2, and Σ in the downset.
 let
   d = @decapode begin
     F == h(d(A) + f(g(B) * C) + D)
   end
-  e = upset(d, :F)
+  e = downset(d, :F)
   # F depends on everything.
   @test nparts(e, :Var) == nparts(d, :Var)
   @test nparts(e, :Op1) == nparts(d, :Op1)
@@ -112,7 +112,7 @@ let
   d = @decapode begin
     B == f(A)
   end
-  @test_throws Exception upset(d, :Z)
+  @test_throws Exception downset(d, :Z)
 end
 
 # Upset of u from the Navier-Stokes Stream Function / Poisson Problem
@@ -124,7 +124,7 @@ end
 # and the time derivative branch:
 #   u, du → ∧ᵈᵖ₁₀ → •3 → [♭♯,⋆₁,d̃₁] → •1 → (*,-1) → du̇
 #
-# The upset of u should include only the first chain, excluding the
+# The downset of u should include only the first chain, excluding the
 # time derivative computation, the wedge product, and the literal -1.
 let
   ns = @decapode begin
@@ -138,14 +138,14 @@ let
     ∂ₜ(du) == (-1) * ∘(♭♯, ⋆₁, d̃₁)(∧ᵈᵖ₁₀(u, ⋆(du)))
   end
 
-  e = upset(ns, :u)
+  e = downset(ns, :u)
 
-  # The upset should contain only: du, u, ψ, and two intermediates.
+  # The downset should contain only: du, u, ψ, and two intermediates.
   @test nparts(e, :Var) == 5
-  upset_names = Set(e[:name])
-  @test :u ∈ upset_names
-  @test :du ∈ upset_names
-  @test :ψ ∈ upset_names
+  downset_names = Set(e[:name])
+  @test :u ∈ downset_names
+  @test :du ∈ downset_names
+  @test :ψ ∈ downset_names
 
   # The chain du→⋆→Δ⁻¹→ψ→d→⋆→u uses 4 Op1s.
   @test nparts(e, :Op1) == 4
@@ -158,15 +158,15 @@ let
   @test nparts(e, :TVar) == 0
 
   # The literal -1 is excluded.
-  @test Symbol("-1") ∉ upset_names
+  @test Symbol("-1") ∉ downset_names
 
   # Sanity: the full decapode has more parts.
   @test nparts(ns, :Var) > nparts(e, :Var)
   @test nparts(ns, :Op1) > nparts(e, :Op1)
   @test nparts(ns, :Op2) > nparts(e, :Op2)
 
-  # Verify there is a monic (injective) ACSet morphism from the upset to the
-  # full NS Decapode, proving the upset is a valid inclusion/subobject.
+  # Verify there is a monic (injective) ACSet morphism from the downset to the
+  # full NS Decapode, proving the downset is a valid inclusion/subobject.
   h = homomorphism(e, ns)
   @test is_natural(h)
   @test is_monic(h)
