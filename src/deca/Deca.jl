@@ -8,6 +8,7 @@ using Reexport
 
 import ..infer_types!, ..resolve_overloads!, ..type_check, ..infer_resolve!, ..rewrite!
 import ..arithmetic_operators, ..same_type_rules_op
+import ..producing_parts
 
 export normalize_unicode, varname, infer_types!, resolve_overloads!, type_check,
 infer_resolve!, typename, spacename, recursive_delete_parents,
@@ -45,11 +46,7 @@ function recursive_delete_parents!(d::SummationDecapode, to_delete::Vector{Int64
   foreach(v -> push!(s, v), to_delete)
   while true
     curr = pop!(s)
-    parents = reduce(vcat,
-                     [d[incident(d, curr, :tgt), :src],
-                      d[incident(d, curr, :res), :proj1],
-                      d[incident(d, curr, :res), :proj2],
-                      d[incident(d, curr, [:summation, :sum]), :summand]])
+    parents = producing_parts(d, curr)[:Var]
 
     # Remove the operations which have curr as the result.
     rem_parts!(d, :TVar,    incident(d, curr, :incl))

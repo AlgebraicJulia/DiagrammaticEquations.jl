@@ -25,6 +25,10 @@ end
   include("bundle.jl")
 end
 
+@testset "Downset" begin
+  include("downset.jl")
+end
+
 @testset "Collages" begin
   include("collages.jl")
 end
