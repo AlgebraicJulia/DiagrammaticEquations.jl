@@ -27,9 +27,11 @@ include("ThDEC.jl")
 
 @reexport using .ThDEC
 
-"""    function recursive_delete_parents!(d::SummationDecapode, to_delete::Vector{Int64})
+"""    function recursive_delete_parents(d::SummationDecapode, to_delete::Vector{Int64})
 
-Delete the given nodes and their parents in the Decapode, recursively.
+Return a copy of the Decapode with the given nodes and their parents deleted recursively.
+
+See also: [`recursive_delete_parents!`](@ref).
 """
 function recursive_delete_parents(d::SummationDecapode, to_delete::Vector{Int64})
   e = SummationDecapode{Any, Any, Symbol}()
@@ -38,6 +40,10 @@ function recursive_delete_parents(d::SummationDecapode, to_delete::Vector{Int64}
   return e
 end
 
+"""    function recursive_delete_parents!(d::SummationDecapode, to_delete::Vector{Int64})
+
+Delete the given nodes and their parents in the Decapode, recursively.
+"""
 function recursive_delete_parents!(d::SummationDecapode, to_delete::Vector{Int64})
   # TODO: We assume to_delete vars have no children. Is that okay?
   # TODO: Explicitly check that a Var in to_delete is not a summand.
