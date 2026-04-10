@@ -939,3 +939,106 @@ function bundle(d::SummationDecapode)
   e
 end
 
+"""    function producing_parts(d::SummationDecapode, var_idx::Int)
+
+Return a `Dict{Symbol, Vector{Int}}` describing the operations that produce
+`var_idx` and the variables they consume.  Keys:
+
+  - `:Var`     – input variable indices (Op1 sources, Op2 projections, summands)
+  - `:Op1`     – Op1 indices whose target is `var_idx`
+  - `:Op2`     – Op2 indices whose result is `var_idx`
+  - `:Σ`       – Σ indices whose sum is `var_idx`
+  - `:Summand` – Summand indices belonging to those Σs
+
+This is the shared backward-neighbourhood lookup used by both [`downset!`](@ref)
+and [`recursive_delete_parents!`](@ref).
+"""
+function producing_parts(d::SummationDecapode, var_idx::Int)
+  result = Dict{Symbol, Vector{Int}}(
+    :Var => Int[], :Op1 => Int[], :Op2 => Int[], :Σ => Int[], :Summand => Int[])
+
+  for op1_idx in incident(d, var_idx, :tgt)
+    push!(result[:Op1], op1_idx)
+    push!(result[:Var], d[op1_idx, :src])
+  end
+
+  for op2_idx in incident(d, var_idx, :res)
+    push!(result[:Op2], op2_idx)
+    push!(result[:Var], d[op2_idx, :proj1])
+    push!(result[:Var], d[op2_idx, :proj2])
+  end
+
+  for Σ_idx in incident(d, var_idx, :sum)
+    push!(result[:Σ], Σ_idx)
+    for summand_idx in incident(d, Σ_idx, :summation)
+      push!(result[:Summand], summand_idx)
+      push!(result[:Var], d[summand_idx, :summand])
+    end
+  end
+
+  return result
+end
+
+"""    function downset(d::SummationDecapode, var_name::Symbol)
+
+Compute the downset of a variable: return a new Decapode containing only the
+given variable and all variables and operations which are necessary for
+computing its value.
+
+See also: [`downset!`](@ref), [`recursive_delete_parents`](@ref).
+"""
+function downset(d::SummationDecapode, var_name::Symbol)
+  e = SummationDecapode{Any, Any, Symbol}()
+  copy_parts!(e, d, (:Var, :TVar, :Op1, :Op2, :Σ, :Summand))
+  downset!(e, d, var_name)
+  return e
+end
+
+"""    function downset!(e::SummationDecapode, d::SummationDecapode, var_name::Symbol)
+
+Mutating helper for [`downset`](@ref). Given `e`, a copy of `d`, remove all
+parts from `e` that are not in the downset of `var_name` in `d`.
+"""
+function downset!(e::SummationDecapode, d::SummationDecapode, var_name::Symbol)
+  var_indices = incident(d, var_name, :name)
+  isempty(var_indices) && error("Variable $(var_name) not found in Decapode")
+  var_idx = only(var_indices)
+
+  # BFS backward to find all ancestor variables and operations.
+  # A single Dict maps each ACSet object type to its set of visited indices.
+  visited = Dict{Symbol, Set{Int}}(
+    k => Set{Int}() for k in (:Var, :TVar, :Op1, :Op2, :Σ, :Summand))
+
+  queue = Queue{Int}()
+  enqueue!(queue, var_idx)
+  push!(visited[:Var], var_idx)
+
+  while !isempty(queue)
+    curr = dequeue!(queue)
+    pp = producing_parts(d, curr)
+    for k in (:Op1, :Op2, :Σ, :Summand)
+      union!(visited[k], pp[k])
+    end
+    for v in pp[:Var]
+      if v ∉ visited[:Var]
+        push!(visited[:Var], v)
+        enqueue!(queue, v)
+      end
+    end
+  end
+
+  # Collect TVars for visited variables.
+  for tvar_idx in parts(d, :TVar)
+    if d[tvar_idx, :incl] ∈ visited[:Var]
+      push!(visited[:TVar], tvar_idx)
+    end
+  end
+
+  # Remove parts not in the downset.
+  for k in keys(visited)
+    rem_parts!(e, k, sort(collect(setdiff(parts(d, k), visited[k]))))
+  end
+
+  return e
+end
+
