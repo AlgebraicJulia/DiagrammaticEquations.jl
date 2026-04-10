@@ -29,7 +29,7 @@ end
   include("bundle.jl")
 end
 
-@testset "Upset" begin
+@testset "Downset" begin
   include("downset.jl")
 end
 

@@ -3,7 +3,7 @@ using DiagrammaticEquations
 using Catlab.ACSetInterface
 using Catlab.CategoricalAlgebra
 
-# Upset (ancestor subgraph)
+# Downset (ancestor subgraph)
 # #########################
 
 # A root variable with no ancestors returns just that variable.
@@ -19,7 +19,7 @@ let
   @test nparts(e, :Σ) == 0
 end
 
-# Upset of a variable produced by a single Op1 chain.
+# Downset of a variable produced by a single Op1 chain.
 let
   d = @decapode begin
     B == f(A)
@@ -32,7 +32,7 @@ let
   @test Set(e[:op1]) == Set([:f, :g])
 end
 
-# Upset of an intermediate variable includes only its ancestors.
+# Downset of an intermediate variable includes only its ancestors.
 let
   d = @decapode begin
     B == f(A)
@@ -45,7 +45,7 @@ let
   @test e[1, :op1] == :f
 end
 
-# Upset through an Op2 includes both projections.
+# Downset through an Op2 includes both projections.
 let
   d = @decapode begin
     C == A * B
@@ -57,7 +57,7 @@ let
   @test e[1, :op2] == :*
 end
 
-# Upset through a summation includes all summands.
+# Downset through a summation includes all summands.
 let
   d = @decapode begin
     D == A + B + C
@@ -68,7 +68,7 @@ let
   @test nparts(e, :Σ) == 1
 end
 
-# Upset excludes unrelated branches.
+# Downset excludes unrelated branches.
 let
   d = @decapode begin
     B == f(A)
@@ -80,7 +80,7 @@ let
   @test nparts(e, :Op1) == 1
 end
 
-# Upset with shared ancestors includes them once.
+# Downset with shared ancestors includes them once.
 let
   d = @decapode begin
     B == f(A)
@@ -115,7 +115,7 @@ let
   @test_throws Exception downset(d, :Z)
 end
 
-# Upset of u from the Navier-Stokes Stream Function / Poisson Problem
+# Downset of u from the Navier-Stokes Stream Function / Poisson Problem
 # Formulation (Correct) from:
 # https://algebraicjulia.github.io/Decapodes.jl/dev/navier_stokes/ns/
 #
