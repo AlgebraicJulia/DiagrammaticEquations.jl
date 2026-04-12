@@ -115,6 +115,53 @@ let
   @test_throws Exception downset(d, :Z)
 end
 
+# Multi-variable downset: union of two disjoint chains.
+let
+  d = @decapode begin
+    B == f(A)
+    D == g(C)
+  end
+  e = downset(d, [:B, :D])
+  @test nparts(e, :Var) == 4
+  @test Set(e[:name]) == Set([:A, :B, :C, :D])
+  @test nparts(e, :Op1) == 2
+  @test Set(e[:op1]) == Set([:f, :g])
+end
+
+# Multi-variable downset: shared ancestor is included once.
+let
+  d = @decapode begin
+    B == f(A)
+    C == g(A)
+    D == h(E)
+  end
+  e = downset(d, [:B, :C])
+  @test nparts(e, :Var) == 3
+  @test Set(e[:name]) == Set([:A, :B, :C])
+  @test nparts(e, :Op1) == 2
+end
+
+# Multi-variable downset: single-element vector behaves like the scalar method.
+let
+  d = @decapode begin
+    B == f(A)
+    C == g(B)
+  end
+  e_vec = downset(d, [:C])
+  e_sym = downset(d, :C)
+  @test nparts(e_vec, :Var) == nparts(e_sym, :Var)
+  @test Set(e_vec[:name]) == Set(e_sym[:name])
+  @test nparts(e_vec, :Op1) == nparts(e_sym, :Op1)
+end
+
+# Multi-variable downset: error when any variable is missing.
+let
+  d = @decapode begin
+    B == f(A)
+  end
+  @test_throws Exception downset(d, [:B, :Z])
+end
+
 # Downset of u from the Navier-Stokes Stream Function / Poisson Problem
 # Formulation (Correct) from:
 # https://algebraicjulia.github.io/Decapodes.jl/dev/navier_stokes/ns/
