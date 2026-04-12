@@ -979,6 +979,21 @@ function producing_parts(d::SummationDecapode, var_idx::Int)
   return result
 end
 
+"""    function downset(d::SummationDecapode, var_names::Vector{Symbol})
+
+Compute the downset of a collection of variables: return a new Decapode
+containing only the given variables and all variables and operations which are
+necessary for computing their values.
+
+See also: [`downset!`](@ref), [`recursive_delete_parents`](@ref).
+"""
+function downset(d::SummationDecapode, var_names::Vector{Symbol})
+  e = SummationDecapode{Any, Any, Symbol}()
+  copy_parts!(e, d, (:Var, :TVar, :Op1, :Op2, :Σ, :Summand))
+  downset!(e, d, var_names)
+  return e
+end
+
 """    function downset(d::SummationDecapode, var_name::Symbol)
 
 Compute the downset of a variable: return a new Decapode containing only the
@@ -988,31 +1003,32 @@ computing its value.
 See also: [`downset!`](@ref), [`recursive_delete_parents`](@ref).
 """
 function downset(d::SummationDecapode, var_name::Symbol)
-  e = SummationDecapode{Any, Any, Symbol}()
-  copy_parts!(e, d, (:Var, :TVar, :Op1, :Op2, :Σ, :Summand))
-  downset!(e, d, var_name)
-  return e
+  downset(d, [var_name])
 end
 
-"""    function downset!(e::SummationDecapode, d::SummationDecapode, var_name::Symbol)
+"""    function downset!(e::SummationDecapode, d::SummationDecapode, var_names::Vector{Symbol})
 
 Mutating helper for [`downset`](@ref). Given `e`, a copy of `d`, remove all
-parts from `e` that are not in the downset of `var_name` in `d`.
+parts from `e` that are not in the downset of `var_names` in `d`.
 """
-function downset!(e::SummationDecapode, d::SummationDecapode, var_name::Symbol)
-  var_indices = incident(d, var_name, :name)
-  isempty(var_indices) && error("Variable $(var_name) not found in Decapode")
-  var_idx = only(var_indices)
-
-  # BFS backward to find all ancestor variables and operations.
-  # A single Dict maps each ACSet object type to its set of visited indices.
+function downset!(e::SummationDecapode, d::SummationDecapode, var_names::Vector{Symbol})
   visited = Dict{Symbol, Set{Int}}(
     k => Set{Int}() for k in (:Var, :TVar, :Op1, :Op2, :Σ, :Summand))
 
   queue = Queue{Int}()
-  enqueue!(queue, var_idx)
-  push!(visited[:Var], var_idx)
 
+  # Seed the BFS with all requested variables.
+  for var_name in var_names
+    var_indices = incident(d, var_name, :name)
+    isempty(var_indices) && error("Variable $(var_name) not found in Decapode")
+    var_idx = only(var_indices)
+    if var_idx ∉ visited[:Var]
+      push!(visited[:Var], var_idx)
+      enqueue!(queue, var_idx)
+    end
+  end
+
+  # BFS backward to find all ancestor variables and operations.
   while !isempty(queue)
     curr = dequeue!(queue)
     pp = producing_parts(d, curr)
@@ -1040,5 +1056,14 @@ function downset!(e::SummationDecapode, d::SummationDecapode, var_name::Symbol)
   end
 
   return e
+end
+
+"""    function downset!(e::SummationDecapode, d::SummationDecapode, var_name::Symbol)
+
+Mutating helper for [`downset`](@ref). Given `e`, a copy of `d`, remove all
+parts from `e` that are not in the downset of `var_name` in `d`.
+"""
+function downset!(e::SummationDecapode, d::SummationDecapode, var_name::Symbol)
+  downset!(e, d, [var_name])
 end
 

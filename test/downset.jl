@@ -29,7 +29,7 @@ let
   @test nparts(e, :Var) == 3
   @test Set(e[:name]) == Set([:A, :B, :C])
   @test nparts(e, :Op1) == 2
-  @test Set(e[:op1]) == Set([:f, :g])
+  @test issetequal(e[:op1], [:f, :g])
 end
 
 # Downset of an intermediate variable includes only its ancestors.
@@ -40,7 +40,7 @@ let
   end
   e = downset(d, :B)
   @test nparts(e, :Var) == 2
-  @test Set(e[:name]) == Set([:A, :B])
+  @test issetequal(e[:name], [:A, :B])
   @test nparts(e, :Op1) == 1
   @test e[1, :op1] == :f
 end
@@ -52,7 +52,7 @@ let
   end
   e = downset(d, :C)
   @test nparts(e, :Var) == 3
-  @test Set(e[:name]) == Set([:A, :B, :C])
+  @test issetequal(e[:name], [:A, :B, :C])
   @test nparts(e, :Op2) == 1
   @test e[1, :op2] == :*
 end
@@ -64,7 +64,7 @@ let
   end
   e = downset(d, :D)
   @test nparts(e, :Var) == 4
-  @test Set(e[:name]) == Set([:A, :B, :C, :D])
+  @test issetequal(e[:name], [:A, :B, :C, :D])
   @test nparts(e, :Σ) == 1
 end
 
@@ -76,7 +76,7 @@ let
   end
   e = downset(d, :B)
   @test nparts(e, :Var) == 2
-  @test Set(e[:name]) == Set([:A, :B])
+  @test issetequal(e[:name], [:A, :B])
   @test nparts(e, :Op1) == 1
 end
 
@@ -89,7 +89,7 @@ let
   end
   e = downset(d, :D)
   @test nparts(e, :Var) == 4
-  @test Set(e[:name]) == Set([:A, :B, :C, :D])
+  @test issetequal(e[:name], [:A, :B, :C, :D])
   @test nparts(e, :Op1) == 2
   @test nparts(e, :Op2) == 1
 end
@@ -113,6 +113,53 @@ let
     B == f(A)
   end
   @test_throws Exception downset(d, :Z)
+end
+
+# Multi-variable downset: union of two disjoint chains.
+let
+  d = @decapode begin
+    B == f(A)
+    D == g(C)
+  end
+  e = downset(d, [:B, :D])
+  @test nparts(e, :Var) == 4
+  @test issetequal(e[:name], [:A, :B, :C, :D])
+  @test nparts(e, :Op1) == 2
+  @test issetequal(e[:op1], [:f, :g])
+end
+
+# Multi-variable downset: shared ancestor is included once.
+let
+  d = @decapode begin
+    B == f(A)
+    C == g(A)
+    D == h(E)
+  end
+  e = downset(d, [:B, :C])
+  @test nparts(e, :Var) == 3
+  @test issetequal(e[:name], [:A, :B, :C])
+  @test nparts(e, :Op1) == 2
+end
+
+# Multi-variable downset: single-element vector behaves like the scalar method.
+let
+  d = @decapode begin
+    B == f(A)
+    C == g(B)
+  end
+  e_vec = downset(d, [:C])
+  e_sym = downset(d, :C)
+  @test nparts(e_vec, :Var) == nparts(e_sym, :Var)
+  @test issetequal(e_vec[:name], e_sym[:name])
+  @test nparts(e_vec, :Op1) == nparts(e_sym, :Op1)
+end
+
+# Multi-variable downset: error when any variable is missing.
+let
+  d = @decapode begin
+    B == f(A)
+  end
+  @test_throws Exception downset(d, [:B, :Z])
 end
 
 # Downset of u from the Navier-Stokes Stream Function / Poisson Problem
@@ -149,7 +196,7 @@ let
 
   # The chain du→⋆→Δ⁻¹→ψ→d→⋆→u uses 4 Op1s.
   @test nparts(e, :Op1) == 4
-  @test Set(e[:op1]) == Set([:⋆, :Δ⁻¹, :d, :⋆])
+  @test issetequal(e[:op1], [:⋆, :Δ⁻¹, :d, :⋆])
 
   # No Op2s (the ∧ᵈᵖ₁₀ and * are excluded).
   @test nparts(e, :Op2) == 0
