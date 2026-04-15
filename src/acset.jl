@@ -351,6 +351,8 @@ function find_chains(d::SummationDecapode;
   @show infer_states(d)
   @show filter(!isnothing, infer_states(d))
   @show Where(:op1, collect(black_list))
+  @show Where(:op1, collect(black_list)).rhs
+  @show Where(:op1, collect(black_list)).rhs(d)
   chain_starts = (From(:Op1) |> 
   Where(:src, d[:res] ∪ d[:sum] ∪ filter(!isnothing, infer_states(d))) |
   Where(:src, From(:Op1=>:tgt) |> Where(:op1, collect(black_list))))(d)
