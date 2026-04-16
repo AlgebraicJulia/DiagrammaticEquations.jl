@@ -348,14 +348,9 @@ function find_chains(d::SummationDecapode;
     black_list::Set{Symbol} = Set{Symbol}())
   chains = []
   visited = falses(nparts(d, :Op1))
-  @show infer_states(d)
-  @show filter(!isnothing, infer_states(d))
-  @show Where(:op1, collect(black_list))
-  @show Where(:op1, collect(black_list)).rhs
-  @show Where(:op1, collect(black_list)).rhs(d)
   chain_starts = (From(:Op1) |> 
   Where(:src, d[:res] ∪ d[:sum] ∪ filter(!isnothing, infer_states(d))) |
-  Where(:src, From(:Op1=>:tgt) |> Where(:op1, collect(black_list))))(d)
+  Where(:src, From(:Op1=>:tgt) |> Where(:op1, collect(black_list))))(d)[:Op1]
 
   passes_white_list(x) = isempty(white_list) ? true : x ∈ white_list
   passes_black_list(x) = x ∉ black_list
