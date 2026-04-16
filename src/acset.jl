@@ -535,16 +535,18 @@ the base (first operand) type, regardless of the exponent (second operand) type.
 function infer_power_types!(d::SummationDecapode, op_idx::Int)
   d[op_idx, :op2] in POWER_OPS || return false
 
-  base_var = d[op_idx, :proj1]
-  res_var = d[op_idx, :res]
-  base_type = d[base_var, :type]
-  res_type = d[res_var, :type]
+  base_type = d[d[op_idx, :proj1], :type]
+  res_type = d[d[op_idx, :res], :type]
+
+  # Nothing to infer if neither type is known, or both are already concrete.
+  (base_type == :infer && res_type == :infer) && return false
+  (base_type != :infer && res_type != :infer) && return false
 
   applied = false
   # If the base type is known, infer the result type from it.
-  applied |= safe_modifytype!(d, res_var, base_type)
+  applied |= safe_modifytype!(d, d[op_idx, :res], base_type)
   # If the result type is known, infer the base type from it.
-  applied |= safe_modifytype!(d, base_var, res_type)
+  applied |= safe_modifytype!(d, d[op_idx, :proj1], res_type)
   applied
 end
 
