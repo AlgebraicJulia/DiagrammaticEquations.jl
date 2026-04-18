@@ -32,9 +32,10 @@ to_graphviz, # Re-exported from Catlab
 ## rewrite
 average_rewrite,
 ## openoperators
-transfer_parents!, transfer_children!, replace_op1!, replace_op2!, replace_all_op1s!, replace_all_op2s!,
-Rule, infer_resolve!, type_check, DecaTypeExeception
-
+transfer_parents!, transfer_children!, replace_op1!, replace_op2!,
+replace_all_op1s!, replace_all_op2s!, Rule, infer_resolve!, type_check,
+DecaTypeExeception, AbstractSDRewriteRule, Op1SDRule, Op2SDRule, apply_rule!,
+rewrite!
 
 using Catlab.Theories
 import Catlab.Theories: otimes, oplus, compose, ⊗, ⊕, ⋅, associate, associate_unit, Ob, Hom, dom, codom
