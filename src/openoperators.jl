@@ -121,7 +121,7 @@ replace_op1!(d::SummationDecapode, r::Op1SDRule) =
   replace_op1!(d, r.LHS, r.RHS)
 
 apply_rule!(d::SummationDecapode, r::Op1SDRule) =
-  replace_op1!(d, r)
+  replace_all_op1s!(d, r)
 
 """    function replace_all_op1s!(d::SummationDecapode, LHS::Union{Symbol, SummationDecapode}, RHS::Union{Symbol, SummationDecapode})
 
@@ -265,7 +265,7 @@ replace_op2!(d::SummationDecapode, r::Op2SDRule) =
   replace_op2!(d, r.LHS, r.RHS, r.proj1, r.proj2)
 
 apply_rule!(d::SummationDecapode, r::Op2SDRule) =
-  replace_op2!(d, r)
+  replace_all_op2s!(d, r)
 
 """    function replace_all_op2s!(d::SummationDecapode, LHS::Union{Symbol, SummationDecapode}, RHS::Union{Symbol, SummationDecapode}, proj1::Int, proj2::Int)
 
@@ -315,4 +315,3 @@ replace_all_op2s!(d::SummationDecapode, r::Op2SDRule) =
 
 rewrite!(d::SummationDecapode, rules::AbstractVector{AbstractSDRewriteRule}) =
   foreach(r -> apply_rule!(d,r), rules)
-

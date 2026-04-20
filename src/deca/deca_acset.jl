@@ -197,15 +197,6 @@ function vec_to_dec!(d::SummationDecapode)
   d
 end
 
-# TODO: When SummationDecapodes are annotated with the degree of their space,
-# use dispatch to choose the correct set of rules.
-"""    function resolve_overloads!(d::SummationDecapode)
-
-Resolve function overloads based on types of src and tgt.
-"""
-resolve_overloads!(d::SummationDecapode) =
-  resolve_overloads!(d, op1_res_rules_2D, op2_res_rules_2D)
-
 # Default Rewrite Rules
 # ---------------------
 
@@ -213,7 +204,7 @@ rewrite_rules_2D = Vector{AbstractSDRewriteRule}([
   Op1SDRule(
     :Δ₀,
     @decapode begin
-      y == ∘(d,δ)(X)
+      y == ∘(d,⋆,d,⋆)(X)
     end),
 
   Op1SDRule(
@@ -272,5 +263,4 @@ rewrite_rules_2D = Vector{AbstractSDRewriteRule}([
     end)])
 
 rewrite!(d::SummationDecapode) =
-  rewrite!(d, rewrite_rules_2D)
-
+  (infer_resolve!(d); rewrite!(d, rewrite_rules_2D))
