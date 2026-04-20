@@ -332,6 +332,6 @@ end
     ∂ₜ(V) == V̇
   end
   rewrite!(Brusselator)
-  @test sort(string.(Brusselator[:op1])) == sort(string.([:d,:⋆,:d,:⋆,:d,:⋆,:d,:⋆,:∂ₜ,:∂ₜ]))
+  @test sort(Brusselator[:op1], by=string) == sort([:d,:⋆,:d,:⋆,:d,:⋆,:d,:⋆,:∂ₜ,:∂ₜ], by=string)
 end
 
