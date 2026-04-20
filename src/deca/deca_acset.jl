@@ -204,7 +204,7 @@ rewrite_rules_2D = Vector{AbstractSDRewriteRule}([
   Op1SDRule(
     :Δ₀,
     @decapode begin
-      y == ∘(d,⋆,d,⋆)(X)
+      y == ∘(d,δ)(X)
     end),
 
   Op1SDRule(

@@ -54,7 +54,41 @@ See also: [`replace_all_op1s!`](@ref)
 """
 function replace_op1!(d::SummationDecapode, LHS::Symbol, RHS::SummationDecapode)
   validate_op1_replacement(d, LHS, RHS)
-  isempty(incident(d, LHS, :op1)) && return 0
+  if isempty(incident(d, LHS, :op1))
+    nparts(RHS, :Op1) == 1 || return 0
+    nparts(RHS, :Op2) == 0 || return 0
+    rhs_op = only(RHS[:op1])
+
+    function replace_in_chain(op)
+      if op isa Symbol
+        return op == LHS ? (rhs_op, true) : (op, false)
+      elseif op isa AbstractVector
+        changed = false
+        flattened = Any[]
+        for sub_op in op
+          new_sub_op, sub_changed = replace_in_chain(sub_op)
+          changed = changed || sub_changed
+          if new_sub_op isa AbstractVector
+            append!(flattened, new_sub_op)
+          else
+            push!(flattened, new_sub_op)
+          end
+        end
+        return changed ? (flattened, true) : (op, false)
+      else
+        return (op, false)
+      end
+    end
+
+    for op1_id in 1:nparts(d, :Op1)
+      new_op, changed = replace_in_chain(d[op1_id, :op1])
+      if changed
+        d[op1_id, :op1] = new_op
+        return op1_id
+      end
+    end
+    return 0
+  end
 
   # Identify the "matched" operation.
   LHS_op1 = first(incident(d, LHS, :op1))
@@ -313,5 +347,12 @@ end
 replace_all_op2s!(d::SummationDecapode, r::Op2SDRule) =
   replace_all_op2s!(d, r.LHS, r.RHS, r.proj1, r.proj2)
 
-rewrite!(d::SummationDecapode, rules::AbstractVector{AbstractSDRewriteRule}) =
-  foreach(r -> apply_rule!(d,r), rules)
+function rewrite!(d::SummationDecapode, rules::AbstractVector{AbstractSDRewriteRule})
+  any_applied = true
+  while any_applied
+    any_applied = false
+    for r in rules
+      any_applied = apply_rule!(d, r) || any_applied
+    end
+  end
+end
