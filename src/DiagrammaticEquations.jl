@@ -14,7 +14,7 @@ oapply, unique_by, unique_by!, OpenSummationDecapodeOb, OpenSummationDecapode, O
 apex, @relation, # Re-exported from Catlab
 ## acset
 SchDecapode, SchNamedDecapode, AbstractDecapode, AbstractNamedDecapode, NamedDecapode, SummationDecapode,
-contract_operators!, contract_operators, add_constant!, add_parameter, fill_names!, dot_rename!, is_expanded, expand_operators, infer_state_names, infer_terminal_names, recognize_types,
+contract_operators!, contract_operators, add_constant!, add_parameter, fill_names!, dot_rename!, is_expanded, expand_operators, expand_operators!, infer_state_names, infer_terminal_names, recognize_types,
 resolve_overloads!, replace_names!, type_check, check_rule_ambiguity,
 transfer_parents!, transfer_children!,
 unique_lits!,
