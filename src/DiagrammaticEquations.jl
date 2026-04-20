@@ -2,8 +2,6 @@
 """
 module DiagrammaticEquations
 
-using Catlab
-
 export
 DerivOp, append_dot, normalize_unicode, infer_states, infer_types!,
 # Deca
@@ -12,7 +10,7 @@ recursive_delete_parents, spacename, varname, unicode!, vec_to_dec!,
 ## collages
 Collage, collate,
 ## composition
-oapply, unique_by, unique_by!, OpenSummationDecapodeOb, OpenSummationDecapode, Open, default_composition_diagram,
+oapply, unique_by, unique_by!, OpenSummationDecapodeOb, OpenSummationDecapode, Open, default_composition_diagram, @default_composition_diagram,
 apex, @relation, # Re-exported from Catlab
 ## acset
 SchDecapode, SchNamedDecapode, AbstractDecapode, AbstractNamedDecapode, NamedDecapode, SummationDecapode,
@@ -20,6 +18,8 @@ contract_operators!, contract_operators, add_constant!, add_parameter, fill_name
 resolve_overloads!, replace_names!, type_check, check_rule_ambiguity,
 transfer_parents!, transfer_children!,
 unique_lits!,
+bundle_op1s!, bundle_op2s!, bundle_sums!, bundle!, bundle,
+downset, downset!, producing_parts,
 ## language
 @decapode, Term, parse_decapode, term, Eq, DecaExpr,
 # ~~~~~
@@ -57,9 +57,12 @@ normalize_unicode(s::Symbol)  = Symbol(normalize_unicode(String(s)))
 DerivOp = Symbol("∂ₜ")
 append_dot(s::Symbol) = Symbol(string(s)*'\U0307')
 
+include("DecapodeACSet.jl")
+using .DecapodeACSet
+
 include("acset.jl")
 include("language.jl")
-include("parser.jl")
+include("Parser.jl")
 include("composition.jl")
 include("collages.jl")
 include("visualization.jl")
@@ -75,6 +78,7 @@ include("SymbolicUtilsInterop.jl")
 
 @reexport using .Deca
 @reexport using .SymbolicUtilsInterop
+@reexport using .Parser 
 
 include("acset2symbolic.jl")
 

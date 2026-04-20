@@ -38,7 +38,7 @@ function parse_decapode(expr::Expr)
             Expr(:call, :(==), lhs, rhs) => Eq(term(lhs), term(rhs))
             _ => error("The line $line is malformed")
         end
-    end |> skipmissing |> collect
+    end |> skipmissing |> Base.collect
     judges = []
     eqns = []
     foreach(stmts) do s
@@ -222,5 +222,12 @@ end
 Construct a SummationDecapode using the Decapode Domain-Specific Language.
 """
 macro decapode(e)
-  :(SummationDecapode(parse_decapode($(Meta.quot(e)))))
+  :(SummationDecapode(parse_decapode($(Meta.quot(e))))) |> esc
+end
+
+# Verify that @decapode is usable at module-level in source (not just in tests/REPL).
+const _LANGUAGE_CHECK = @decapode begin
+  A::Form0{X}
+  B::Form1{X}
+  B == d₀(A)
 end

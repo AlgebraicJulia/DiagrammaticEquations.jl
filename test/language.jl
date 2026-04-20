@@ -1,5 +1,6 @@
 using Test
-using Catlab
+using Catlab.ACSetInterface
+using Catlab.CategoricalAlgebra
 using LinearAlgebra
 using MLStyle
 using Base.Iterators
@@ -7,7 +8,7 @@ using Base.Iterators
 using DiagrammaticEquations
 using DiagrammaticEquations.Deca
 
-import DiagrammaticEquations: Judgement, filterfor_ec_types
+import DiagrammaticEquations: Judgement, filterfor_ec_types, Var
 
 @testset "Parsing" begin
   # Tests
@@ -323,6 +324,25 @@ end
   @test nparts(advdiffdp, :Op2) == 1
   @test nparts(advdiffdp, :Σ) == 1
   @test nparts(advdiffdp, :Summand) == 2
+end
+
+@testset "Variable Interpolation" begin
+  oscillator = @decapode begin
+   (X,V)::Form0
+   k::Constant
+   ∂ₜ(X) == V
+   ∂ₜ(V) == 5.0 * X
+  end
+  
+  k = 5.0
+  oscillator_interpolated = @decapode begin
+   (X,V)::Form0
+   k::Constant
+   ∂ₜ(X) == V
+   ∂ₜ(V) == $k * X
+  end
+  
+  @test oscillator == oscillator_interpolated
 end
 
 @testset "State Variable Inference" begin

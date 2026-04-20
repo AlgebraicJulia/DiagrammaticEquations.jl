@@ -8,7 +8,7 @@ using ..decapodes
 using ..Deca
 
 using MLStyle
-using SymbolicUtils
+import SymbolicUtils
 using SymbolicUtils: Symbolic, BasicSymbolic, FnType, Sym, symtype
 
 # name collision with decapodes.Equation

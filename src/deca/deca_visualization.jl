@@ -1,7 +1,6 @@
 ### Drawing of Decapodes
-import Catlab.Graphics.Graphviz
-using Catlab.Graphics
-using Catlab.Graphics.Graphviz
+import Catlab.Graphics: to_graphviz
+import Catlab.Graphics.GraphvizGraphs: to_graphviz_property_graph
 using Catlab.Graphs.PropertyGraphs
 using Catlab.Graphs
 using Catlab.Graphs.BasicGraphs
@@ -16,8 +15,8 @@ using Colors
 
 Visualize the given Decapode through Graphviz. Ensure that you have called `using Catlab.Graphics` before-hand, and have a way of visualizing SVG files in your current environment.
 """
-Graphics.to_graphviz(F::AbstractDecapode; directed = true, verbose = true, kw...) =
-to_graphviz(GraphvizGraphs.to_graphviz_property_graph(F; typename, directed, verbose, kw...))
+to_graphviz(F::AbstractDecapode; directed = true, verbose = true, kw...) =
+to_graphviz(to_graphviz_property_graph(F; typename, directed, verbose, kw...))
 
 Decapode_edge_label(s::Symbol) = String(s)
 Decapode_edge_label(s::Vector{Symbol}) = join(String.(s), "⋅")
@@ -85,12 +84,12 @@ function labelcolor(s::T, colordict::Dict{SubString{String}, U}) where {T, U}
     String(get(colordict, head, "#ffffff"))
 end
 
-function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; typename=spacename, directed = true, prog = "dot", node_attrs=Dict(), edge_attrs=Dict(), graph_attrs=Dict(), node_labels = true, verbose = true, color = false, kw...)
+function to_graphviz_property_graph(d::SummationDecapode; typename=spacename, directed = true, prog = "dot", node_attrs=Dict(), edge_attrs=Dict(), graph_attrs=Dict(), node_labels = true, verbose = true, color = false, kw...)
     default_graph_attrs = Dict(:rankdir => "TB")
     default_edge_attrs = Dict()
     default_node_attrs = Dict(:shape => "oval")
 
-    G = to_graphviz_property_graph(Catlab.Graphs.Graph(0); prog, node_labels,
+    G = to_graphviz_property_graph(Graphs.Graph(0); prog, node_labels,
       node_attrs = merge!(default_node_attrs, node_attrs),  
       edge_attrs = merge!(default_edge_attrs, edge_attrs),  
       graph_attrs = merge!(default_graph_attrs, graph_attrs))

@@ -1,17 +1,19 @@
 using Test
-using Catlab
+import Catlab.CategoricalAlgebra: is_isomorphic
+
 using DiagrammaticEquations
 
 # Import Decapodes AST Nodes
-using DiagrammaticEquations: Lit, AppCirc1, App1, App2, Plus, Mult, Tan, Eq
+using DiagrammaticEquations: Lit, AppCirc1, App1, App2, Plus, Mult, Tan, Eq, Var, Judgement
 
 # Import PEG Rules
 using PEG
-using DiagrammaticEquations: DecapodeExpr, SingleLineComment, MultiLineComment,
-  Line, Statement, Judgement, TypeName, Equation, SumOperation,
-  PrecMinusOperation, PrecDivOperation, MultOperation, PrecPowerOperation, Term,
+import DiagrammaticEquations.Parser: DecapodeExpr, SingleLineComment, MultiLineComment,
+  Line, Statement, AnyJudgement, TypeName, Equation, SumOperation,
+  PrecMinusOperation, PrecDivOperation, MultOperation, PrecPowerOperation, Term as ParserTerm,
   Grouping, Derivative, Compose, Call, CallName, Operator, List, CallList, Atom,
-  Ident, SciLiteral, PrecMinusOp, PrecDivOp, PrecPowerOp, OpSuffixes
+  Ident, SciLiteral, PrecMinusOp, PrecDivOp, PrecPowerOp, OpSuffixes, LieBracket, Magnitude,
+  @decapode_str
 
 LS = Lit ∘ Symbol
 
@@ -57,16 +59,16 @@ end
 end
 
 @testset "Statements" begin
-  @test DiagrammaticEquations.Statement("a::b")[1] == Judgement(:a, :b, :I)
-  @test DiagrammaticEquations.Statement("a == b")[1] == Eq(Var(:a), Var(:b))
+  @test DiagrammaticEquations.Parser.Statement("a::b")[1] == Judgement(:a, :b, :I)
+  @test DiagrammaticEquations.Parser.Statement("a == b")[1] == Eq(Var(:a), Var(:b))
 end
 
 @testset "Judgements" begin
-  @test Judgement("alpha::beta")[1] == Judgement(:alpha, :beta, :I)
-  @test Judgement("a::Form{X}")[1] == Judgement(:a, :Form, :X)
-  @test Judgement("(a, b, c)::d")[1] ==
+  @test AnyJudgement("alpha::beta")[1] == Judgement(:alpha, :beta, :I)
+  @test AnyJudgement("a::Form{X}")[1] == Judgement(:a, :Form, :X)
+  @test AnyJudgement("(a, b, c)::d")[1] ==
     [Judgement(:a, :d, :I), Judgement(:b, :d, :I), Judgement(:c, :d, :I)]
-  @test Judgement("(a, b, c)::Form{X}")[1] ==
+  @test AnyJudgement("(a, b, c)::Form{X}")[1] ==
     [Judgement(:a, :Form, :X), Judgement(:b, :Form, :X), Judgement(:c, :Form, :X)]
 end
 
@@ -160,11 +162,11 @@ end
 end
 
 @testset "Terms" begin
-  @test Term("∂ₜ(X)")[1] == Tan(Var(:X))
-  @test Term("a")[1] == Var(:a)
-  @test Term("12")[1] == LS("12")
-  @test Term("∘(a, b)(c)")[1] == AppCirc1([:a, :b], Var(:c))
-  @test Term("a(b)")[1] == App1(:a, Var(:b))
+  @test ParserTerm("∂ₜ(X)")[1] == Tan(Var(:X))
+  @test ParserTerm("a")[1] == Var(:a)
+  @test ParserTerm("12")[1] == LS("12")
+  @test ParserTerm("∘(a, b)(c)")[1] == AppCirc1([:a, :b], Var(:c))
+  @test ParserTerm("a(b)")[1] == App1(:a, Var(:b))
 end
 
 @testset "Grouping" begin
@@ -210,6 +212,12 @@ end
   @test Call("+(3, 3)")[1] == App2(:+, LS("3"), LS("3"))
   @test Call("*(3, 2)")[1] == App2(:*, LS("3"), LS("2"))
   @test Call("∧(A, 2)")[1] == App2(:∧, Var(:A), LS("2"))
+end
+
+@testset "Circumfix Notation" begin
+  @test LieBracket("[C,D]")[1] == App2(:L₁, Var(:C), Var(:D))
+  @test Magnitude("|x|")[1] == App1(:mag, Var(:x))
+  @test Magnitude("|f(x)|")[1] == App1(:mag, App1(:f, Var(:x)))
 end
 
 @testset "Function Call Names" begin
@@ -397,6 +405,22 @@ end
       Γ::Form1
       n::Constant
                 
+      ∂ₜ(h) == (∘(⋆, d, ⋆))(((Γ * d(h)) ∧ mag(♯(d(h))) ^ (n - 1)) ∧ h ^ (n + 2))
+    end)
+
+  # Support the magnitude circumfix notation |expr| in the Halfar equation.
+  @test is_isomorphic(
+    decapode"
+      h::Form0
+      Γ::Form1
+      n::Constant
+
+      ∂ₜ(h) == (∘(⋆, d, ⋆))(((Γ * d(h)) ∧ |♯(d(h))| ^ (n - 1)) ∧ h ^ (n + 2))",
+    @decapode begin
+      h::Form0
+      Γ::Form1
+      n::Constant
+
       ∂ₜ(h) == (∘(⋆, d, ⋆))(((Γ * d(h)) ∧ mag(♯(d(h))) ^ (n - 1)) ∧ h ^ (n + 2))
     end)
   
@@ -782,4 +806,33 @@ end
     =#
     A == d(B)
     ")
+
+  # Support parsing the Lie bracket.
+  # The Lie advection equation:
+  @test decapode"
+          Y::DualForm1
+          X::Constant
+
+          ∂ₜ(Y) == [X,Y]
+        " ==
+        @decapode begin
+          Y::DualForm1
+          X::Constant
+
+          ∂ₜ(Y) == L₁(X,Y)
+        end
+  # This equation corresponds to diffusion along the contour lines of a vector field X,
+  # proportional to the magnitude of X.
+  @test decapode"
+          Y::DualForm1
+          X::Constant
+
+          ∂ₜ(Y) == -1 * [X,[X,Y]]
+        " ==
+        @decapode begin
+          Y::DualForm1
+          X::Constant
+
+          ∂ₜ(Y) == -1 * L₁(X,L₁(X,Y))
+        end
 end
