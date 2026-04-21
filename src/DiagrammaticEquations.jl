@@ -14,7 +14,7 @@ oapply, unique_by, unique_by!, OpenSummationDecapodeOb, OpenSummationDecapode, O
 apex, @relation, # Re-exported from Catlab
 ## acset
 SchDecapode, SchNamedDecapode, AbstractDecapode, AbstractNamedDecapode, NamedDecapode, SummationDecapode,
-contract_operators!, contract_operators, add_constant!, add_parameter, fill_names!, dot_rename!, is_expanded, expand_operators, infer_state_names, infer_terminal_names, recognize_types,
+contract_operators!, contract_operators, add_constant!, add_parameter, fill_names!, dot_rename!, is_expanded, expand_operators, expand_operators!, infer_state_names, infer_terminal_names, recognize_types,
 resolve_overloads!, replace_names!, type_check, check_rule_ambiguity,
 transfer_parents!, transfer_children!,
 unique_lits!,
@@ -32,9 +32,10 @@ to_graphviz, # Re-exported from Catlab
 ## rewrite
 average_rewrite,
 ## openoperators
-transfer_parents!, transfer_children!, replace_op1!, replace_op2!, replace_all_op1s!, replace_all_op2s!,
-Rule, infer_resolve!, type_check, DecaTypeExeception
-
+transfer_parents!, transfer_children!, replace_op1!, replace_op2!,
+replace_all_op1s!, replace_all_op2s!, Rule, infer_resolve!, type_check,
+DecaTypeExeception, AbstractSDRewriteRule, Op1SDRule, Op2SDRule, apply_rule!,
+rewrite!
 
 using Catlab.Theories
 import Catlab.Theories: otimes, oplus, compose, ⊗, ⊕, ⋅, associate, associate_unit, Ob, Hom, dom, codom

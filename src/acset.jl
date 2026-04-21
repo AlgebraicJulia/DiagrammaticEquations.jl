@@ -286,6 +286,40 @@ function expand_operators(d::SummationDecapode)
   return e
 end
 
+"""    function expand_operators!(d::SummationDecapode)
+
+In-place: find Op1s that are compositions, and expand them with intermediate variables.
+"""
+function expand_operators!(d::SummationDecapode)
+  chains = filter(parts(d, :Op1)) do op_idx
+    d[op_idx, :op1] isa AbstractArray
+  end
+  isempty(chains) && return d
+  ops_to_remove = Int[]
+  for op_idx in chains
+    steps = d[op_idx, :op1]
+    orig_src = d[op_idx, :src]
+    orig_tgt = d[op_idx, :tgt]
+    if length(steps) == 1
+      add_part!(d, :Op1, op1=only(steps), src=orig_src, tgt=orig_tgt)
+    else
+      current_src = orig_src
+      for (i, step) in enumerate(steps)
+        if i == length(steps)
+          add_part!(d, :Op1, op1=step, src=current_src, tgt=orig_tgt)
+        else
+          new_var = add_part!(d, :Var, type=:infer, name=Symbol("•_$(op_idx)_$(i)"))
+          add_part!(d, :Op1, op1=step, src=current_src, tgt=new_var)
+          current_src = new_var
+        end
+      end
+    end
+    push!(ops_to_remove, op_idx)
+  end
+  rem_parts!(d, :Op1, sort!(ops_to_remove))
+  d
+end
+
 """    function contract_operators(d::SummationDecapode; white_list::Set{Symbol} = Set{Symbol}(), black_list::Set{Symbol} = Set{Symbol}())
 
 Find chains of Op1s in the given Decapode, and replace them with
