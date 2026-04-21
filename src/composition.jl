@@ -309,3 +309,4 @@ macro default_composition_diagram(args...)
   models = [esc(arg) for arg in args]
   :(default_composition_diagram([$(models...)], [$(names...)]))
 end
+
