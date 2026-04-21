@@ -1130,8 +1130,6 @@ end
   @test_broken arithmetic[2, :name] == :A && arithmetic[2, :type] == :Form0
 
   # Infer types and resolve overloads for the Halfar equation.
-  # TODO: This test isn't passing right now because we can't ignore type of the power
-  # in the exponent.
   let
     d = @decapode begin
       h::Form0
@@ -1142,7 +1140,7 @@ end
     end
     d = expand_operators(d)
     infer_resolve!(d)
-    @test_broken d == @acset SummationDecapode{Any, Any, Symbol} begin
+    @test d == @acset SummationDecapode{Any, Any, Symbol} begin
       Var = 19
       TVar = 1
       Op1 = 8
@@ -1160,7 +1158,7 @@ end
       sum = [5]
       op1 = [:∂ₜ, :d₀, :d₀, :♯ᵖᵖ, :norm, :⋆₁, :dual_d₁, :⋆₀⁻¹]
       op2 = [:*, :-, :^, :∧₁₀, :^, :∧₁₀]
-      type = [:Form0, :Form1, :Constant, :Form0, :infer, :Form1, :Form1, :Form1, :Form1, :Form0, :Form0, :PVF, :Form1, :infer, :Literal, :Form0, :Literal, :DualForm1, :DualForm2]
+      type = [:Form0, :Form1, :Constant, :Form0, :Form0, :Form1, :Form1, :Form1, :Form1, :Form0, :Form0, :PVF, :Form1, :Form0, :Literal, :Form0, :Literal, :DualForm1, :DualForm2]
       name = [:h, :Γ, :n, :ḣ, :sum_1, Symbol("•2"), Symbol("•3"), Symbol("•4"), Symbol("•5"), Symbol("•6"), Symbol("•7"), Symbol("•8"), Symbol("•9"), Symbol("•10"), Symbol("1"), Symbol("•11"), Symbol("2"), Symbol("•_6_1"), Symbol("•_6_2")]
     end
   end

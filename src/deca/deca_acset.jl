@@ -111,11 +111,6 @@ op2_operators = [
   arithmetic_operators(:*, true)...,
   arithmetic_operators(:^, true)...,
 
-  # TODO: Add some intermediate result type to avoid having infers
-  # Rule(:Form0, [:Form0, :infer], :^),
-  # Rule(:Form0, [:Form0, :infer], :.^),
-  # Rule(:Form1, [:Form1, :infer], :^),
-  # Rule(:Form1, [:Form1, :infer], :.^)
 ]
 
 # TODO: When SummationDecapodes are annotated with the degree of their space,

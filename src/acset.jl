@@ -559,6 +559,31 @@ function infer_sum_types!(d::SummationDecapode, Σ_idx::Int)
   return applied
 end
 
+const POWER_OPS = Set([:^, :.^])
+
+"""    infer_power_types!(d::SummationDecapode, op_idx::Int)
+
+For exponentiation operators (`^` and `.^`), infer that the result type matches
+the base (first operand) type, regardless of the exponent (second operand) type.
+"""
+function infer_power_types!(d::SummationDecapode, op_idx::Int)
+  d[op_idx, :op2] in POWER_OPS || return false
+
+  base_type = d[d[op_idx, :proj1], :type]
+  res_type = d[d[op_idx, :res], :type]
+
+  # Nothing to infer if neither type is known, or both are already concrete.
+  (base_type == :infer && res_type == :infer) && return false
+  (base_type != :infer && res_type != :infer) && return false
+
+  applied = false
+  # If the base type is known, infer the result type from it.
+  applied |= safe_modifytype!(d, d[op_idx, :res], base_type)
+  # If the result type is known, infer the base type from it.
+  applied |= safe_modifytype!(d, d[op_idx, :proj1], res_type)
+  applied
+end
+
 """    function check_operator(user::AbstractOperator, rule::Rule; check_name::Bool = false, ignore_nonapplicable_types::Bool = false)
 
 Return the number of differences in types between a given `user` operator and a `rule` operator.
@@ -723,6 +748,11 @@ function infer_types!(d::SummationDecapode, type_rules::AbstractVector{Rule{Symb
 
     for Σ_idx in parts(d, :Σ)
       applied |= infer_sum_types!(d, Σ_idx)
+    end
+
+    for op_idx in parts(d, :Op2)
+      types_known[:Op2][op_idx] && continue
+      applied |= infer_power_types!(d, op_idx)
     end
 
     applied || break # Break if no rules were applied.
