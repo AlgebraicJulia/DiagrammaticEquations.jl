@@ -1,3 +1,4 @@
+import Catlab.ADTs.RelationTerm: UWDExpr, Statement, Untyped, construct
 import Catlab.BasicSets: FinFunction
 import Catlab.CategoricalAlgebra: apex, feet, legs
 import Catlab.WiringDiagrams: oapply
@@ -233,12 +234,11 @@ function find_duplicates(vs::Vector{T}) where T
   twice
 end
 
-# TODO: Upstream this to Catlab?
 function construct_relation_diagram(boxes::Vector{Symbol}, junctions::Vector{Vector{Symbol}})
-  tables = map(boxes, junctions) do b, j
-    Expr(:call, b, j...)
+  statements = map(boxes, junctions) do b, j
+    Statement(b, Untyped.(j))
   end
-  parse_relation_diagram(:(), :($(tables...),))
+  construct(RelationDiagram, UWDExpr(Untyped[], Untyped[], statements))
 end
 
 """    function default_composition_diagram(podes::Vector{D}, names::Vector{Symbol} only_states_terminals=true) where {D<:SummationDecapode}
@@ -310,4 +310,3 @@ macro default_composition_diagram(args...)
   models = [esc(arg) for arg in args]
   :(default_composition_diagram([$(models...)], [$(names...)]))
 end
-
