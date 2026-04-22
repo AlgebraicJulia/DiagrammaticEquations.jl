@@ -200,26 +200,7 @@ end
 # Default Rewrite Rules
 # ---------------------
 
-rewrite_rules_2D = Vector{AbstractSDRewriteRule}([
-  Op1SDRule(
-    :Δ₀,
-    @decapode begin
-      y == ∘(d,δ)(X)
-    end),
-
-  Op1SDRule(
-    :Δ₁,
-    @decapode begin
-      (X,y)::Form1
-      y == ∘(d,δ)(X) + ∘(δ,d)(X)
-    end),
-
-  Op1SDRule(
-    :Δ₂,
-    @decapode begin
-      y == ∘(δ,d)(X)
-    end),
-
+rewrite_rules_nD = Vector{AbstractSDRewriteRule}([
   Op1SDRule(
     :δ,
     @decapode begin
@@ -236,6 +217,56 @@ rewrite_rules_2D = Vector{AbstractSDRewriteRule}([
     :δ₂,
     @decapode begin
       y == ∘(⋆,d,⋆)(X)
+    end),
+
+  Op1SDRule(
+    :Δ₀,
+    @decapode begin
+      y == ∘(d,δ)(X)
+    end)])
+
+rewrite_rules_1D = Vector{AbstractSDRewriteRule}([
+  rewrite_rules_nD...,
+
+  Op1SDRule(
+    :Δ₁,
+    @decapode begin
+      (X,y)::Form1
+      y == ∘(δ,d)(X)
+    end),
+
+  Op2SDRule(
+    :ι₁,
+    @decapode begin
+      y == -1*⋆((⋆p1) ∧ p2)
+    end),
+
+  Op2SDRule(
+    :L₀,
+    @decapode begin
+      y == ι(p1, d(p2))
+    end),
+
+  Op2SDRule(
+    :L₁,
+    @decapode begin
+      y == d(ι(p1, p2))
+    end)])
+
+rewrite_rules_2D = Vector{AbstractSDRewriteRule}([
+  rewrite_rules_nD...,
+
+  Op1SDRule(
+    :Δ₁,
+    @decapode begin
+      (X,y)::Form1
+      y == ∘(d,δ)(X) + ∘(δ,d)(X)
+    end),
+
+  Op1SDRule(
+    :Δ₂,
+    @decapode begin
+      y == ∘(δ,d)(X)
     end),
 
   Op2SDRule(
@@ -262,5 +293,14 @@ rewrite_rules_2D = Vector{AbstractSDRewriteRule}([
       y == d(ι(p1, p2))
     end)])
 
-rewrite!(d::SummationDecapode) =
-  (infer_resolve!(d); rewrite!(d, rewrite_rules_2D))
+function rewrite!(d::SummationDecapode; dimension::Int = 2)
+  infer_resolve!(d)
+  if d == 1
+    rewrite!(d, rewrite_rules_1D)
+  elseif d == 2
+    rewrite!(d, rewrite_rules_2D)
+  else
+    d
+  end
+end
+
