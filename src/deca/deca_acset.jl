@@ -279,7 +279,7 @@ rewrite_rules_2D = Vector{AbstractSDRewriteRule}([
   Op2SDRule(
     :i₁,
     @decapode begin
-      y == -1 * ⋆((⋆p1) ∧ p2)
+      y == -1 * ⋆((⋆p2) ∧ p1)
     end),
 
   Op2SDRule(
