@@ -1,4 +1,5 @@
 using ..DiagrammaticEquations
+using MLStyle
 
 # TODO: You could write a method which auto-generates these rules given degree N.
 """
@@ -210,19 +211,33 @@ rewrite_rules_nD = Vector{AbstractSDRewriteRule}([
   Op1SDRule(
     :δ₁,
     @decapode begin
+      X::Form1
+      y::Form0
       y == ∘(⋆,d,⋆)(X)
     end),
 
   Op1SDRule(
     :δ₂,
     @decapode begin
+      X::Form2
+      y::Form1
       y == ∘(⋆,d,⋆)(X)
     end),
 
   Op1SDRule(
     :Δ₀,
     @decapode begin
+      (X, y)::Form0
       y == ∘(d,δ)(X)
+    end),
+
+  Op2SDRule(
+    :i₁,
+    @decapode begin
+      p1::Form1
+      p2::DualForm1
+      y::DualForm0
+      y == -1*⋆((⋆p1) ∧ p2)
     end)])
 
 rewrite_rules_1D = Vector{AbstractSDRewriteRule}([
@@ -236,21 +251,15 @@ rewrite_rules_1D = Vector{AbstractSDRewriteRule}([
     end),
 
   Op2SDRule(
-    :ι₁,
-    @decapode begin
-      y == -1*⋆((⋆p1) ∧ p2)
-    end),
-
-  Op2SDRule(
     :L₀,
     @decapode begin
-      y == ι(p1, d(p2))
+      y == i(p1, d(p2))
     end),
 
   Op2SDRule(
     :L₁,
     @decapode begin
-      y == d(ι(p1, p2))
+      y == d(i(p1, p2))
     end)])
 
 rewrite_rules_2D = Vector{AbstractSDRewriteRule}([
@@ -270,37 +279,29 @@ rewrite_rules_2D = Vector{AbstractSDRewriteRule}([
     end),
 
   Op2SDRule(
-    :ι₁,
-    @decapode begin
-      y == -1*⋆((⋆p1) ∧ p2)
-    end),
-
-  Op2SDRule(
     :L₀,
     @decapode begin
-      y == ι(p1, d(p2))
+      y == i(p1, d(p2))
     end),
 
   Op2SDRule(
     :L₁,
     @decapode begin
-      y == ι(p1, d(p2)) + d(ι(p1, p2))
+      y == i(p1, d(p2)) + d(i(p1, p2))
     end),
 
   Op2SDRule(
     :L₂,
     @decapode begin
-      y == d(ι(p1, p2))
+      y == d(i(p1, p2))
     end)])
 
 function rewrite!(d::SummationDecapode; dimension::Int = 2)
-  infer_resolve!(d)
-  if d == 1
-    rewrite!(d, rewrite_rules_1D)
-  elseif d == 2
-    rewrite!(d, rewrite_rules_2D)
-  else
-    d
+  infer_resolve!(d, dim = dimension)
+  @match dimension begin
+    1 => rewrite!(d, rewrite_rules_1D)
+    2 => rewrite!(d, rewrite_rules_2D)
+    _ => d
   end
 end
 
