@@ -313,10 +313,11 @@ end
 replace_all_op2s!(d::SummationDecapode, r::Op2SDRule) =
   replace_all_op2s!(d, r.LHS, r.RHS, r.proj1, r.proj2)
 
-function rewrite!(d::SummationDecapode, rules::AbstractVector{AbstractSDRewriteRule})
+function rewrite!(d::SummationDecapode, rules::AbstractVector{AbstractSDRewriteRule}, dimension)
   any_applied = true
   while any_applied
     expand_operators!(d)
+    infer_resolve!(d, dim = dimension)
     any_applied = false
     for r in rules
       any_applied = apply_rule!(d, r) || any_applied

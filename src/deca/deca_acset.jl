@@ -297,8 +297,8 @@ rewrite_rules_2D = Vector{AbstractSDRewriteRule}([
 function rewrite!(d::SummationDecapode; dimension::Int = 2)
   infer_resolve!(d, dim = dimension)
   @match dimension begin
-    1 => rewrite!(d, rewrite_rules_1D)
-    2 => rewrite!(d, rewrite_rules_2D)
+    1 => rewrite!(d, rewrite_rules_1D, dimension)
+    2 => rewrite!(d, rewrite_rules_2D, dimension)
     _ => d
   end
 end
