@@ -232,13 +232,11 @@ rewrite_rules_nD = Vector{AbstractSDRewriteRule}([
     end),
 
   Op2SDRule(
-    :i₁,
+    :L₀,
     @decapode begin
-      p1::Form1
-      p2::DualForm1
-      y::DualForm0
-      y == -1*⋆((⋆p1) ∧ p2)
-    end)])
+      y == i(p1, d(p2))
+    end),
+  ])
 
 rewrite_rules_1D = Vector{AbstractSDRewriteRule}([
   rewrite_rules_nD...,
@@ -251,9 +249,9 @@ rewrite_rules_1D = Vector{AbstractSDRewriteRule}([
     end),
 
   Op2SDRule(
-    :L₀,
+    :i₁,
     @decapode begin
-      y == i(p1, d(p2))
+      y == ⋆((⋆p2) ∧ p1)
     end),
 
   Op2SDRule(
@@ -279,9 +277,9 @@ rewrite_rules_2D = Vector{AbstractSDRewriteRule}([
     end),
 
   Op2SDRule(
-    :L₀,
+    :i₁,
     @decapode begin
-      y == i(p1, d(p2))
+      y == -1 * ⋆((⋆p1) ∧ p2)
     end),
 
   Op2SDRule(
