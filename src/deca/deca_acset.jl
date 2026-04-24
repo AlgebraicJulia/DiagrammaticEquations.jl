@@ -283,6 +283,12 @@ rewrite_rules_2D = Vector{AbstractSDRewriteRule}([
     end),
 
   Op2SDRule(
+    :i₂,
+    @decapode begin
+      y == ⋆((⋆p2) ∧ p1)
+    end),
+
+  Op2SDRule(
     :L₁,
     @decapode begin
       y == i(p1, d(p2)) + d(i(p1, p2))
