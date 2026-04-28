@@ -238,7 +238,7 @@ function decapode_latex_strings(e::Expr)
   lines = e.head === :block ? e.args : Any[e]
   eqs = map(lines) do line
     @match line begin
-      Expr(:call, :(==), lhs, rhs) => _latexify_statement(Expr(:call, :(==), lhs, rhs))
+      Expr(:call, :(==), lhs, rhs) => _latexify_statement(line)
       _ => nothing
     end
   end
