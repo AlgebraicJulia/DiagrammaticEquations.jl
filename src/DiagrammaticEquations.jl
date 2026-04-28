@@ -21,7 +21,7 @@ unique_lits!,
 bundle_op1s!, bundle_op2s!, bundle_sums!, bundle!, bundle,
 downset, downset!, producing_parts,
 ## language
-@decapode, Term, parse_decapode, term, Eq, DecaExpr,
+@decapode, Term, parse_decapode, term, Eq, DecaExpr, DecapodeLaTeX, decapode_latex, decapode_latex_strings, @decapode_latex,
 # ~~~~~
 Plus, AppCirc1, Var, Tan, App1, App2,
 ## Parser
@@ -45,6 +45,7 @@ import Catlab.CategoricalAlgebra: ∧
 using Catlab.WiringDiagrams
 using Catlab.WiringDiagrams.DirectedWiringDiagrams
 using Catlab.ACSetInterface
+using Latexify
 using MLStyle
 import Unicode
 using Reexport

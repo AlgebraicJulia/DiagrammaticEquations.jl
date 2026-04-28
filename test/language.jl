@@ -203,6 +203,36 @@ import DiagrammaticEquations: Judgement, filterfor_ec_types, Var
   @test pt5[:name] == [:X, Symbol('X'*'\U0307'), :k, :mult_1, Symbol('X'*'\U0307'*'\U0307'), Symbol("-1")]
 
 end
+
+@testset "Decapode LaTeX Rendering" begin
+  latex_block = quote
+    h::Form0
+    Γ::Constant
+    ∂ₜ(h) == Γ * h
+    q == h + Γ
+  end
+
+  eq_latex = decapode_latex_strings(latex_block)
+  @test length(eq_latex) == 2
+  @test occursin(raw"\partial_t", eq_latex[1])
+  @test occursin(raw"\Gamma", eq_latex[1])
+
+  rendered = decapode_latex(latex_block)
+  @test rendered.equations == eq_latex
+  @test sprint(show, rendered) == join(eq_latex, '\n')
+  @test sprint(show, MIME"text/latex"(), rendered) == "\\begin{aligned}" * join(eq_latex, " \\\\ ") * "\\end{aligned}"
+
+  macro_rendered = @decapode_latex begin
+    h::Form0
+    Γ::Constant
+    ∂ₜ(h) == Γ * h
+  end
+  @test macro_rendered.equations == decapode_latex_strings(quote
+    h::Form0
+    Γ::Constant
+    ∂ₜ(h) == Γ * h
+  end)
+end
 Deca = quote
   (A, B, C)::Form0
 end

@@ -225,6 +225,46 @@ macro decapode(e)
   :(SummationDecapode(parse_decapode($(Meta.quot(e))))) |> esc
 end
 
+struct DecapodeLaTeX
+  equations::Vector{String}
+end
+
+function _latexify_statement(expr::Expr)
+  latex = String(latexify(expr))
+  startswith(latex, '$') && endswith(latex, '$') ? latex[2:end-1] : latex
+end
+
+function decapode_latex_strings(e::Expr)
+  lines = e.head === :block ? e.args : Any[e]
+  collect(filter(!isnothing, map(lines) do line
+    @match line begin
+      ::LineNumberNode => nothing
+      Expr(:call, :(==), lhs, rhs) => _latexify_statement(Expr(:call, :(==), lhs, rhs))
+      _ => nothing
+    end
+  end))
+end
+
+decapode_latex(e::Expr) = DecapodeLaTeX(decapode_latex_strings(e))
+
+"""    macro decapode_latex(e)
+
+Create a LaTeX-renderable display object from a Decapode eDSL block.
+"""
+macro decapode_latex(e)
+  :(decapode_latex($(Meta.quot(e)))) |> esc
+end
+
+Base.show(io::IO, d::DecapodeLaTeX) = print(io, join(d.equations, '\n'))
+Base.show(io::IO, ::MIME"text/latex", d::DecapodeLaTeX) = begin
+  print(io, "\\begin{aligned}")
+  for (i, equation) in enumerate(d.equations)
+    print(io, equation)
+    i < length(d.equations) && print(io, " \\\\ ")
+  end
+  print(io, "\\end{aligned}")
+end
+
 # Verify that @decapode is usable at module-level in source (not just in tests/REPL).
 const _LANGUAGE_CHECK = @decapode begin
   A::Form0{X}
