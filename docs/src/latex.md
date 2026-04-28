@@ -20,8 +20,9 @@ For notebook-style LaTeX display, use `decapode_latex` (or `@decapode_latex`) wh
 ```@example latex-rendering
 decapode_latex(quote
   h::Form0
-  Γ::Constant
-  ∂ₜ(h) == Γ * h
-  q == h + Γ
+  Γ::Form1
+  n::Constant
+
+  ∂ₜ(h) == (∘(⋆, d, ⋆))(((Γ * d(h)) ∧ mag(♯(d(h))) ^ (n - 1)) ∧ h ^ (n + 2))
 end)
 ```
