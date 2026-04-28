@@ -42,6 +42,7 @@ makedocs(
   pages=Any[
     "DiagrammaticEquations.jl"=>"index.md",
     "Equations"=>"equations.md",
+    "LaTeX Rendering"=>"latex.md",
     "Library Reference"=>"api.md",
   ]
 )
