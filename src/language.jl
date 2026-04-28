@@ -263,7 +263,7 @@ end
 
 Base.show(io::IO, d::DecapodeLaTeX) = print(io, join(d.equations, '\n'))
 function Base.show(io::IO, ::MIME"text/latex", d::DecapodeLaTeX)
-  print(io, raw"\begin{aligned}", join(d.equations, raw" \\ "), raw"\end{aligned}")
+  print(io, raw"\[", raw"\begin{aligned}", join(d.equations, raw" \\ "), raw"\end{aligned}", raw"\]")
 end
 
 # Verify that @decapode is usable at module-level in source (not just in tests/REPL).

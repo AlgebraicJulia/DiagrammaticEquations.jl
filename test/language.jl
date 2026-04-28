@@ -220,7 +220,7 @@ end
   rendered = decapode_latex(latex_block)
   @test rendered.equations == eq_latex
   @test sprint(show, rendered) == join(eq_latex, '\n')
-  @test sprint(show, MIME"text/latex"(), rendered) == "\\begin{aligned}" * join(eq_latex, " \\\\ ") * "\\end{aligned}"
+  @test sprint(show, MIME"text/latex"(), rendered) == "\\[" * "\\begin{aligned}" * join(eq_latex, " \\\\ ") * "\\end{aligned}" * "\\]"
 
   macro_rendered = @decapode_latex begin
     h::Form0
