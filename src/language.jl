@@ -236,16 +236,14 @@ end
 
 function decapode_latex_strings(e::Expr)
   lines = e.head === :block ? e.args : Any[e]
-  equations = String[]
-  for line in lines
-    latex = @match line begin
-      ::LineNumberNode => nothing
+  eqs = map(lines) do line
+    @match line begin
       Expr(:call, :(==), lhs, rhs) => _latexify_statement(Expr(:call, :(==), lhs, rhs))
       _ => nothing
     end
-    isnothing(latex) || push!(equations, latex)
   end
-  equations
+  filter!(!isnothing, eqs)
+  eqs
 end
 
 decapode_latex(e::Expr) = DecapodeLaTeX(decapode_latex_strings(e))
