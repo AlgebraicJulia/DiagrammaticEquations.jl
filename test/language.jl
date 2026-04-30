@@ -239,9 +239,9 @@ end
     C == ∧(A, B)
   end)
   @test length(wedge_latex) == 1
-  # Infix: "A \wedge B", not prefix "\wedge(A, B)" or "\wedge\left(A, B\right)"
   @test occursin(raw"\wedge", wedge_latex[1])
   @test !occursin(raw"\left", wedge_latex[1])
+  @test occursin("A \\wedge B", wedge_latex[1])
 
   # Subscripted variant ∧₀₁ must also be rendered infix.
   wedge01_latex = decapode_latex_strings(quote
@@ -253,6 +253,7 @@ end
   @test length(wedge01_latex) == 1
   @test occursin(raw"\wedge", wedge01_latex[1])
   @test !occursin(raw"\left", wedge01_latex[1])
+  @test occursin("A \\wedge_{0 1} B", wedge01_latex[1])
 
   # ASCII alias "wedge" must also be rendered infix.
   wedge_ascii_latex = decapode_latex_strings(quote
@@ -262,6 +263,7 @@ end
   @test length(wedge_ascii_latex) == 1
   @test occursin(raw"\wedge", wedge_ascii_latex[1])
   @test !occursin(raw"\left", wedge_ascii_latex[1])
+  @test occursin("A \\wedge B", wedge_ascii_latex[1])
 
   # Wedge product nested inside another operation must still be infix.
   nested_latex = decapode_latex_strings(quote
@@ -271,6 +273,7 @@ end
   @test length(nested_latex) == 1
   @test occursin(raw"\wedge", nested_latex[1])
   @test !occursin(raw"\left( \wedge", nested_latex[1])
+  @test occursin("A \\wedge B", nested_latex[1])
 end
 Deca = quote
   (A, B, C)::Form0
