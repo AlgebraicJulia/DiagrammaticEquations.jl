@@ -232,6 +232,48 @@ end
     Γ::Constant
     ∂ₜ(h) == Γ * h
   end)
+
+  # Binary operations such as the wedge product must be rendered infix.
+  wedge_latex = decapode_latex_strings(quote
+    (A, B, C)::Form0
+    C == ∧(A, B)
+  end)
+  @test length(wedge_latex) == 1
+  @test occursin(raw"\wedge", wedge_latex[1])
+  @test !occursin(raw"\left", wedge_latex[1])
+  @test occursin("A \\wedge B", wedge_latex[1])
+
+  # Subscripted variant ∧₀₁ must also be rendered infix.
+  wedge01_latex = decapode_latex_strings(quote
+    A::Form0
+    B::Form1
+    C::Form1
+    C == ∧₀₁(A, B)
+  end)
+  @test length(wedge01_latex) == 1
+  @test occursin(raw"\wedge", wedge01_latex[1])
+  @test !occursin(raw"\left", wedge01_latex[1])
+  @test occursin("A \\wedge_{0 1} B", wedge01_latex[1])
+
+  # ASCII alias "wedge" must also be rendered infix.
+  wedge_ascii_latex = decapode_latex_strings(quote
+    (A, B, C)::Form0
+    C == wedge(A, B)
+  end)
+  @test length(wedge_ascii_latex) == 1
+  @test occursin(raw"\wedge", wedge_ascii_latex[1])
+  @test !occursin(raw"\left", wedge_ascii_latex[1])
+  @test occursin("A \\wedge B", wedge_ascii_latex[1])
+
+  # Wedge product nested inside another operation must still be infix.
+  nested_latex = decapode_latex_strings(quote
+    (A, B, C, D)::Form0
+    D == d(∧(A, B))
+  end)
+  @test length(nested_latex) == 1
+  @test occursin(raw"\wedge", nested_latex[1])
+  @test !occursin(raw"\left( \wedge", nested_latex[1])
+  @test occursin("A \\wedge B", nested_latex[1])
 end
 Deca = quote
   (A, B, C)::Form0

@@ -229,8 +229,14 @@ struct DecapodeLaTeX
   equations::Vector{String}
 end
 
+# Normalize the ASCII alias "wedge(a, b)" → "∧(a, b)" so that Latexify
+# renders it infix via the binary_operators table registered in __init__.
+_norm_wedge(s::Symbol) = s === :wedge ? :∧ : s
+_norm_wedge(x) = x
+_norm_wedge(e::Expr) = Expr(e.head, map(_norm_wedge, e.args)...)
+
 function _latexify_statement(expr::Expr)
-  latex = String(latexify(expr))
+  latex = String(latexify(_norm_wedge(expr)))
   startswith(latex, '$') && endswith(latex, '$') ? latex[2:end-1] : latex
 end
 

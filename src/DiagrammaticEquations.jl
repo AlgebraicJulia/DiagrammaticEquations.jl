@@ -84,4 +84,16 @@ include("SymbolicUtilsInterop.jl")
 
 include("acset2symbolic.jl")
 
+# Register wedge-product operators as infix binary operators with Latexify so
+# that e.g. ∧(A, B) renders as "A \wedge B" instead of "\wedge(A, B)".
+# This must run in __init__ (not at module level) because it mutates
+# Latexify's dict, which is owned by Latexify's precompile cache and would
+# otherwise be reset on every subsequent `using DiagrammaticEquations`.
+function __init__()
+  for op in (:∧, :∧₀₀, :∧₀₁, :∧₁₀, :∧₁₁, :∧₀₂, :∧₂₀)
+    s = String(latexify(op))
+    Latexify.binary_operators[op] = startswith(s, '$') && endswith(s, '$') ? s[2:end-1] : s
+  end
+end
+
 end
