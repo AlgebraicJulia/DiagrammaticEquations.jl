@@ -229,9 +229,79 @@ struct DecapodeLaTeX
   equations::Vector{String}
 end
 
+_strip_dollars(s::AbstractString) =
+  startswith(s, '$') && endswith(s, '$') ? s[2:end-1] : s
+
+# Returns true when `op` is a binary operator that should be rendered infix,
+# i.e. wedge product and its subscripted variants (∧, ∧₀₁, ∧₁₀, …) plus the
+# ASCII alias "wedge".
+_is_infix_binary_op(op) = op isa Symbol &&
+  (String(op) == "wedge" || startswith(String(op), "∧"))
+
+# LaTeX string for the infix operator symbol.
+function _infix_op_latex(op::Symbol)
+  op === :wedge && return raw"\wedge"
+  _strip_dollars(String(latexify(op)))  # handles ∧ → \wedge, ∧₀₁ → \wedge_{0 1}, etc.
+end
+
+# True when the expression tree rooted at `expr` contains at least one
+# infix binary operator call.
+function _has_infix_binary_op(expr)
+  expr isa Expr || return false
+  if expr.head === :call
+    op = expr.args[1]
+    _is_infix_binary_op(op) && length(expr.args) == 3 && return true
+  end
+  any(_has_infix_binary_op, expr.args)
+end
+
+# Recursively convert a Julia expression to a LaTeX string, using infix
+# notation for binary operators such as the wedge product.  For expressions
+# that contain no infix binary operators the result is identical to calling
+# `latexify` directly.
+function _expr_to_latex(expr)
+  if expr isa Expr && expr.head === :call
+    op = expr.args[1]
+    args = expr.args[2:end]
+    if _is_infix_binary_op(op) && length(args) == 2
+      lhs = _expr_to_latex(args[1])
+      rhs = _expr_to_latex(args[2])
+      return "$lhs $(_infix_op_latex(op)) $rhs"
+    end
+    _has_infix_binary_op(expr) && return _build_infix_latex(expr)
+  elseif expr isa Expr && _has_infix_binary_op(expr)
+    return _build_infix_latex(expr)
+  end
+  _strip_dollars(String(latexify(expr)))
+end
+
+# Handle expression types that may contain infix binary ops nested inside them.
+function _build_infix_latex(expr::Expr)
+  expr.head !== :call && return _strip_dollars(String(latexify(expr)))
+  op   = expr.args[1]
+  args = expr.args[2:end]
+  if op === :(==) && length(args) == 2
+    return "$(_expr_to_latex(args[1])) = $(_expr_to_latex(args[2]))"
+  elseif op === :+
+    return join(map(_expr_to_latex, args), " + ")
+  elseif op === :- && length(args) == 2
+    return "$(_expr_to_latex(args[1])) - $(_expr_to_latex(args[2]))"
+  elseif op === :- && length(args) == 1
+    return "-$(_expr_to_latex(args[1]))"
+  elseif op === :*
+    return join(map(_expr_to_latex, args), " \\cdot ")
+  elseif op === :^ && length(args) == 2
+    return "{$(_expr_to_latex(args[1]))}^{$(_expr_to_latex(args[2]))}"
+  else
+    # Generic function application: f(a, b, …)
+    fn_latex   = _strip_dollars(String(latexify(op)))
+    args_latex = map(_expr_to_latex, args)
+    return "$fn_latex\\left($(join(args_latex, ", "))\\right)"
+  end
+end
+
 function _latexify_statement(expr::Expr)
-  latex = String(latexify(expr))
-  startswith(latex, '$') && endswith(latex, '$') ? latex[2:end-1] : latex
+  _expr_to_latex(expr)
 end
 
 function decapode_latex_strings(e::Expr)
