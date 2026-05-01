@@ -1,6 +1,6 @@
 using DiagrammaticEquations
 using ACSets
-using SymbolicUtils
+import SymbolicUtils
 using SymbolicUtils: BasicSymbolic, Symbolic
 
 export symbolic_rewriting

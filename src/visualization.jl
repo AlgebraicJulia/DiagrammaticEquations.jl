@@ -1,6 +1,5 @@
 import Catlab.Graphics.Graphviz
-using Catlab.Graphics
-using Catlab.Graphics.Graphviz
+import Catlab.Graphics.GraphvizGraphs: to_graphviz_property_graph
 using Catlab.Graphs.PropertyGraphs
 using Catlab.Graphs
 using Catlab.Graphs.BasicGraphs
@@ -8,20 +7,12 @@ using Catlab.Graphs.BasicGraphs
 #= reg_to_sub = Dict('0'=>'₀', '1'=>"₁", '2'=>'₂', '3'=>'₃', '4'=>'₄',
     '5'=>'₅', '6'=>'₆','7'=>'₇', '8'=>'₈', '9'=>'₉', 'r'=>'•', 'l'=>'L', ) =#
 
-
 typename(d, v) = begin
   t = d[v, :type]
   return t 
 end 
 
-# function Catlab.Graphics.to_graphviz_property_graph(d::AbstractNamedDecapode; kw...)
-#   to_graphviz_property_graph(d::AbstractNamedDecapode; typename=spacename, directed = true, kw...)
-# end
-
-# function Catlab.Graphics.to_graphviz_property_graph(d::SummationDecapode; kw...)
-#   to_graphviz_property_graph(d::SummationDecapode; typename=spacename, directed = true, kw...)
-# end
-function Catlab.Graphics.to_graphviz_property_graph(d::AbstractNamedDecapode; typename=typename, directed=true, kw...)
+function to_graphviz_property_graph(d::AbstractNamedDecapode; typename=typename, directed=true, kw...)
     pg = PropertyGraph{Any}(;kw...)
     vids = map(parts(d, :Var)) do v
       add_vertex!(pg, label=varname(d,v))

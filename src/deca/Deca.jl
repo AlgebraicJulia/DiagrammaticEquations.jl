@@ -2,16 +2,24 @@ module Deca
 
 using DataStructures
 using ..DiagrammaticEquations
-using Catlab
+using Catlab.ACSetInterface
 
 using Reexport
 
-import ..infer_types!, ..resolve_overloads!, ..type_check, ..infer_resolve!
+import ..infer_types!, ..resolve_overloads!, ..type_check, ..infer_resolve!, ..rewrite!
 import ..arithmetic_operators, ..same_type_rules_op
+import ..producing_parts
 
-export normalize_unicode, varname, infer_types!, resolve_overloads!, type_check, infer_resolve!,
-typename, spacename, recursive_delete_parents, recursive_delete_parents!, unicode!, vec_to_dec!,
-op1_operators, op1_1D_bound_operators, op1_2D_bound_operators, op2_operators, default_operators
+export normalize_unicode, varname, infer_types!, resolve_overloads!, type_check,
+infer_resolve!, typename, spacename, recursive_delete_parents,
+recursive_delete_parents!, unicode!, vec_to_dec!, op1_operators,
+op1_1D_bound_operators, op1_2D_bound_operators, op2_operators, default_operators
+
+export normalize_unicode, varname, infer_types!, resolve_overloads!, type_check,
+infer_resolve!, typename, spacename, recursive_delete_parents,
+recursive_delete_parents!, unicode!, vec_to_dec!, op1_operators,
+op1_1D_bound_operators, op1_2D_bound_operators, op2_operators, default_operators,
+rewrite!
 
 include("deca_acset.jl")
 include("deca_visualization.jl")
@@ -19,9 +27,11 @@ include("ThDEC.jl")
 
 @reexport using .ThDEC
 
-"""    function recursive_delete_parents!(d::SummationDecapode, to_delete::Vector{Int64})
+"""    function recursive_delete_parents(d::SummationDecapode, to_delete::Vector{Int64})
 
-Delete the given nodes and their parents in the Decapode, recursively.
+Return a copy of the Decapode with the given nodes and their parents deleted recursively.
+
+See also: [`recursive_delete_parents!`](@ref).
 """
 function recursive_delete_parents(d::SummationDecapode, to_delete::Vector{Int64})
   e = SummationDecapode{Any, Any, Symbol}()
@@ -30,6 +40,10 @@ function recursive_delete_parents(d::SummationDecapode, to_delete::Vector{Int64}
   return e
 end
 
+"""    function recursive_delete_parents!(d::SummationDecapode, to_delete::Vector{Int64})
+
+Delete the given nodes and their parents in the Decapode, recursively.
+"""
 function recursive_delete_parents!(d::SummationDecapode, to_delete::Vector{Int64})
   # TODO: We assume to_delete vars have no children. Is that okay?
   # TODO: Explicitly check that a Var in to_delete is not a summand.
@@ -38,11 +52,7 @@ function recursive_delete_parents!(d::SummationDecapode, to_delete::Vector{Int64
   foreach(v -> push!(s, v), to_delete)
   while true
     curr = pop!(s)
-    parents = reduce(vcat,
-                     [d[incident(d, curr, :tgt), :src],
-                      d[incident(d, curr, :res), :proj1],
-                      d[incident(d, curr, :res), :proj2],
-                      d[incident(d, curr, [:summation, :sum]), :summand]])
+    parents = producing_parts(d, curr)[:Var]
 
     # Remove the operations which have curr as the result.
     rem_parts!(d, :TVar,    incident(d, curr, :incl))

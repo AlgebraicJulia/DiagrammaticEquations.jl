@@ -1,6 +1,6 @@
 using DiagrammaticEquations
-using Catlab
 using Catlab.CategoricalAlgebra
+using ACSets
 
 function Term(s::SummationDecapode)
   # s = expand_operators(s)

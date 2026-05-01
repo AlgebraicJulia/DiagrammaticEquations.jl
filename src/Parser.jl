@@ -1,4 +1,10 @@
+module Parser
+
 using Catlab.Parsers.ParserCore
+using ..DiagrammaticEquations
+using ..DiagrammaticEquations.decapodes
+
+using MLStyle
 
 # String -> Vector{String}
 ##########################
@@ -15,10 +21,10 @@ using Catlab.Parsers.ParserCore
 @rule LineEOL = Line & EOL |>
   v -> v[1]
 
-@rule Statement = Judgement , Equation
+@rule Statement = AnyJudgement , Equation
 
 # Recall that a more-left rule in an OR has higher precedence in a PEG.
-@rule Term = Derivative , Call , Compose , Grouping , Atom
+@rule Term = Derivative , Call , Compose , LieBracket , Magnitude , Grouping , Atom
 
 # Parentheses enforce precedence.
 @rule Grouping = lparen & ws & PrecMinusOperation & ws & rparen |>
@@ -38,7 +44,7 @@ using Catlab.Parsers.ParserCore
 #------------------
 
 # e.g. C::Form0 or (C, D)::DualForm1{X}.
-@rule Judgement = SingleJudgement , MultiJudgement
+@rule AnyJudgement = SingleJudgement , MultiJudgement
 
 @rule SingleJudgement = Ident & "::" & TypeName |>
   v -> Judgement(v[1], v[3]...)
@@ -129,6 +135,20 @@ using Catlab.Parsers.ParserCore
 @rule CallList = CallName & (ws & comma & CallName)[*] |>
   v -> vcat(v[1], last.(v[2]))
 
+# Circumfix syntax
+#-----------------
+
+@rule bar = r"\|"
+
+@rule lbracket = r"\["
+@rule rbracket = r"\]"
+
+@rule LieBracket = lbracket & ws & PrecMinusOperation & ws & comma & ws & PrecMinusOperation & ws & rbracket |>
+  v -> App2(:L₁, v[3], v[7])
+
+@rule Magnitude = bar & ws & PrecMinusOperation & ws & bar |>
+  v -> App1(:mag, v[3])
+
 # Function syntax
 #----------------
 
@@ -168,10 +188,10 @@ using Catlab.Parsers.ParserCore
 # They cannot start with digits.
 @rule Ident = r"""([^0-9\+\*:{}→\n;=,\-−¦⊕⊖⊞⊟∪∨⊔±∓∔∸≏⊎⊻⊽⋎⋓⟇⧺⧻⨈⨢⨣⨤⨥⨦⨧⨨⨩⨪⨫⨬⨭⨮⨹⨺⩁⩂
   ⩅⩊⩌⩏⩐⩒⩔⩖⩗⩛⩝⩡⩢⩣\\\/⌿÷%&··⋅∘×∩∧⊗⊘⊙⊚⊛⊠⊡⊓∗∙∤⅋≀⊼⋄⋆⋇⋉⋊⋋⋌⋏⋒⟑⦸⦼⦾⦿⧶⧷⨇⨰⨱⨲⨳⨴⨵⨶⨷⨸⨻⨼⨽⩀<⩃⩄⩋
-  ⩍⩎⩑⩓⩕⩘⩚⩜⩞⩟⩠⫛⊍▷⨝⟕⟖⟗⨟\^↑↓⇵⟰⟱⤈⤉⤊⤋⤒⤓⥉⥌⥍⥏⥑⥔⥕⥘⥙⥜⥝⥠⥡⥣⥥⥮⥯￪￬\|\(\)\s][^\+\*:{}→\n;=,\-
+  ⩍⩎⩑⩓⩕⩘⩚⩜⩞⩟⩠⫛⊍▷⨝⟕⟖⟗⨟\^↑↓⇵⟰⟱⤈⤉⤊⤋⤒⤓⥉⥌⥍⥏⥑⥔⥕⥘⥙⥜⥝⥠⥡⥣⥥⥮⥯￪￬\|\(\)\[\]\s][^\+\*:{}→\n;=,\-
   −¦⊕⊖⊞⊟∪∨⊔±∓∔∸≏⊎⊻⊽⋎⋓⟇⧺⧻⨈⨢⨣⨤⨥⨦⨧⨨⨩⨪⨫⨬⨭⨮⨹⨺⩁⩂⩅⩊⩌⩏⩐⩒⩔⩖⩗⩛⩝⩡⩢⩣\\\/⌿÷%&··⋅∘×∩∧⊗⊘⊙⊚⊛⊠⊡⊓
   ∗∙∤⅋≀⊼⋄⋆⋇⋉⋊⋋⋌⋏⋒⟑⦸⦼⦾⦿⧶⧷⨇⨰⨱⨲⨳⨴⨵⨶⨷⨸⨻⨼⨽⩀<⩃⩄⩋⩍⩎⩑⩓⩕⩘⩚⩜⩞⩟⩠⫛⊍▷⨝⟕⟖⟗⨟\^↑↓⇵⟰⟱⤈⤉⤊⤋⤒⤓⥉⥌⥍⥏⥑
-  ⥔⥕⥘⥙⥜⥝⥠⥡⥣⥥⥮⥯￪￬\|\(\)\s]*)""" |>
+  ⥔⥕⥘⥙⥜⥝⥠⥡⥣⥥⥮⥯￪￬\|\(\)\[\]\s]*)""" |>
   v -> Symbol(v...)
 
 @rule Operator = PrecMinusOp , PrecDivOp , PrecPowerOp
@@ -252,4 +272,6 @@ The `SummationDecapode` constructor then constructs an ACSet.
 macro decapode_str(s::String)
   :(SummationDecapode(parse_whole(DecapodeExpr, $s)))
 end
+export decapode_str
 
+end

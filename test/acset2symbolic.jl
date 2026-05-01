@@ -1,7 +1,7 @@
 using Test
 using DiagrammaticEquations
 using SymbolicUtils: Fixpoint, Prewalk, Postwalk, Chain, @rule
-using Catlab
+# using Catlab
 
 (≃) = is_isomorphic
 

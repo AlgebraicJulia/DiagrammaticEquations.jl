@@ -2,8 +2,6 @@
 """
 module DiagrammaticEquations
 
-using Catlab
-
 export
 DerivOp, append_dot, normalize_unicode, infer_states, infer_types!,
 # Deca
@@ -12,16 +10,18 @@ recursive_delete_parents, spacename, varname, unicode!, vec_to_dec!,
 ## collages
 Collage, collate,
 ## composition
-oapply, unique_by, unique_by!, OpenSummationDecapodeOb, OpenSummationDecapode, Open, default_composition_diagram,
+oapply, unique_by, unique_by!, OpenSummationDecapodeOb, OpenSummationDecapode, Open, default_composition_diagram, @default_composition_diagram,
 apex, @relation, # Re-exported from Catlab
 ## acset
 SchDecapode, SchNamedDecapode, AbstractDecapode, AbstractNamedDecapode, NamedDecapode, SummationDecapode,
-contract_operators!, contract_operators, add_constant!, add_parameter, fill_names!, dot_rename!, is_expanded, expand_operators, infer_state_names, infer_terminal_names, recognize_types,
+contract_operators!, contract_operators, add_constant!, add_parameter, fill_names!, dot_rename!, is_expanded, expand_operators, expand_operators!, infer_state_names, infer_terminal_names, recognize_types,
 resolve_overloads!, replace_names!, type_check, check_rule_ambiguity,
 transfer_parents!, transfer_children!,
 unique_lits!,
+bundle_op1s!, bundle_op2s!, bundle_sums!, bundle!, bundle,
+downset, downset!, producing_parts,
 ## language
-@decapode, Term, parse_decapode, term, Eq, DecaExpr,
+@decapode, Term, parse_decapode, term, Eq, DecaExpr, DecapodeLaTeX, decapode_latex, decapode_latex_strings, @decapode_latex,
 # ~~~~~
 Plus, AppCirc1, Var, Tan, App1, App2,
 ## Parser
@@ -32,9 +32,10 @@ to_graphviz, # Re-exported from Catlab
 ## rewrite
 average_rewrite,
 ## openoperators
-transfer_parents!, transfer_children!, replace_op1!, replace_op2!, replace_all_op1s!, replace_all_op2s!,
-Rule, infer_resolve!, type_check, DecaTypeExeception
-
+transfer_parents!, transfer_children!, replace_op1!, replace_op2!,
+replace_all_op1s!, replace_all_op2s!, Rule, infer_resolve!, type_check,
+DecaTypeExeception, AbstractSDRewriteRule, Op1SDRule, Op2SDRule, apply_rule!,
+rewrite!
 
 using Catlab.Theories
 import Catlab.Theories: otimes, oplus, compose, ⊗, ⊕, ⋅, associate, associate_unit, Ob, Hom, dom, codom
@@ -44,6 +45,7 @@ import Catlab.CategoricalAlgebra: ∧
 using Catlab.WiringDiagrams
 using Catlab.WiringDiagrams.DirectedWiringDiagrams
 using Catlab.ACSetInterface
+using Latexify
 using MLStyle
 import Unicode
 using Reexport
@@ -57,9 +59,12 @@ normalize_unicode(s::Symbol)  = Symbol(normalize_unicode(String(s)))
 DerivOp = Symbol("∂ₜ")
 append_dot(s::Symbol) = Symbol(string(s)*'\U0307')
 
+include("DecapodeACSet.jl")
+using .DecapodeACSet
+
 include("acset.jl")
 include("language.jl")
-include("parser.jl")
+include("Parser.jl")
 include("composition.jl")
 include("collages.jl")
 include("visualization.jl")
@@ -75,7 +80,20 @@ include("SymbolicUtilsInterop.jl")
 
 @reexport using .Deca
 @reexport using .SymbolicUtilsInterop
+@reexport using .Parser 
 
 include("acset2symbolic.jl")
+
+# Register wedge-product operators as infix binary operators with Latexify so
+# that e.g. ∧(A, B) renders as "A \wedge B" instead of "\wedge(A, B)".
+# This must run in __init__ (not at module level) because it mutates
+# Latexify's dict, which is owned by Latexify's precompile cache and would
+# otherwise be reset on every subsequent `using DiagrammaticEquations`.
+function __init__()
+  for op in (:∧, :∧₀₀, :∧₀₁, :∧₁₀, :∧₁₁, :∧₀₂, :∧₂₀)
+    s = String(latexify(op))
+    Latexify.binary_operators[op] = startswith(s, '$') && endswith(s, '$') ? s[2:end-1] : s
+  end
+end
 
 end

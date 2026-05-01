@@ -38,7 +38,7 @@ function parse_decapode(expr::Expr)
             Expr(:call, :(==), lhs, rhs) => Eq(term(lhs), term(rhs))
             _ => error("The line $line is malformed")
         end
-    end |> skipmissing |> collect
+    end |> skipmissing |> Base.collect
     judges = []
     eqns = []
     foreach(stmts) do s
@@ -222,5 +222,59 @@ end
 Construct a SummationDecapode using the Decapode Domain-Specific Language.
 """
 macro decapode(e)
-  :(SummationDecapode(parse_decapode($(Meta.quot(e)))))
+  :(SummationDecapode(parse_decapode($(Meta.quot(e))))) |> esc
+end
+
+struct DecapodeLaTeX
+  equations::Vector{String}
+end
+
+# Normalize the ASCII alias "wedge(a, b)" → "∧(a, b)" so that Latexify
+# renders it infix via the binary_operators table registered in __init__.
+_norm_wedge(s::Symbol) = s === :wedge ? :∧ : s
+_norm_wedge(x) = x
+_norm_wedge(e::Expr) = Expr(e.head, map(_norm_wedge, e.args)...)
+
+function _latexify_statement(expr::Expr)
+  latex = String(latexify(_norm_wedge(expr)))
+  startswith(latex, '$') && endswith(latex, '$') ? latex[2:end-1] : latex
+end
+
+function decapode_latex_strings(e::Expr)
+  lines = e.head === :block ? e.args : Any[e]
+  eqs = map(lines) do line
+    @match line begin
+      Expr(:call, :(==), lhs, rhs) => _latexify_statement(line)
+      _ => nothing
+    end
+  end
+  filter!(!isnothing, eqs)
+  eqs
+end
+
+decapode_latex(e::Expr) = DecapodeLaTeX(decapode_latex_strings(e))
+
+"""
+    macro decapode_latex(e)
+
+Create a `DecapodeLaTeX` display object from a Decapode eDSL block.
+
+This macro mirrors `@decapode` syntax while returning a render-only object for
+notebook environments. The resulting object supports `show(::MIME"text/latex", ...)`
+to display the equations in aligned LaTeX form.
+"""
+macro decapode_latex(e)
+  :(decapode_latex($(Meta.quot(e)))) |> esc
+end
+
+Base.show(io::IO, d::DecapodeLaTeX) = print(io, join(d.equations, '\n'))
+function Base.show(io::IO, ::MIME"text/latex", d::DecapodeLaTeX)
+  print(io, raw"\[", raw"\begin{aligned}", join(d.equations, raw" \\ "), raw"\end{aligned}", raw"\]")
+end
+
+# Verify that @decapode is usable at module-level in source (not just in tests/REPL).
+const _LANGUAGE_CHECK = @decapode begin
+  A::Form0{X}
+  B::Form1{X}
+  B == d₀(A)
 end

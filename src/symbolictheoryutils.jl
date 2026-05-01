@@ -1,5 +1,5 @@
 using MLStyle
-using SymbolicUtils
+import SymbolicUtils
 using SymbolicUtils: Symbolic, BasicSymbolic, FnType, Sym, symtype
 import SymbolicUtils: promote_symtype
 

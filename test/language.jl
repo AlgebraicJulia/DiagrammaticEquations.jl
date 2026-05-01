@@ -1,5 +1,6 @@
 using Test
-using Catlab
+using Catlab.ACSetInterface
+using Catlab.CategoricalAlgebra
 using LinearAlgebra
 using MLStyle
 using Base.Iterators
@@ -7,7 +8,7 @@ using Base.Iterators
 using DiagrammaticEquations
 using DiagrammaticEquations.Deca
 
-import DiagrammaticEquations: Judgement, filterfor_ec_types
+import DiagrammaticEquations: Judgement, filterfor_ec_types, Var
 
 @testset "Parsing" begin
   # Tests
@@ -202,6 +203,78 @@ import DiagrammaticEquations: Judgement, filterfor_ec_types
   @test pt5[:name] == [:X, Symbol('X'*'\U0307'), :k, :mult_1, Symbol('X'*'\U0307'*'\U0307'), Symbol("-1")]
 
 end
+
+@testset "Decapode LaTeX Rendering" begin
+  latex_block = quote
+    h::Form0
+    Γ::Constant
+    ∂ₜ(h) == Γ * h
+    q == h + Γ
+  end
+
+  eq_latex = decapode_latex_strings(latex_block)
+  @test length(eq_latex) == 2
+  @test occursin(raw"\partial_t", eq_latex[1])
+  @test occursin(raw"\Gamma", eq_latex[1])
+
+  rendered = decapode_latex(latex_block)
+  @test rendered.equations == eq_latex
+  @test sprint(show, rendered) == join(eq_latex, '\n')
+  @test sprint(show, MIME"text/latex"(), rendered) == "\\[" * "\\begin{aligned}" * join(eq_latex, " \\\\ ") * "\\end{aligned}" * "\\]"
+
+  macro_rendered = @decapode_latex begin
+    h::Form0
+    Γ::Constant
+    ∂ₜ(h) == Γ * h
+  end
+  @test macro_rendered.equations == decapode_latex_strings(quote
+    h::Form0
+    Γ::Constant
+    ∂ₜ(h) == Γ * h
+  end)
+
+  # Binary operations such as the wedge product must be rendered infix.
+  wedge_latex = decapode_latex_strings(quote
+    (A, B, C)::Form0
+    C == ∧(A, B)
+  end)
+  @test length(wedge_latex) == 1
+  @test occursin(raw"\wedge", wedge_latex[1])
+  @test !occursin(raw"\left", wedge_latex[1])
+  @test occursin("A \\wedge B", wedge_latex[1])
+
+  # Subscripted variant ∧₀₁ must also be rendered infix.
+  wedge01_latex = decapode_latex_strings(quote
+    A::Form0
+    B::Form1
+    C::Form1
+    C == ∧₀₁(A, B)
+  end)
+  @test length(wedge01_latex) == 1
+  @test occursin(raw"\wedge", wedge01_latex[1])
+  @test !occursin(raw"\left", wedge01_latex[1])
+  @test occursin("A \\wedge_{0 1} B", wedge01_latex[1])
+
+  # ASCII alias "wedge" must also be rendered infix.
+  wedge_ascii_latex = decapode_latex_strings(quote
+    (A, B, C)::Form0
+    C == wedge(A, B)
+  end)
+  @test length(wedge_ascii_latex) == 1
+  @test occursin(raw"\wedge", wedge_ascii_latex[1])
+  @test !occursin(raw"\left", wedge_ascii_latex[1])
+  @test occursin("A \\wedge B", wedge_ascii_latex[1])
+
+  # Wedge product nested inside another operation must still be infix.
+  nested_latex = decapode_latex_strings(quote
+    (A, B, C, D)::Form0
+    D == d(∧(A, B))
+  end)
+  @test length(nested_latex) == 1
+  @test occursin(raw"\wedge", nested_latex[1])
+  @test !occursin(raw"\left( \wedge", nested_latex[1])
+  @test occursin("A \\wedge B", nested_latex[1])
+end
 Deca = quote
   (A, B, C)::Form0
 end
@@ -323,6 +396,25 @@ end
   @test nparts(advdiffdp, :Op2) == 1
   @test nparts(advdiffdp, :Σ) == 1
   @test nparts(advdiffdp, :Summand) == 2
+end
+
+@testset "Variable Interpolation" begin
+  oscillator = @decapode begin
+   (X,V)::Form0
+   k::Constant
+   ∂ₜ(X) == V
+   ∂ₜ(V) == 5.0 * X
+  end
+  
+  k = 5.0
+  oscillator_interpolated = @decapode begin
+   (X,V)::Form0
+   k::Constant
+   ∂ₜ(X) == V
+   ∂ₜ(V) == $k * X
+  end
+  
+  @test oscillator == oscillator_interpolated
 end
 
 @testset "State Variable Inference" begin

@@ -2,8 +2,8 @@ using Test
 using DiagrammaticEquations
 using DiagrammaticEquations.Deca.ThDEC
 using DiagrammaticEquations.decapodes
-using SymbolicUtils
-using SymbolicUtils: symtype, promote_symtype, Symbolic
+import SymbolicUtils
+using SymbolicUtils: symtype, promote_symtype, Symbolic, @syms, @rule
 using MLStyle
 
 import DiagrammaticEquations: rules

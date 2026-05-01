@@ -1,7 +1,4 @@
 using Test
-@testset "Core" begin
-  include("core.jl")
-end
 
 @testset "Composition" begin
   include("composition.jl")
@@ -22,6 +19,14 @@ end
 
 @testset "Redundant Literals" begin
   include("redundant_lits.jl")
+end
+
+@testset "Bundling" begin
+  include("bundle.jl")
+end
+
+@testset "Downset" begin
+  include("downset.jl")
 end
 
 @testset "Collages" begin
