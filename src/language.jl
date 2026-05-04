@@ -4,6 +4,7 @@ using .decapodes
 term(s::Symbol) = Var(normalize_unicode(s))
 term(s::Number) = Lit(Symbol(s))
 
+"""Recursively collect variable names appearing in a `Term` into `variables`."""
 function _term_variables!(variables::Set{Symbol}, t::Term)
   @match t begin
     Var(name) => push!(variables, name)
@@ -18,11 +19,14 @@ function _term_variables!(variables::Set{Symbol}, t::Term)
   variables
 end
 
+"""Return sorted unique variable names that appear in a `Term`."""
 term_variables(t::Term) = sort!(collect(_term_variables!(Set{Symbol}(), t)))
 
+"""Compute a downset from the variables referenced in a `Term` or expression."""
 downset(d::SummationDecapode, t::Term) = downset(d, term_variables(t))
 downset(d::SummationDecapode, expr::Expr) = downset(d, term(expr))
 
+"""Mutating form of `downset` for `Term` or expression inputs."""
 downset!(e::SummationDecapode, d::SummationDecapode, t::Term) = downset!(e, d, term_variables(t))
 downset!(e::SummationDecapode, d::SummationDecapode, expr::Expr) = downset!(e, d, term(expr))
 
