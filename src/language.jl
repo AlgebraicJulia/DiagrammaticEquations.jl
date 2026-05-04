@@ -5,22 +5,22 @@ term(s::Symbol) = Var(normalize_unicode(s))
 term(s::Number) = Lit(Symbol(s))
 
 """Recursively collect variable names appearing in a `Term` into `variables`."""
-function _term_variables!(variables::Set{Symbol}, t::Term)
+function _collect_term_variables!(variables::Set{Symbol}, t::Term)
   @match t begin
     Var(name) => push!(variables, name)
     Lit(_) => nothing
-    AppCirc1(_, arg) || App1(_, arg) || Tan(arg) => _term_variables!(variables, arg)
+    AppCirc1(_, arg) || App1(_, arg) || Tan(arg) => _collect_term_variables!(variables, arg)
     App2(_, arg1, arg2) => begin
-      _term_variables!(variables, arg1)
-      _term_variables!(variables, arg2)
+      _collect_term_variables!(variables, arg1)
+      _collect_term_variables!(variables, arg2)
     end
-    Plus(args) || Mult(args) => foreach(arg -> _term_variables!(variables, arg), args)
+    Plus(args) || Mult(args) => foreach(arg -> _collect_term_variables!(variables, arg), args)
   end
   variables
 end
 
-"""Return sorted unique variable names that appear in a `Term`."""
-term_variables(t::Term) = sort!(collect(_term_variables!(Set{Symbol}(), t)))
+"""Return sorted unique variable names that appear in a `Term` for deterministic output."""
+term_variables(t::Term) = sort!(collect(_collect_term_variables!(Set{Symbol}(), t)))
 
 """Compute a downset from the variables referenced in a `Term` or expression."""
 downset(d::SummationDecapode, t::Term) = downset(d, term_variables(t))
