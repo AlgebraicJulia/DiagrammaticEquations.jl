@@ -4,7 +4,7 @@ using .decapodes
 term(s::Symbol) = Var(normalize_unicode(s))
 term(s::Number) = Lit(Symbol(s))
 
-"""Recursively collect variable names appearing in a `Term` into `variables`."""
+"""Recursively collect variable names appearing in a `Term` into `variables`. Returns the modified `variables` set."""
 function _collect_term_variables!(variables::Set{Symbol}, t::Term)
   @match t begin
     Var(name) => push!(variables, name)
@@ -19,7 +19,7 @@ function _collect_term_variables!(variables::Set{Symbol}, t::Term)
   variables
 end
 
-"""Return sorted unique variable names that appear in a `Term` for deterministic output."""
+"""Return a sorted `Vector{Symbol}` of unique variable names that appear in a `Term`."""
 term_variables(t::Term) = sort!(collect(_collect_term_variables!(Set{Symbol}(), t)))
 
 """Compute a downset from the variables referenced in a `Term` or expression."""
