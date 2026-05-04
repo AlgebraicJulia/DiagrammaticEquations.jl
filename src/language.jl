@@ -4,6 +4,28 @@ using .decapodes
 term(s::Symbol) = Var(normalize_unicode(s))
 term(s::Number) = Lit(Symbol(s))
 
+function _term_variables!(variables::Set{Symbol}, t::Term)
+  @match t begin
+    Var(name) => push!(variables, name)
+    Lit(_) => nothing
+    AppCirc1(_, arg) || App1(_, arg) || Tan(arg) => _term_variables!(variables, arg)
+    App2(_, arg1, arg2) => begin
+      _term_variables!(variables, arg1)
+      _term_variables!(variables, arg2)
+    end
+    Plus(args) || Mult(args) => foreach(arg -> _term_variables!(variables, arg), args)
+  end
+  variables
+end
+
+term_variables(t::Term) = sort!(collect(_term_variables!(Set{Symbol}(), t)))
+
+downset(d::SummationDecapode, t::Term) = downset(d, term_variables(t))
+downset(d::SummationDecapode, expr::Expr) = downset(d, term(expr))
+
+downset!(e::SummationDecapode, d::SummationDecapode, t::Term) = downset!(e, d, term_variables(t))
+downset!(e::SummationDecapode, d::SummationDecapode, expr::Expr) = downset!(e, d, term(expr))
+
 term(expr::Expr) = begin
     @match expr begin
         #TODO: Would we want ∂ₜ to be used with general expressions or just Vars?

@@ -162,6 +162,36 @@ let
   @test_throws Exception downset(d, [:B, :Z])
 end
 
+# Downset from a derived expression term uses the variables in the term.
+let
+  d = @decapode begin
+    P == f(A)
+    Q == g(C)
+  end
+  e_term = downset(d, term(:(d(P) / mag(P))))
+  e_expr = downset(d, :(d(P) / mag(P)))
+
+  @test issetequal(e_term[:name], [:A, :P])
+  @test nparts(e_term, :Op1) == 1
+  @test e_term[1, :op1] == :f
+
+  @test issetequal(e_expr[:name], e_term[:name])
+  @test nparts(e_expr, :Op1) == nparts(e_term, :Op1)
+end
+
+# Downset from an expression includes the union of dependencies of all variables.
+let
+  d = @decapode begin
+    P == f(A)
+    Q == g(C)
+    R == h(D)
+  end
+  e = downset(d, :((d(P) / mag(P)) + Q))
+  @test issetequal(e[:name], [:A, :P, :C, :Q])
+  @test nparts(e, :Op1) == 2
+  @test issetequal(e[:op1], [:f, :g])
+end
+
 # Downset of u from the Navier-Stokes Stream Function / Poisson Problem
 # Formulation (Correct) from:
 # https://algebraicjulia.github.io/Decapodes.jl/dev/navier_stokes/ns/
