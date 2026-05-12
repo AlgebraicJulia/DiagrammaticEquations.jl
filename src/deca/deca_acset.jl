@@ -2,7 +2,7 @@ using ..DiagrammaticEquations
 
 # TODO: You could write a method which auto-generates these rules given degree N.
 """
-These are the default rules used to do type inference/function resolution in the 1D/2D exterior calculus.
+These are the default rules used to do type inference/function resolution in the 1D/2D/3D exterior calculus.
 """
 op1_operators = [
   # Rules for ∂ₜ
