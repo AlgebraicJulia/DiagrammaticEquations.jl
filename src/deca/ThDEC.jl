@@ -169,12 +169,7 @@ isForm2(x) = @match symtype(x) begin
     _ => false
 end
 
-isForm3(x) = @match symtype(x) begin
-    PatFormParams([3,_,_,_]) => true
-    _ => false
-end
-
-export isDualForm, isForm0, isForm1, isForm2, isForm3
+export isDualForm, isForm0, isForm1, isForm2
 
 # ###############################
 # OPERATORS
@@ -193,9 +188,7 @@ export isDualForm, isForm0, isForm1, isForm2, isForm3
 end
 
 @alias (
-    d₀, d₁, d₂,
-    dual_d₀, dual_d₁, dual_d₂,
-    d̃₀, d̃₁, d̃₂,
+    d₀, d₁, d₂
 ) => d
 
 @operator ★(S)::DECQuantity begin
@@ -209,7 +202,7 @@ end
 # TODO in orthodox Decapodes, these are type-specific.
 @alias (
     ★₀, ★₁, ★₂, ★₃, ★₀⁻¹, ★₁⁻¹, ★₂⁻¹, ★₃⁻¹,
-    ⋆₀, ⋆₁, ⋆₂, ⋆₃, ⋆₀⁻¹, ⋆₁⁻¹, ⋆₂⁻¹, ⋆₃⁻¹,
+    ⋆₀, ⋆₁, ⋆₂, ⋆₃, ⋆₀⁻¹, ⋆₁⁻¹, ⋆₂⁻¹, ⋆₃⁻¹
 ) => ★
 
 @operator Δ(S)::DECQuantity begin
@@ -221,7 +214,6 @@ end
     @rule Δ(~x::isForm0) => ★(d(★(d(~x))))
     @rule Δ(~x::isForm1) => ★(d(★(d(~x)))) + d(★(d(★(~x))))
     @rule Δ(~x::isForm2) => d(★(d(★(~x))))
-    @rule Δ(~x::isForm3) => d(★(d(★(~x))))
 end
 
 @alias (Δ₀, Δ₁, Δ₂, Δ₃) => Δ
