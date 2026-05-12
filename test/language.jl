@@ -1284,7 +1284,61 @@ end
   # Compare pprint of Term(deca_3d) against the expected repr copied from the
   # test environment.  This avoids fragile ACSet row-position indexing and
   # fully documents the inferred types and resolved operators in one place.
-  expected_pprint = "Context:\n  P0::Form0 over I\n  P1::Form1 over I\n  P2::Form2 over I\n  P3::Form3 over I\n  D0::DualForm0 over I\n  D1::DualForm1 over I\n  D2::DualForm2 over I\n  D3::DualForm3 over I\n  R1::Form3 over I\n  R12::Form2 over I\n  R2::DualForm3 over I\n  R20::DualForm2 over I\n  R3::Form2 over I\n  R13::Form1 over I\n  R4::Form3 over I\n  R18::Form3 over I\n  R5::Form3 over I\n  R14::Form0 over I\n  R6::DualForm3 over I\n  R22::Form3 over I\n  R7::DualForm3 over I\n  R15::Form3 over I\n  R8::DualForm2 over I\n  R19::DualForm3 over I\n  R9::DualForm1 over I\n  R16::DualForm3 over I\n  R10::DualForm0 over I\n  R21::Form3 over I\n  R11::Form3 over I\n  R17::Form3 over I\nEquations:\nR1   = d₂(P2)\nR2   = dual_d₂(D2)\nR3   = δ₃(P3)\nR4   = Δ₃(P3)\nR5   = -(P3)\nR6   = -(D3)\nR7   = ⋆₀(P0)\nR8   = ⋆₁(P1)\nR9   = ⋆₂(P2)\nR10   = ⋆₃(P3)\nR11   = ⋆₃⁻¹(D0)\nR12   = ⋆₂⁻¹(D1)\nR13   = ⋆₁⁻¹(D2)\nR14   = ⋆₀⁻¹(D3)\nR15   = ∂ₜ(P3)\nR16   = ∂ₜ(D3)\nR17   = ∧₂₁(P2, P1)\nR18   = ∧₁₂(P1, P2)\nR19   = L₃(P1, D3)\nR20   = i₃(P1, D3)\nR21   = ∧₃₀(P3, P0)\nR22   = ∧₀₃(P0, P3)\n"
+  expected_pprint = """Context:
+  P0::Form0 over I
+  P1::Form1 over I
+  P2::Form2 over I
+  P3::Form3 over I
+  D0::DualForm0 over I
+  D1::DualForm1 over I
+  D2::DualForm2 over I
+  D3::DualForm3 over I
+  R1::Form3 over I
+  R12::Form2 over I
+  R2::DualForm3 over I
+  R20::DualForm2 over I
+  R3::Form2 over I
+  R13::Form1 over I
+  R4::Form3 over I
+  R18::Form3 over I
+  R5::Form3 over I
+  R14::Form0 over I
+  R6::DualForm3 over I
+  R22::Form3 over I
+  R7::DualForm3 over I
+  R15::Form3 over I
+  R8::DualForm2 over I
+  R19::DualForm3 over I
+  R9::DualForm1 over I
+  R16::DualForm3 over I
+  R10::DualForm0 over I
+  R21::Form3 over I
+  R11::Form3 over I
+  R17::Form3 over I
+Equations:
+R1   = d₂(P2)
+R2   = dual_d₂(D2)
+R3   = δ₃(P3)
+R4   = Δ₃(P3)
+R5   = -(P3)
+R6   = -(D3)
+R7   = ⋆₀(P0)
+R8   = ⋆₁(P1)
+R9   = ⋆₂(P2)
+R10   = ⋆₃(P3)
+R11   = ⋆₃⁻¹(D0)
+R12   = ⋆₂⁻¹(D1)
+R13   = ⋆₁⁻¹(D2)
+R14   = ⋆₀⁻¹(D3)
+R15   = ∂ₜ(P3)
+R16   = ∂ₜ(D3)
+R17   = ∧₂₁(P2, P1)
+R18   = ∧₁₂(P1, P2)
+R19   = L₃(P1, D3)
+R20   = i₃(P1, D3)
+R21   = ∧₃₀(P3, P0)
+R22   = ∧₀₃(P0, P3)
+"""
   @test sprint((io, x) -> DiagrammaticEquations.pprint(io, x), Term(deca_3d)) == expected_pprint
 end
 
