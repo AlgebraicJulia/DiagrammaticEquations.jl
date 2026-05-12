@@ -192,7 +192,11 @@ export isDualForm, isForm0, isForm1, isForm2, isForm3
     end
 end
 
-@alias (d₀, d₁, d₂, dual_d₀, dual_d₁, dual_d₂, d̃₀, d̃₁, d̃₂) => d
+@alias (
+    d₀, d₁, d₂,
+    dual_d₀, dual_d₁, dual_d₂,
+    d̃₀, d̃₁, d̃₂,
+) => d
 
 @operator ★(S)::DECQuantity begin
     @match S begin
@@ -203,7 +207,10 @@ end
 end
 
 # TODO in orthodox Decapodes, these are type-specific.
-@alias (★₀, ★₁, ★₂, ★₃, ★₀⁻¹, ★₁⁻¹, ★₂⁻¹, ★₃⁻¹, ⋆₀, ⋆₁, ⋆₂, ⋆₃, ⋆₀⁻¹, ⋆₁⁻¹, ⋆₂⁻¹, ⋆₃⁻¹) => ★
+@alias (
+    ★₀, ★₁, ★₂, ★₃, ★₀⁻¹, ★₁⁻¹, ★₂⁻¹, ★₃⁻¹,
+    ⋆₀, ⋆₁, ⋆₂, ⋆₃, ⋆₀⁻¹, ⋆₁⁻¹, ⋆₂⁻¹, ⋆₃⁻¹,
+) => ★
 
 @operator Δ(S)::DECQuantity begin
     @match S begin
