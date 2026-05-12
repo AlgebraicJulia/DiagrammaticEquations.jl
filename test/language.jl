@@ -1277,24 +1277,15 @@ end
   end
 
   infer_types!(deca_3d, dim=3)
-
-  @test deca_3d[deca_3d[1:4, :tgt], :type] == [:Form3, :DualForm3, :Form2, :Form3]
-  @test deca_3d[deca_3d[5:6, :tgt], :type] == [:Form3, :DualForm3]
-  @test deca_3d[deca_3d[7:10, :tgt], :type] == [:DualForm3, :DualForm2, :DualForm1, :DualForm0]
-  @test deca_3d[deca_3d[11:14, :tgt], :type] == [:Form3, :Form2, :Form1, :Form0]
-  @test deca_3d[deca_3d[15:16, :tgt], :type] == [:Form3, :DualForm3]
-  @test deca_3d[deca_3d[1:6, :res], :type] == [:Form3, :Form3, :DualForm3, :DualForm2, :Form3, :Form3]
-
   @test type_check(deca_3d, dim=3)
 
   resolve_overloads!(deca_3d, dim=3)
 
-  @test deca_3d[1:4, :op1] == [:d₂, :dual_d₂, :δ₃, :Δ₃]
-  @test deca_3d[5:6, :op1] == [:-, :-]
-  @test deca_3d[7:10, :op1] == [:⋆₀, :⋆₁, :⋆₂, :⋆₃]
-  @test deca_3d[11:14, :op1] == [:⋆₃⁻¹, :⋆₂⁻¹, :⋆₁⁻¹, :⋆₀⁻¹]
-  @test deca_3d[15:16, :op1] == [:∂ₜ, :∂ₜ]
-  @test deca_3d[1:6, :op2] == [:∧₂₁, :∧₁₂, :L₃, :i₃, :∧₃₀, :∧₀₃]
+  # Compare pprint of Term(deca_3d) against the expected repr copied from the
+  # test environment.  This avoids fragile ACSet row-position indexing and
+  # fully documents the inferred types and resolved operators in one place.
+  expected_pprint = "Context:\n  P0::Form0 over I\n  P1::Form1 over I\n  P2::Form2 over I\n  P3::Form3 over I\n  D0::DualForm0 over I\n  D1::DualForm1 over I\n  D2::DualForm2 over I\n  D3::DualForm3 over I\n  R1::Form3 over I\n  R12::Form2 over I\n  R2::DualForm3 over I\n  R20::DualForm2 over I\n  R3::Form2 over I\n  R13::Form1 over I\n  R4::Form3 over I\n  R18::Form3 over I\n  R5::Form3 over I\n  R14::Form0 over I\n  R6::DualForm3 over I\n  R22::Form3 over I\n  R7::DualForm3 over I\n  R15::Form3 over I\n  R8::DualForm2 over I\n  R19::DualForm3 over I\n  R9::DualForm1 over I\n  R16::DualForm3 over I\n  R10::DualForm0 over I\n  R21::Form3 over I\n  R11::Form3 over I\n  R17::Form3 over I\nEquations:\nR1   = d₂(P2)\nR2   = dual_d₂(D2)\nR3   = δ₃(P3)\nR4   = Δ₃(P3)\nR5   = -(P3)\nR6   = -(D3)\nR7   = ⋆₀(P0)\nR8   = ⋆₁(P1)\nR9   = ⋆₂(P2)\nR10   = ⋆₃(P3)\nR11   = ⋆₃⁻¹(D0)\nR12   = ⋆₂⁻¹(D1)\nR13   = ⋆₁⁻¹(D2)\nR14   = ⋆₀⁻¹(D3)\nR15   = ∂ₜ(P3)\nR16   = ∂ₜ(D3)\nR17   = ∧₂₁(P2, P1)\nR18   = ∧₁₂(P1, P2)\nR19   = L₃(P1, D3)\nR20   = i₃(P1, D3)\nR21   = ∧₃₀(P3, P0)\nR22   = ∧₀₃(P0, P3)\n"
+  @test sprint((io, x) -> DiagrammaticEquations.pprint(io, x), Term(deca_3d)) == expected_pprint
 end
 
 @testset "Compilation Transformation" begin
