@@ -1281,10 +1281,11 @@ end
 
   resolve_overloads!(deca_3d, dim=3)
 
-  # Compare pprint of Term(deca_3d) against the expected repr copied from the
-  # test environment.  This avoids fragile ACSet row-position indexing and
-  # fully documents the inferred types and resolved operators in one place.
-  expected_pprint = """Context:
+  # Compare pprint of Term(deca_3d) as a set of lines against the expected set
+  # copied from the test environment.  Using set equality avoids brittleness due
+  # to internal ACSet row ordering while still verifying all inferred types and
+  # resolved operators.
+  expected_lines = Set(split("""Context:
   P0::Form0 over I
   P1::Form1 over I
   P2::Form2 over I
@@ -1338,8 +1339,9 @@ R19   = L₃(P1, D3)
 R20   = i₃(P1, D3)
 R21   = ∧₃₀(P3, P0)
 R22   = ∧₀₃(P0, P3)
-"""
-  @test sprint((io, x) -> DiagrammaticEquations.pprint(io, x), Term(deca_3d)) == expected_pprint
+""", "\n"))
+  actual_lines = Set(split(sprint((io, x) -> DiagrammaticEquations.pprint(io, x), Term(deca_3d)), "\n"))
+  @test actual_lines == expected_lines
 end
 
 @testset "Compilation Transformation" begin

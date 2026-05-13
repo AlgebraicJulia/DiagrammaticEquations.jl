@@ -169,7 +169,12 @@ isForm2(x) = @match symtype(x) begin
     _ => false
 end
 
-export isDualForm, isForm0, isForm1, isForm2
+isForm3(x) = @match symtype(x) begin
+    PatFormParams([3,_,_,_]) => true
+    _ => false
+end
+
+export isDualForm, isForm0, isForm1, isForm2, isForm3
 
 # ###############################
 # OPERATORS
@@ -214,6 +219,7 @@ end
     @rule Δ(~x::isForm0) => ★(d(★(d(~x))))
     @rule Δ(~x::isForm1) => ★(d(★(d(~x)))) + d(★(d(★(~x))))
     @rule Δ(~x::isForm2) => d(★(d(★(~x))))
+    @rule Δ(~x::isForm3) => d(★(d(★(~x))))
 end
 
 @alias (Δ₀, Δ₁, Δ₂, Δ₃) => Δ

@@ -90,6 +90,10 @@ end
   @test !isForm2(u)
   @test !isForm2(a)
 
+  @test isForm3(h3)
+  @test !isForm3(u)
+  @test !isForm3(a)
+
   @test isDualForm(η)
   @test !isDualForm(u)
   @test !isDualForm(a)
@@ -152,6 +156,9 @@ end
     @test symtype(★₃(h3)) == PrimalForm{0, :X, 3}
     @test symtype(⋆₃(h3)) == PrimalForm{0, :X, 3}
     @test symtype(∧₂₁(η3, ω3)) == PrimalForm{3, :X, 3}
+
+    # Δ rewrite rule for 3-forms: only the d∘δ term survives since d(Form3)=0 in 3D
+    @test isequal(SymbolicUtils.Chain(rules(Δ, Val(1)))(Δ(h3)), d(★(d(★(h3)))))
 end
 
 @testset "Term Construction" begin
