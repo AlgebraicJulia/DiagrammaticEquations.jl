@@ -1341,7 +1341,7 @@ R21   = ∧₃₀(P3, P0)
 R22   = ∧₀₃(P0, P3)
 """, "\n"))
   actual_lines = Set(split(sprint((io, x) -> DiagrammaticEquations.pprint(io, x), Term(deca_3d)), "\n"))
-  @test actual_lines == expected_lines
+  @test issetequal(actual_lines, expected_lines)
 end
 
 @testset "Compilation Transformation" begin
