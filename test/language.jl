@@ -1302,6 +1302,118 @@ end
   @test_throws DecaTypeExeception type_check(HeatXfer)
   @test HeatXfer[12, :op2] == :*
   @test HeatXfer[40, :type] == :DualForm1 && HeatXfer[39, :type] == :Form1
+
+  deca_3d = @decapode begin
+    (P0::Form0)
+    (P1::Form1)
+    (P2::Form2)
+    (P3::Form3)
+
+    (D0::DualForm0)
+    (D1::DualForm1)
+    (D2::DualForm2)
+    (D3::DualForm3)
+
+    R1 == d(P2)
+    R2 == d(D2)
+
+    R3 == δ(P3)
+
+    R4 == Δ(P3)
+
+    R5 == -(P3)
+    R6 == -(D3)
+
+    R7 == ⋆(P0)
+    R8 == ⋆(P1)
+    R9 == ⋆(P2)
+    R10 == ⋆(P3)
+
+    R11 == ⋆(D0)
+    R12 == ⋆(D1)
+    R13 == ⋆(D2)
+    R14 == ⋆(D3)
+
+    R15 == ∂ₜ(P3)
+    R16 == ∂ₜ(D3)
+
+    R17 == ∧(P2, P1)
+    R18 == ∧(P1, P2)
+
+    R19 == L(P1, D3)
+    R20 == i(P1, D3)
+
+    R21 == ∧(P3, P0)
+    R22 == ∧(P0, P3)
+
+  end
+
+  infer_types!(deca_3d, dim=3)
+  @test type_check(deca_3d, dim=3)
+
+  resolve_overloads!(deca_3d, dim=3)
+
+  # Compare pprint of Term(deca_3d) as a set of lines against the expected set
+  # copied from the test environment.  Using set equality avoids brittleness due
+  # to internal ACSet row ordering while still verifying all inferred types and
+  # resolved operators.
+  expected_lines = Set(split("""Context:
+  P0::Form0 over I
+  P1::Form1 over I
+  P2::Form2 over I
+  P3::Form3 over I
+  D0::DualForm0 over I
+  D1::DualForm1 over I
+  D2::DualForm2 over I
+  D3::DualForm3 over I
+  R1::Form3 over I
+  R12::Form2 over I
+  R2::DualForm3 over I
+  R20::DualForm2 over I
+  R3::Form2 over I
+  R13::Form1 over I
+  R4::Form3 over I
+  R18::Form3 over I
+  R5::Form3 over I
+  R14::Form0 over I
+  R6::DualForm3 over I
+  R22::Form3 over I
+  R7::DualForm3 over I
+  R15::Form3 over I
+  R8::DualForm2 over I
+  R19::DualForm3 over I
+  R9::DualForm1 over I
+  R16::DualForm3 over I
+  R10::DualForm0 over I
+  R21::Form3 over I
+  R11::Form3 over I
+  R17::Form3 over I
+Equations:
+R1   = d₂(P2)
+R2   = dual_d₂(D2)
+R3   = δ₃(P3)
+R4   = Δ₃(P3)
+R5   = -(P3)
+R6   = -(D3)
+R7   = ⋆₀(P0)
+R8   = ⋆₁(P1)
+R9   = ⋆₂(P2)
+R10   = ⋆₃(P3)
+R11   = ⋆₃⁻¹(D0)
+R12   = ⋆₂⁻¹(D1)
+R13   = ⋆₁⁻¹(D2)
+R14   = ⋆₀⁻¹(D3)
+R15   = ∂ₜ(P3)
+R16   = ∂ₜ(D3)
+R17   = ∧₂₁(P2, P1)
+R18   = ∧₁₂(P1, P2)
+R19   = L₃(P1, D3)
+R20   = i₃(P1, D3)
+R21   = ∧₃₀(P3, P0)
+R22   = ∧₀₃(P0, P3)
+""", "\n"))
+  actual_lines = Set(split(sprint((io, x) -> DiagrammaticEquations.pprint(io, x), Term(deca_3d)), "\n"))
+  @test issetequal(actual_lines, expected_lines)
 end
 
 @testset "Compilation Transformation" begin

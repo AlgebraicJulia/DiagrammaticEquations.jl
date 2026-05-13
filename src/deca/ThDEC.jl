@@ -169,7 +169,12 @@ isForm2(x) = @match symtype(x) begin
     _ => false
 end
 
-export isDualForm, isForm0, isForm1, isForm2
+isForm3(x) = @match symtype(x) begin
+    PatFormParams([3,_,_,_]) => true
+    _ => false
+end
+
+export isDualForm, isForm0, isForm1, isForm2, isForm3
 
 # ###############################
 # OPERATORS
@@ -187,7 +192,9 @@ export isDualForm, isForm0, isForm1, isForm2
     end
 end
 
-@alias (d₀, d₁) => d
+@alias (
+    d₀, d₁, d₂
+) => d
 
 @operator ★(S)::DECQuantity begin
     @match S begin
@@ -198,7 +205,10 @@ end
 end
 
 # TODO in orthodox Decapodes, these are type-specific.
-@alias (★₀, ★₁, ★₂, ★₀⁻¹, ★₁⁻¹, ★₂⁻¹) => ★
+@alias (
+    ★₀, ★₁, ★₂, ★₃, ★₀⁻¹, ★₁⁻¹, ★₂⁻¹, ★₃⁻¹,
+    ⋆₀, ⋆₁, ⋆₂, ⋆₃, ⋆₀⁻¹, ⋆₁⁻¹, ⋆₂⁻¹, ⋆₃⁻¹
+) => ★
 
 @operator Δ(S)::DECQuantity begin
     @match S begin
@@ -209,9 +219,10 @@ end
     @rule Δ(~x::isForm0) => ★(d(★(d(~x))))
     @rule Δ(~x::isForm1) => ★(d(★(d(~x)))) + d(★(d(★(~x))))
     @rule Δ(~x::isForm2) => d(★(d(★(~x))))
+    @rule Δ(~x::isForm3) => d(★(d(★(~x))))
 end
 
-@alias (Δ₀, Δ₁, Δ₂) => Δ
+@alias (Δ₀, Δ₁, Δ₂, Δ₃) => Δ
 
 # TODO: Determine what we need to do for .+
 @operator +(S1, S2)::DECQuantity begin
@@ -243,7 +254,7 @@ end
     end
 end
 
-@alias (∧₀₀, ∧₀₁, ∧₁₀, ∧₁₁, ∧₀₂, ∧₂₀) => ∧
+@alias (∧₀₀, ∧₀₁, ∧₁₀, ∧₁₁, ∧₀₂, ∧₂₀, ∧₀₃, ∧₃₀, ∧₁₂, ∧₂₁) => ∧
 
 @operator ∧(S1, S2)::DECQuantity begin
     @match (S1, S2) begin
@@ -305,9 +316,11 @@ function SymbolicUtils.symtype(::Type{<:Quantity}, qty::Symbol, space::Symbol, d
         :Form0 => PrimalForm{0, space, dim}
         :Form1 => PrimalForm{1, space, dim}
         :Form2 => PrimalForm{2, space, dim}
+        :Form3 => PrimalForm{3, space, dim}
         :DualForm0 => DualForm{0, space, dim}
         :DualForm1 => DualForm{1, space, dim}
         :DualForm2 => DualForm{2, space, dim}
+        :DualForm3 => DualForm{3, space, dim}
         :infer => InferredType
         _ => error("Received $qty which is not a valid type for Decapodes")
     end

@@ -21,6 +21,9 @@ h,    = @syms h::PrimalForm{2, :X, 2}
 
 u2,   = @syms u2::PrimalForm{0, :Y, 2}
 u3,   = @syms u3::PrimalForm{0, :X, 3}
+ω3,   = @syms ω3::PrimalForm{1, :X, 3}
+η3,   = @syms η3::PrimalForm{2, :X, 3}
+h3,   = @syms h3::PrimalForm{3, :X, 3}
 
 @testset "Symtypes" begin
 
@@ -87,6 +90,10 @@ end
   @test !isForm2(u)
   @test !isForm2(a)
 
+  @test isForm3(h3)
+  @test !isForm3(u)
+  @test !isForm3(a)
+
   @test isDualForm(η)
   @test !isDualForm(u)
   @test !isDualForm(a)
@@ -138,6 +145,20 @@ end
 
     # test composition
     @test promote_symtype(d ∘ d, u) == PrimalForm{2, :X, 2}
+end
+
+@testset "3D Type and Alias Support" begin
+    @test symtype(Quantity, :Form3, :X, 3) == PrimalForm{3, :X, 3}
+    @test symtype(Quantity, :DualForm3, :X, 3) == DualForm{3, :X, 3}
+
+    @test symtype(d₂(η3)) == PrimalForm{3, :X, 3}
+    @test symtype(Δ₃(h3)) == PrimalForm{3, :X, 3}
+    @test symtype(★₃(h3)) == PrimalForm{0, :X, 3}
+    @test symtype(⋆₃(h3)) == PrimalForm{0, :X, 3}
+    @test symtype(∧₂₁(η3, ω3)) == PrimalForm{3, :X, 3}
+
+    # Δ rewrite rule for 3-forms: only the d∘δ term survives since d(Form3)=0 in 3D
+    @test isequal(SymbolicUtils.Chain(rules(Δ, Val(1)))(Δ(h3)), d(★(d(★(h3)))))
 end
 
 @testset "Term Construction" begin
