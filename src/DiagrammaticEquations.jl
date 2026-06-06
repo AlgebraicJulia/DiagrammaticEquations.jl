@@ -54,7 +54,7 @@ using Reexport
 ## generate schema from a _theory_
 ## from presentation in the theory determine what to slice over
 ## Pavel S., Hypergraph theory string diagram
-normalize_unicode(s::String) = Unicode.normalize(s, compose=true, stable=true, chartransform=Unicode.julia_chartransform)
+normalize_unicode(s::String) = Unicode.normalize(map(c -> Char(Unicode.julia_chartransform(UInt32(c))), s), compose=true, stable=true)
 normalize_unicode(s::Symbol)  = Symbol(normalize_unicode(String(s)))
 DerivOp = Symbol("∂ₜ")
 append_dot(s::Symbol) = Symbol(string(s)*'\U0307')
