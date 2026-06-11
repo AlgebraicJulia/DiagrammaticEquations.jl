@@ -206,7 +206,16 @@ end
   end
   infer_types!(distr_d_res)
 
-  @test is_isomorphic(distr_d_res, distr_d_rewritten)
+  # SymbolicUtils does not guarantee an order for the summands, which permutes
+  # the names of the gensym'd intermediate variables, so compare up to renaming.
+  anonymize = d -> begin
+    e = deepcopy(d)
+    foreach(parts(e, :Var)) do v
+      startswith(string(e[v, :name]), '•') && (e[v, :name] = :anon)
+    end
+    e
+  end
+  @test anonymize(distr_d_res) ≃ anonymize(distr_d_rewritten)
 end
 
 @testset "Heat" begin
