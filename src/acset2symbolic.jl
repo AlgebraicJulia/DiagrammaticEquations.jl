@@ -69,9 +69,12 @@ function to_acset(d::SummationDecapode, sym_exprs)
   #TODO: This step is breaking up summations
   final_exprs = SymbolicUtils.Code.toexpr.(sym_exprs)
   reify!(exprs) = foreach(exprs) do x
-    if typeof(x) == Expr && x.head == :call
-      x.args[1] = nameof(x.args[1])
-      reify!(x.args[2:end])
+    @match x begin
+      Expr(:call, op, args...) => begin
+        x.args[1] = nameof(op)
+        reify!(args)
+      end
+      _ => nothing
     end
   end
   reify!(final_exprs)
