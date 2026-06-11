@@ -9,7 +9,7 @@ using ..Deca
 
 using MLStyle
 import SymbolicUtils
-using SymbolicUtils: Symbolic, BasicSymbolic, FnType, Sym, symtype
+using SymbolicUtils: BasicSymbolic, FnType, Sym, SymReal, symtype
 
 # name collision with decapodes.Equation
 struct SymbolicEquation{E}
@@ -22,8 +22,8 @@ Base.show(io::IO, e::SymbolicEquation) = print(io, "$(e.lhs) == $(e.rhs)")
 
 ## a struct carry the symbolic variables and their equations
 struct SymbolicContext
-    vars::Vector{Symbolic}
-    equations::Vector{SymbolicEquation{Symbolic}}
+    vars::Vector{BasicSymbolic}
+    equations::Vector{SymbolicEquation{BasicSymbolic}}
 end
 export SymbolicContext
 
@@ -39,17 +39,21 @@ Base.show(io::IO, d::SymbolicContext) = begin
 
 ## BasicSymbolic -> DecaExpr
 function decapodes.Term(t::SymbolicUtils.BasicSymbolic)
-    if SymbolicUtils.issym(t)
+    if SymbolicUtils.isconst(t)
+        decapodes.Term(SymbolicUtils.unwrap_const(t))
+    elseif SymbolicUtils.issym(t)
         decapodes.Var(nameof(t))
     else
-        op = SymbolicUtils.head(t)
+        op = SymbolicUtils.operation(t)
         args = SymbolicUtils.arguments(t)
         termargs = Term.(args)
-        if op == +
+        # `===` rather than `==`: the operation may itself be symbolic (e.g. an
+        # applied function-like Sym), for which `==` builds a symbolic equation.
+        if op === (+)
             decapodes.Plus(termargs)
-        elseif op == *
+        elseif op === (*)
             decapodes.Mult(termargs)
-        elseif op ∈ [DerivOp, ∂ₜ]
+        elseif op === DerivOp || op === ∂ₜ
             decapodes.Tan(only(termargs))
         elseif length(args) == 1
             decapodes.App1(nameof(op, symtype.(args)...), termargs...)
@@ -90,7 +94,7 @@ function SymbolicUtils.BasicSymbolic(context::Dict{Symbol,DataType}, t::decapode
     # user must import symbols into scope
     ! = (f -> getfield(@__MODULE__, f))
     @match t begin
-        Var(name) => SymbolicUtils.Sym{context[name]}(name)
+        Var(name) => SymbolicUtils.Sym{SymReal}(name; type=context[name])
         Lit(v) => Meta.parse(string(v))
         # see heat_eq test: eqs had AppCirc1, but this returns
         # App1(f, App1(...)
@@ -116,11 +120,11 @@ function SymbolicContext(d::decapodes.DecaExpr)
     end
     # ... which we then produce a vector of symbolic vars
     vars = map(context) do (v, s)
-        SymbolicUtils.Sym{s}(v)
+        SymbolicUtils.Sym{SymReal}(v; type=s)
     end
     context = Dict{Symbol,DataType}(context)
     eqs = map(d.equations) do eq
-        SymbolicEquation{Symbolic}(BasicSymbolic.(Ref(context), [eq.lhs, eq.rhs])...)
+        SymbolicEquation{BasicSymbolic}(BasicSymbolic.(Ref(context), [eq.lhs, eq.rhs])...)
     end
     SymbolicContext(vars, eqs)
 end

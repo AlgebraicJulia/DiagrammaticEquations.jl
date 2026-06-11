@@ -1,6 +1,6 @@
 using MLStyle
 import SymbolicUtils
-using SymbolicUtils: Symbolic, BasicSymbolic, FnType, Sym, symtype
+using SymbolicUtils: BasicSymbolic, FnType, Sym, symtype
 import SymbolicUtils: promote_symtype
 
 function rules end
@@ -55,7 +55,7 @@ as well as
 ```
 foo(S1, S2, ...) where {S1<:DECQuantity, ...}
     s = promote_symtype(f, S1, S2, ...)
-    SymbolicUtils.Term{s}(foo, [S1, S2, ...])
+    SymbolicUtils.Term{vartype(S1)}(foo, [S1, S2, ...]; type=s)
 end
 ```
 
@@ -99,19 +99,24 @@ macro operator(head, body)
     result = quote end
 
     # construct the function on basic symbolics
+    # (Base arithmetic operators are already defined on BasicSymbolic by SymbolicUtils
+    # itself, and route their result type through promote_symtype, so for those we only
+    # extend promote_symtype below.)
     argnames = [gensym(:x) for _ in 1:arity]
-    argclaus = [:($a::Symbolic) for a in argnames]
-    push!(result.args, quote
-        @nospecialize
-        function $f($(argclaus...))
-            s = promote_symtype($f, $(argnames...))
-            SymbolicUtils.Term{s}($f, Any[$(argnames...)])
-        end
+    argclaus = [:($a::SymbolicUtils.BasicSymbolic) for a in argnames]
+    if f ∉ (:+, :-, :*)
+        push!(result.args, quote
+            @nospecialize
+            function $f($(argclaus...))
+                s = promote_symtype($f, $(argnames...))
+                SymbolicUtils.Term{SymbolicUtils.vartype($(argnames[1]))}($f, Any[$(argnames...)]; type=s)
+            end
 
-        export $f
+            export $f
 
-        # Base.show(io::IO, ::typeof($f)) = print(io, $f)
-    end)
+            # Base.show(io::IO, ::typeof($f)) = print(io, $f)
+        end)
+    end
 
     # if there are rewriting rules, add a method which accepts the function symbol and its arity
     # (to prevent shadowing on operators like `-`)
@@ -131,7 +136,7 @@ macro operator(head, body)
                 $(sort_types...)) where {$(sort_constraints...)}
             $block
         end
-        function SymbolicUtils.promote_symtype(::typeof($f), args::Vararg{Symbolic, $arity})
+        function SymbolicUtils.promote_symtype(::typeof($f), args::Vararg{SymbolicUtils.BasicSymbolic, $arity})
             promote_symtype($f, symtype.(args)...)
         end
     end)

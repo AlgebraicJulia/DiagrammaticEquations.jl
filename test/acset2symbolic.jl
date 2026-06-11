@@ -46,8 +46,8 @@ using SymbolicUtils: Fixpoint, Prewalk, Postwalk, Chain, @rule
   end
   infer_types!(multi_sum)
 
-  # TODO: This is correct but the symbolics is splitting up the sum
-  @test multi_sum == symbolic_rewriting(multi_sum)
+  # TODO: This is correct but the symbolics may reorder the summands
+  @test multi_sum ≃ symbolic_rewriting(multi_sum)
 
 
   all_ops = @decapode begin

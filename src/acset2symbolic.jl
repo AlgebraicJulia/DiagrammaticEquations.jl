@@ -1,12 +1,12 @@
 using DiagrammaticEquations
 using ACSets
 import SymbolicUtils
-using SymbolicUtils: BasicSymbolic, Symbolic
+using SymbolicUtils: BasicSymbolic, SymReal
 
 export symbolic_rewriting
 
 const EQUALITY = (==)
-const SymEqSym = SymbolicEquation{Symbolic}
+const SymEqSym = SymbolicEquation{BasicSymbolic}
 
 function symbolics_lookup(d::SummationDecapode)
   Dict{Symbol, BasicSymbolic}(map(d[:name],d[:type]) do name,type
@@ -16,7 +16,7 @@ end
 
 function decavar_to_symbolics(var_name::Symbol, var_type::Symbol, space = :I)
   new_type = SymbolicUtils.symtype(Deca.DECQuantity, var_type, space)
-  SymbolicUtils.Sym{new_type}(var_name)
+  SymbolicUtils.Sym{SymReal}(var_name; type=new_type)
 end
 
 function to_symbolics(d::SummationDecapode, symvar_lookup::Dict{Symbol, BasicSymbolic}, op_idx::Int, op_type::Symbol)
@@ -25,7 +25,7 @@ function to_symbolics(d::SummationDecapode, symvar_lookup::Dict{Symbol, BasicSym
   op_sym = getfield(@__MODULE__, edge_function(d,op_idx,Val(op_type)))
 
   S = promote_symtype(op_sym, input_syms...)
-  SymEqSym(output_sym, SymbolicUtils.Term{S}(op_sym, input_syms))
+  SymEqSym(output_sym, SymbolicUtils.Term{SymReal}(op_sym, input_syms; type=S))
 end
 
 function to_symbolics(d::SummationDecapode)
@@ -55,7 +55,7 @@ function merge_equations(d::SummationDecapode)
   end
 
   map(terminal_eqns) do eqn
-    SymbolicUtils.Term{Number}(EQUALITY, [eqn.lhs, eqn.rhs])
+    SymbolicUtils.Term{SymReal}(EQUALITY, [eqn.lhs, eqn.rhs]; type=Number)
   end
 end
 

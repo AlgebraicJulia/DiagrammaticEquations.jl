@@ -7,7 +7,7 @@ using MLStyle
 using StructEquality
 
 import SymbolicUtils
-using SymbolicUtils: Symbolic, BasicSymbolic, FnType, Sym, Term, @rule
+using SymbolicUtils: BasicSymbolic, FnType, Sym, Term, @rule
 import SymbolicUtils: symtype, promote_symtype
 
 import Base: +, -, *
@@ -239,9 +239,26 @@ end
         PatInferredTypes(_) => InferredType
         (PatScalar(_), PatScalar(_)) => Scalar
         (PatScalar(_), PatFormParams([i,d,s,n])) || (PatFormParams([i,d,s,n]), PatScalar(_)) => Form{i,d,s,n}
+        # Forms of the same type may be multiplied. (SymbolicUtils computes the type
+        # of a scalar multiple like `2x` by folding `promote_symtype(*, S, S)` over
+        # the factors, so this case must be defined for forms.)
+        (PatFormParams([i1,d1,s1,n1]), PatFormParams([i2,d2,s2,n2])) => begin
+            if (i1 == i2) && (d1 == d2) && (s1 == s2) && (n1 == n2)
+                Form{i1,d1,s1,n1}
+            else
+                throw(OperatorError("multiply", [S1, S2]))
+            end
+        end
         _ => throw(OperatorError("multiply", [S1, S2]))
     end
 end
+
+# Numeric coefficients act like literals, e.g. `-x` is lowered to `-1 * x` by
+# SymbolicUtils and must preserve the quantity's type.
+SymbolicUtils.promote_symtype(::typeof(*), ::Type{T}, ::Type{S}) where {T<:Real, S<:DECQuantity} =
+    promote_symtype(*, Literal, S)
+SymbolicUtils.promote_symtype(::typeof(*), ::Type{S}, ::Type{T}) where {T<:Real, S<:DECQuantity} =
+    promote_symtype(*, S, Literal)
 
 @alias (∧₀₀, ∧₀₁, ∧₁₀, ∧₁₁, ∧₀₂, ∧₂₀) => ∧
 

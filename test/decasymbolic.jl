@@ -3,7 +3,7 @@ using DiagrammaticEquations
 using DiagrammaticEquations.Deca.ThDEC
 using DiagrammaticEquations.decapodes
 import SymbolicUtils
-using SymbolicUtils: symtype, promote_symtype, Symbolic, @syms, @rule
+using SymbolicUtils: symtype, promote_symtype, BasicSymbolic, @syms, @rule
 using MLStyle
 
 import DiagrammaticEquations: rules
@@ -164,7 +164,7 @@ end
   @test Term(a * b) == Mult(Term[Var(:a), Var(:b)])
   @test Term(ω ∧ du) == App2(:∧₁₁, Var(:ω), Var(:du))
 
-  @test Term(ω + du + d(u)) == Plus(Term[App1(:d₀, Var(:u)), Var(:du), Var(:ω)])
+  @test Term(ω + du + d(u)) == Plus(Term[Var(:ω), Var(:du), App1(:d₀, Var(:u))])
 
   let
     @syms f(x, y, z)
