@@ -80,9 +80,12 @@ function to_acset(d::SummationDecapode, sym_exprs)
   # varies across platforms. Sort summands by their printed form so that the
   # generated decapode is deterministic.
   sort_sums!(exprs) = foreach(exprs) do x
-    if typeof(x) == Expr && x.head == :call
-      sort_sums!(x.args[2:end])
-      x.args[1] == :+ && sort!(@view(x.args[2:end]), by=string)
+    @match x begin
+      Expr(:call, op, args...) => begin
+        sort_sums!(args)
+        op == :+ && sort!(@view(x.args[2:end]), by=string)
+      end
+      _ => nothing
     end
   end
   sort_sums!(final_exprs)
