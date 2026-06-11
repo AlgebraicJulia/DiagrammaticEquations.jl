@@ -254,11 +254,16 @@ end
 end
 
 # Numeric coefficients act like literals, e.g. `-x` is lowered to `-1 * x` by
-# SymbolicUtils and must preserve the quantity's type.
+# SymbolicUtils and must preserve the quantity's type. Likewise for sums, which
+# also covers binary subtraction since `a - b` is lowered to `a + (-b)`.
 SymbolicUtils.promote_symtype(::typeof(*), ::Type{T}, ::Type{S}) where {T<:Real, S<:DECQuantity} =
     promote_symtype(*, Literal, S)
 SymbolicUtils.promote_symtype(::typeof(*), ::Type{S}, ::Type{T}) where {T<:Real, S<:DECQuantity} =
     promote_symtype(*, S, Literal)
+SymbolicUtils.promote_symtype(::typeof(+), ::Type{T}, ::Type{S}) where {T<:Real, S<:DECQuantity} =
+    promote_symtype(+, Literal, S)
+SymbolicUtils.promote_symtype(::typeof(+), ::Type{S}, ::Type{T}) where {T<:Real, S<:DECQuantity} =
+    promote_symtype(+, S, Literal)
 
 @alias (∧₀₀, ∧₀₁, ∧₁₀, ∧₁₁, ∧₀₂, ∧₂₀) => ∧
 

@@ -6,10 +6,11 @@ import SymbolicUtils: promote_symtype
 function rules end
 export rules
 
-# TODO: Probable piracy here
-function promote_symtype(f::ComposedFunction, args)
-    promote_symtype(f.outer, promote_symtype(f.inner, args))
-end
+# Composed operators applied to symbolic values, e.g. `promote_symtype(d ∘ d, u)`.
+# SymbolicUtils provides the corresponding method on symtypes; this only lifts it
+# to symbolic arguments, mirroring the per-operator methods @operator generates.
+promote_symtype(f::ComposedFunction, args::Vararg{BasicSymbolic}) =
+    promote_symtype(f, symtype.(args)...)
 
 @active PatBlock(e) begin
     @match e begin
@@ -126,7 +127,7 @@ macro operator(head, body)
                 [($(rulecalls...))]
             end
 
-            rules(::typeof($f)) = rules($f, Val{1})
+            rules(::typeof($f)) = rules($f, Val($arity))
         end)
     end
 
@@ -167,7 +168,10 @@ macro alias(body)
                 end
                 export $alias
 
-                Base.nameof(::typeof($alias), s) = Symbol("$alias")
+                Base.nameof(::typeof($alias), s...) = $(QuoteNode(alias))
+
+                SymbolicUtils.promote_symtype(::typeof($alias), args...) =
+                    SymbolicUtils.promote_symtype($rep, args...)
             end)
     end
     return esc(result)

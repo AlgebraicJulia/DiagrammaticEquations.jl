@@ -53,7 +53,7 @@ function decapodes.Term(t::SymbolicUtils.BasicSymbolic)
             decapodes.Plus(termargs)
         elseif op === (*)
             decapodes.Mult(termargs)
-        elseif op === DerivOp || op === ∂ₜ
+        elseif op === ∂ₜ
             decapodes.Tan(only(termargs))
         elseif length(args) == 1
             decapodes.App1(nameof(op, symtype.(args)...), termargs...)
