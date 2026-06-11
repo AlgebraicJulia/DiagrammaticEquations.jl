@@ -76,6 +76,17 @@ function to_acset(d::SummationDecapode, sym_exprs)
   end
   reify!(final_exprs)
 
+  # Sums are unordered, but the order SymbolicUtils yields their arguments in
+  # varies across platforms. Sort summands by their printed form so that the
+  # generated decapode is deterministic.
+  sort_sums!(exprs) = foreach(exprs) do x
+    if typeof(x) == Expr && x.head == :call
+      sort_sums!(x.args[2:end])
+      x.args[1] == :+ && sort!(@view(x.args[2:end]), by=string)
+    end
+  end
+  sort_sums!(final_exprs)
+
   deca_block = quote end
   deca_block.args = [outer_types..., final_exprs...]
 

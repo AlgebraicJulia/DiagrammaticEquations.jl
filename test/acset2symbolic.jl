@@ -46,8 +46,7 @@ using SymbolicUtils: Fixpoint, Prewalk, Postwalk, Chain, @rule
   end
   infer_types!(multi_sum)
 
-  # TODO: This is correct but the symbolics may reorder the summands
-  @test multi_sum ≃ symbolic_rewriting(multi_sum)
+  @test multi_sum == symbolic_rewriting(multi_sum)
 
 
   all_ops = @decapode begin
@@ -197,25 +196,17 @@ end
 
   distr_d_rewritten = symbolic_rewriting(distr_d, expr_rewriter([leibniz]))
 
+  # The summands are written in the normal form's order, sorted by printed form.
   distr_d_res = @decapode begin
     A::Form0
     B::Form1
     C::Form2
 
-    C == ∧(d(A), B) + ∧(A, d(B))
+    C == ∧(A, d(B)) + ∧(d(A), B)
   end
   infer_types!(distr_d_res)
 
-  # SymbolicUtils does not guarantee an order for the summands, which permutes
-  # the names of the gensym'd intermediate variables, so compare up to renaming.
-  anonymize = d -> begin
-    e = deepcopy(d)
-    foreach(parts(e, :Var)) do v
-      startswith(string(e[v, :name]), '•') && (e[v, :name] = :anon)
-    end
-    e
-  end
-  @test anonymize(distr_d_res) ≃ anonymize(distr_d_rewritten)
+  @test distr_d_res == distr_d_rewritten
 end
 
 @testset "Heat" begin
