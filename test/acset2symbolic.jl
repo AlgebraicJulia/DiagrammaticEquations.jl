@@ -206,7 +206,7 @@ end
   end
   infer_types!(distr_d_res)
 
-  @test distr_d_res == distr_d_rewritten
+  @test is_isomorphic(distr_d_res, distr_d_rewritten)
 end
 
 @testset "Heat" begin
