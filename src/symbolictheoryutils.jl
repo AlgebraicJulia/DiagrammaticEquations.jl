@@ -1,15 +1,16 @@
 using MLStyle
 import SymbolicUtils
-using SymbolicUtils: Symbolic, BasicSymbolic, FnType, Sym, symtype
+using SymbolicUtils: BasicSymbolic, FnType, Sym, symtype
 import SymbolicUtils: promote_symtype
 
 function rules end
 export rules
 
-# TODO: Probable piracy here
-function promote_symtype(f::ComposedFunction, args)
-    promote_symtype(f.outer, promote_symtype(f.inner, args))
-end
+# Composed operators applied to symbolic values, e.g. `promote_symtype(d ∘ d, u)`.
+# SymbolicUtils provides the corresponding method on symtypes; this only lifts it
+# to symbolic arguments, mirroring the per-operator methods @operator generates.
+promote_symtype(f::ComposedFunction, args::Vararg{BasicSymbolic}) =
+    promote_symtype(f, symtype.(args)...)
 
 @active PatBlock(e) begin
     @match e begin
@@ -55,7 +56,7 @@ as well as
 ```
 foo(S1, S2, ...) where {S1<:DECQuantity, ...}
     s = promote_symtype(f, S1, S2, ...)
-    SymbolicUtils.Term{s}(foo, [S1, S2, ...])
+    SymbolicUtils.Term{vartype(S1)}(foo, [S1, S2, ...]; type=s)
 end
 ```
 
@@ -99,19 +100,24 @@ macro operator(head, body)
     result = quote end
 
     # construct the function on basic symbolics
+    # (Base arithmetic operators are already defined on BasicSymbolic by SymbolicUtils
+    # itself, and route their result type through promote_symtype, so for those we only
+    # extend promote_symtype below.)
     argnames = [gensym(:x) for _ in 1:arity]
-    argclaus = [:($a::Symbolic) for a in argnames]
-    push!(result.args, quote
-        @nospecialize
-        function $f($(argclaus...))
-            s = promote_symtype($f, $(argnames...))
-            SymbolicUtils.Term{s}($f, Any[$(argnames...)])
-        end
+    argclaus = [:($a::SymbolicUtils.BasicSymbolic) for a in argnames]
+    if f ∉ (:+, :-, :*)
+        push!(result.args, quote
+            @nospecialize
+            function $f($(argclaus...))
+                s = promote_symtype($f, $(argnames...))
+                SymbolicUtils.Term{SymbolicUtils.vartype($(argnames[1]))}($f, Any[$(argnames...)]; type=s)
+            end
 
-        export $f
+            export $f
 
-        # Base.show(io::IO, ::typeof($f)) = print(io, $f)
-    end)
+            # Base.show(io::IO, ::typeof($f)) = print(io, $f)
+        end)
+    end
 
     # if there are rewriting rules, add a method which accepts the function symbol and its arity
     # (to prevent shadowing on operators like `-`)
@@ -121,7 +127,7 @@ macro operator(head, body)
                 [($(rulecalls...))]
             end
 
-            rules(::typeof($f)) = rules($f, Val{1})
+            rules(::typeof($f)) = rules($f, Val($arity))
         end)
     end
 
@@ -131,7 +137,7 @@ macro operator(head, body)
                 $(sort_types...)) where {$(sort_constraints...)}
             $block
         end
-        function SymbolicUtils.promote_symtype(::typeof($f), args::Vararg{Symbolic, $arity})
+        function SymbolicUtils.promote_symtype(::typeof($f), args::Vararg{SymbolicUtils.BasicSymbolic, $arity})
             promote_symtype($f, symtype.(args)...)
         end
     end)
@@ -162,7 +168,10 @@ macro alias(body)
                 end
                 export $alias
 
-                Base.nameof(::typeof($alias), s) = Symbol("$alias")
+                Base.nameof(::typeof($alias), s...) = $(QuoteNode(alias))
+
+                SymbolicUtils.promote_symtype(::typeof($alias), args...) =
+                    SymbolicUtils.promote_symtype($rep, args...)
             end)
     end
     return esc(result)

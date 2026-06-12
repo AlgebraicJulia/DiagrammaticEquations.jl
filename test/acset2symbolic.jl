@@ -46,7 +46,6 @@ using SymbolicUtils: Fixpoint, Prewalk, Postwalk, Chain, @rule
   end
   infer_types!(multi_sum)
 
-  # TODO: This is correct but the symbolics is splitting up the sum
   @test multi_sum == symbolic_rewriting(multi_sum)
 
 
@@ -197,12 +196,13 @@ end
 
   distr_d_rewritten = symbolic_rewriting(distr_d, expr_rewriter([leibniz]))
 
+  # The summands are written in the normal form's order, sorted by printed form.
   distr_d_res = @decapode begin
     A::Form0
     B::Form1
     C::Form2
 
-    C == ∧(d(A), B) + ∧(A, d(B))
+    C == ∧(A, d(B)) + ∧(d(A), B)
   end
   infer_types!(distr_d_res)
 
